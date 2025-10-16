@@ -11,7 +11,7 @@ const upload = multer({ storage: multer.memoryStorage() });
 
 router.get("/v", getApiVersion);
 
-router.get("/scannedSteam", upload.single("img"),createScan);
+router.post("/scannedSteam", upload.single("img"),createScan);
 
 
 
