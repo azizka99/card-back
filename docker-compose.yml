@@ -1,0 +1,18 @@
+version: '3.9'
+
+services:
+  postgres:
+    image: postgres:14-alpine
+    ports:
+      - 5432:5432
+    volumes:
+      - ~/apps/postgres_arascom_scan:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_PASSWORD=arascom_scan906090
+      - POSTGRES_USER=root
+      - POSTGRES_DB=arascom_scan_db
+    container_name: arascom_scan_container
+    restart: always
+
+    # Run with:
+    # docker-compose -p arascom_scan up -d
