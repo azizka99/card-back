@@ -6,17 +6,99 @@ import clientRoutes from "./routes/client/clientRoutes";
 import { errorHandler, notFound } from "./middlewares/errorMiddleware";
 import expressAsyncHandler from "express-async-handler";
 import { User } from "./models/User";
+import path from "path";
+import session from "express-session";
+import { S3Client, GetObjectCommand } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import prisma from "./constants/dbConnection";
 
 
 const app = express();
 
 dotenv.config({ path: '.env' });
 
+app.set("view engine", "ejs");
+app.set("views", path.join(process.cwd(), "views"));
+
 
 app.use(cors());
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
+
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET || "dev-secret-change-me",
+    resave: false,
+    saveUninitialized: false,
+    cookie: { maxAge: 1000 * 60 * 60 }, // 1h
+  })
+);
+
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "admin@example.com";
+const ADMIN_PASS  = process.env.ADMIN_PASS  || "supersecret";
+
+function requireAuth(req: any, res: any, next: any) {
+  if (req.session?.isAuthed) return next();
+  res.redirect("/admin/login");
+}
+
+const REGION = process.env.AWS_REGION || "eu-central-1";
+const BUCKET = process.env.AWS_BUCKET_NAME || "scanaras-steam-bucket";
+const s3 = new S3Client({ region: REGION });
+
+app.get("/admin/login", (req, res) => {
+  res.render("login", { error: null });
+});
+
+app.post("/admin/login", async (req, res) => {
+  const { email, password } = req.body;
+  if (email === ADMIN_EMAIL && password === ADMIN_PASS) {
+    req.session.isAuthed = true;
+    return res.redirect("/admin");
+  }
+  res.status(401).render("login", { error: "Invalid credentials" });
+});
+
+app.post("/admin/logout", (req, res) => {
+  req.session.destroy(() => res.redirect("/admin/login"));
+});
+
+app.get("/admin", requireAuth, async (req, res) => {
+  const q = (req.query.q as string) || "";
+
+  const items = await prisma.steam_card.findMany({
+    where: q ? { barcode: { contains: q, mode: "insensitive" } } : {},
+    orderBy: { created_at: "desc" },
+    take: 200, // cap to keep page light
+    select: { id: true, barcode: true, activation_code: true, img_src: true, created_at: true }
+  });
+
+  res.render("dashboard", { items, q });
+});
+
+app.get("/admin/item/:id", requireAuth, async (req, res) => {
+  const item = await prisma.steam_card.findUnique({
+    where: { id: req.params.id },
+    select: { id: true, barcode: true, activation_code: true, img_src: true, created_at: true }
+  });
+  if (!item) return res.status(404).send("Not found");
+
+  // img_src stores the S3 key (e.g. 'scans/123-file.jpg')
+  let signedUrl: string | null = null;
+  if (item.img_src) {
+    signedUrl = await getSignedUrl(
+      s3,
+      new GetObjectCommand({ Bucket: BUCKET, Key: item.img_src }),
+      { expiresIn: 60 * 10 } // 10 minutes
+    );
+  }
+
+  res.render("item", { item, signedUrl });
+});
+
+
+
 
 app.use("/arascom-scan", clientRoutes);
 

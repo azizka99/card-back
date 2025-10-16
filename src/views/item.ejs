@@ -1,0 +1,27 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Item · <%= item.barcode %></title>
+  <style>
+    body { font-family: system-ui, Arial; padding: 24px; }
+    img { max-width: 100%; height: auto; border:1px solid #ddd; }
+    a { color:#0a58ca; }
+  </style>
+</head>
+<body>
+  <p><a href="/admin">&larr; Back</a></p>
+  <h2>Item</h2>
+  <p><b>Barcode:</b> <%= item.barcode %></p>
+  <p><b>Activation:</b> <%= item.activation_code || "-" %></p>
+  <p><b>Created:</b> <%= new Date(item.created_at).toLocaleString() %></p>
+
+  <% if (signedUrl) { %>
+    <h3>Image</h3>
+    <img src="<%= signedUrl %>" alt="Image for <%= item.barcode %>"/>
+    <p><small>Link expires in ~10 minutes.</small></p>
+  <% } else { %>
+    <p>No image for this item.</p>
+  <% } %>
+</body>
+</html>

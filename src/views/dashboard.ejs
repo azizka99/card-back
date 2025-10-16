@@ -1,0 +1,53 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Admin · Items</title>
+  <style>
+    body { font-family: system-ui, Arial; padding: 24px; }
+    form.search { margin-bottom: 16px; display:flex; gap:8px; }
+    input[type="text"] { padding:8px; flex:1; }
+    table { border-collapse: collapse; width:100%; }
+    th, td { border:1px solid #ddd; padding:8px; }
+    th { background:#f3f3f3; text-align:left; }
+    a { color:#0a58ca; text-decoration:none; }
+  </style>
+</head>
+<body>
+  <h2>Items</h2>
+
+  <form class="search" method="get" action="/admin">
+    <input type="text" name="q" value="<%= q %>" placeholder="Search by barcode…" />
+    <button>Search</button>
+  </form>
+
+  <form method="post" action="/admin/logout" style="margin-bottom:16px;">
+    <button>Logout</button>
+  </form>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Barcode</th>
+        <th>Activation Code</th>
+        <th>Created</th>
+        <th>Image</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% items.forEach(it => { %>
+        <tr>
+          <td><%= it.barcode %></td>
+          <td><%= it.activation_code || "-" %></td>
+          <td><%= new Date(it.created_at).toLocaleString() %></td>
+          <td>
+            <% if (it.img_src) { %>
+              <a href="/admin/item/<%= it.id %>">View</a>
+            <% } else { %>-<% } %>
+          </td>
+        </tr>
+      <% }) %>
+    </tbody>
+  </table>
+</body>
+</html>
