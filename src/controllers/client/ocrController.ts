@@ -1,3 +1,4 @@
+// src/controllers/client/ocrController.ts
 import { Request, Response } from "express";
 import { promises as fs } from "fs";
 import { tmpdir } from "os";
@@ -109,7 +110,7 @@ const AMBIG_PAIRS: Record<string, string> = {
   "0": "C", "C": "0",
   "8": "B", "B": "8",
   "7": "T", "T": "7",
-  "D": "0" // rare but seen
+  "D": "0"
 };
 
 function parseTSV(tsv: string): Sym[] {
@@ -118,71 +119,59 @@ function parseTSV(tsv: string): Sym[] {
   for (let i = 1; i < rows.length; i++) {
     const cols = rows[i].split("\t");
     if (cols.length < 12) continue;
-    const level = Number(cols[0]);
-    if (level !== 5) continue; // symbols
+    if (Number(cols[0]) !== 5) continue; // symbols
     const left = Number(cols[6]), top = Number(cols[7]), width = Number(cols[8]), height = Number(cols[9]);
     const conf = Number(cols[10]);
-    const text = cols[11] || "";
-    if (!/^[A-Za-z0-9-]$/.test(text)) continue;
-    out.push({ ch: text.toUpperCase(), conf: isFinite(conf) ? conf : 0, x: left, y: top, w: width, h: height });
+    const text = (cols[11] || "").toUpperCase();
+    if (!/^[A-Z0-9-]$/.test(text)) continue;
+    out.push({ ch: text, conf: isFinite(conf) ? conf : 0, x: left, y: top, w: width, h: height });
   }
-  out.sort((a,b) => a.x - b.x);
+  out.sort((a, b) => a.x - b.x);
   return out;
 }
 
 function best15FromTSVSymbols(syms: Sym[]): { raw15: string, avgConf: number } | null {
-  const only = syms.map(s => s.ch).join("").replace(/[^A-Z0-9]+/g, "");
-  if (only.length < 15) return null;
-
-  // approximate: average conf of first 15 alnum symbols in each window
-  const alnumSyms = syms.filter(s => /^[A-Z0-9]$/.test(s.ch));
+  const alnum = syms.filter(s => /^[A-Z0-9]$/.test(s.ch));
+  if (alnum.length < 15) return null;
   let best: { raw15: string, avgConf: number } | null = null;
-  for (let i = 0; i <= only.length - 15; i++) {
-    const seg = only.slice(i, i + 15);
-    let confSum = 0, count = 0, pos = 0;
-    for (const s of alnumSyms) {
-      if (pos >= i && pos < i + 15) { confSum += s.conf; count++; }
-      pos++;
-      if (pos >= i + 15) break;
-    }
-    const avg = count ? confSum / count : 0;
-    if (!best || avg > best.avgConf) best = { raw15: seg, avgConf: avg };
+  for (let i = 0; i <= alnum.length - 15; i++) {
+    const seg = alnum.slice(i, i + 15);
+    const raw15 = seg.map(s => s.ch).join("");
+    const avgConf = seg.reduce((a, s) => a + s.conf, 0) / 15;
+    if (!best || avgConf > best.avgConf) best = { raw15, avgConf };
   }
   return best;
 }
 
 function disambiguateWithTSV(tsv: string): string | null {
   const syms = parseTSV(tsv);
-  const best15 = best15FromTSVSymbols(syms);
-  if (!best15) return null;
+  const best = best15FromTSVSymbols(syms);
+  if (!best) return null;
 
-  const alnumSyms = syms.filter(s => /^[A-Z0-9]$/.test(s.ch));
-  const base = best15.raw15.split("");
-  const confs: number[] = [];
-  for (let i = 0; i < 15; i++) confs[i] = alnumSyms[i]?.conf ?? 0;
+  const alnum = syms.filter(s => /^[A-Z0-9]$/.test(s.ch));
+  const base = best.raw15.split("");
+  const confs = alnum.slice(0, 15).map(s => s.conf);
 
   type Node = { s: string, score: number };
   let beam: Node[] = [{ s: base.join(""), score: 0 }];
   const BEAM_WIDTH = 8;
-  const FLIP_CONF_THRESHOLD = 82;
+  const FLIP_CONF_THRESHOLD = 85;
 
   for (let i = 0; i < 15; i++) {
     const next: Node[] = [];
     for (const node of beam) {
       const ch = node.s[i];
-      const conf = confs[i] || 0;
-
+      const conf = confs[i] ?? 0;
       // keep
       next.push({ s: node.s, score: node.score + Math.log((conf + 1) / 101) });
-
       // flip (if ambiguous & low confidence)
       const alt = AMBIG_PAIRS[ch];
       if (alt && conf < FLIP_CONF_THRESHOLD) {
-        const flipped = node.s.split(""); flipped[i] = alt;
-        next.push({ s: flipped.join(""), score: node.score + Math.log(((100 - conf) + 1) / 101) });
+        const arr = node.s.split(""); arr[i] = alt;
+        next.push({ s: arr.join(""), score: node.score + Math.log(((100 - conf) + 1) / 101) });
       }
     }
-    next.sort((a,b) => b.score - a.score);
+    next.sort((a, b) => b.score - a.score);
     beam = next.slice(0, BEAM_WIDTH);
   }
 
@@ -194,7 +183,6 @@ function disambiguateWithTSV(tsv: string): string | null {
 }
 
 /* ---------------- sharp variants (TS-safe) ---------------- */
-// base returns a Sharp pipeline (SYNC) so we can keep chaining methods.
 function base(img: sharp.Sharp): sharp.Sharp {
   return img
     .rotate()
@@ -257,17 +245,31 @@ async function makeVariants(inputPath: string, baseOut: string): Promise<string[
     outs.push(out); log("✅ Prepped V4:", out);
   }
 
-  // V5: inverted (negative) + threshold(210)  ← your idea
+  // V5: inverted (negative) + threshold(210)
   {
     const out = `${baseOut}.v5_neg.png`;
     const buf = await base(sharp(inputPath))
-      .negate()               // invert colors
+      .negate()
       .linear(1.2, -10)
       .threshold(210)
       .png()
       .toBuffer();
     await fs.writeFile(out, buf);
     outs.push(out); log("✅ Prepped V5 (neg):", out);
+  }
+
+  // V6: light horizontal dilation (bolden thin hyphens)
+  {
+    const out = `${baseOut}.v6_boldx.png`;
+    const kernel: any = { width: 3, height: 1, kernel: [1, 1, 1] };
+    const buf = await base(sharp(inputPath))
+      .linear(1.15, -8)
+      .threshold(205)
+      .convolve(kernel as any)
+      .png()
+      .toBuffer();
+    await fs.writeFile(out, buf);
+    outs.push(out); log("✅ Prepped V6 (bold-x):", out);
   }
 
   return outs;
@@ -302,9 +304,10 @@ export async function ocrTesseract(req: Request, res: Response) {
     outer:
     for (const v of variants) {
       for (const p of psms) {
-        const raw = await runTesseract(v, p, v.split("/").pop() || v);
+        const tag = v.split("/").pop() || v;
+        const raw = await runTesseract(v, p, tag);
         const code = extractActivationCode(raw);
-        log(`🔎 Extracted (${v.split("/").pop()}, PSM=${p}):`, code || "<none>");
+        log(`🔎 Extracted (${tag}, PSM=${p}):`, code || "<none>");
         if (code) {
           bestRaw = raw;
           bestCode = code;
@@ -317,18 +320,19 @@ export async function ocrTesseract(req: Request, res: Response) {
     // 4) TSV refinement (only if we have a variant to analyze)
     if (chosenVariantPath) {
       try {
+        log("🔬 Running TSV refinement on:", chosenVariantPath);
         const tsv = await runTesseractTSV(chosenVariantPath, "13");
         const tsvCode = disambiguateWithTSV(tsv);
+        log("TSV candidate:", tsvCode || "<none>");
         if (tsvCode && wantFormat(tsvCode)) {
-          log("🎯 TSV-disambiguated code:", tsvCode);
           bestCode = tsvCode;
         }
       } catch (e: any) {
-        log("TSV refinement skipped:", e?.message || e);
+        log("TSV refinement error:", e?.message || e);
       }
     }
 
-    // 5) Business replacements at the very end
+    // 5) Business replacements at the end
     const cleaned = normalizeBusiness(bestCode);
     log("✅ Final cleaned code:", cleaned || "<none>");
 
@@ -338,14 +342,13 @@ export async function ocrTesseract(req: Request, res: Response) {
       code: cleaned,
       debug: {
         triedVariants: variants.map(v => v.split("/").pop()),
-        usedVariant: chosenVariantPath.split("/").pop()
+        usedVariant: chosenVariantPath ? chosenVariantPath.split("/").pop() : null
       }
     });
   } catch (err: any) {
     log("💥 Error:", err?.message || err);
     return res.status(500).json({ ok: false, error: err?.message || String(err) });
   } finally {
-    // cleanup
     const unique = Array.from(new Set(toCleanup.concat(tmpPath ? [tmpPath] : [])));
     await Promise.all(unique.map(p => fs.unlink(p).catch(() => {})));
   }
