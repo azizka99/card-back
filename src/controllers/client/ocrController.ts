@@ -258,14 +258,18 @@ async function makeVariants(inputPath: string, baseOut: string): Promise<string[
     outs.push(out); log("✅ Prepped V5 (neg):", out);
   }
 
-  // V6: light horizontal dilation (bolden thin hyphens)
+  // V6: horizontal "bold" via 3x3 ones kernel (fixes invalid-kernel error by using 3x3)
   {
     const out = `${baseOut}.v6_boldx.png`;
-    const kernel: any = { width: 3, height: 1, kernel: [1, 1, 1] };
+    const kernel: any = { width: 3, height: 3, kernel: [
+      1, 1, 1,
+      1, 1, 1,
+      1, 1, 1
+    ], scale: 1 };
     const buf = await base(sharp(inputPath))
       .linear(1.15, -8)
       .threshold(205)
-      .convolve(kernel as any)
+      .convolve(kernel as any)   // makes thin strokes/hyphens a touch bolder
       .png()
       .toBuffer();
     await fs.writeFile(out, buf);
@@ -285,7 +289,7 @@ export async function ocrTesseract(req: Request, res: Response) {
       return res.status(400).json({ ok: false, error: "No file uploaded (field must be 'img')." });
     }
 
-    // 1) save upload
+    // 1) save upload (temporary)
     tmpPath = join(tmpdir(), `roi_${Date.now()}_${Math.random().toString(36).slice(2)}.jpg`);
     await fs.writeFile(tmpPath, req.file.buffer);
     log("📸 Saved upload:", tmpPath, "bytes:", req.file.buffer.length);
@@ -349,6 +353,7 @@ export async function ocrTesseract(req: Request, res: Response) {
     log("💥 Error:", err?.message || err);
     return res.status(500).json({ ok: false, error: err?.message || String(err) });
   } finally {
+    // 6) cleanup: delete all temp files (original + variants)
     const unique = Array.from(new Set(toCleanup.concat(tmpPath ? [tmpPath] : [])));
     await Promise.all(unique.map(p => fs.unlink(p).catch(() => {})));
   }
