@@ -9,10 +9,11 @@ const execFileAsync = promisify(execFile);
 
 const TESSDATA_DIR = "/usr/share/tesseract-ocr/4.00/tessdata_best";
 
-/* ---------------- Small helpers ---------------- */
-function now() { return new Date().toISOString().slice(11,19); }
+/* ---------------- small log helpers ---------------- */
+function now() { return new Date().toISOString().slice(11, 19); }
 function log(...args: any[]) { console.log("[OCR]", now(), ...args); }
 
+/* ---------------- business helpers ---------------- */
 function normalizeSerialToBusinessRules(serial: string): string {
   if (!serial) return "";
   let s = serial;
@@ -26,7 +27,6 @@ function extractActivationCode(rawText: string): string {
   if (!rawText) return "";
   const up = String(rawText).toUpperCase().replace(/\r?\n/g, " ");
 
-  // tolerant 5-5-5 with optional inner spaces around hyphens and inside blocks
   const tolerant = new RegExp(
     String.raw`
       (?:
@@ -50,8 +50,9 @@ function extractActivationCode(rawText: string): string {
   return `${compact.slice(0,5)}-${compact.slice(5,10)}-${compact.slice(10,15)}`;
 }
 
-/* ---------------- Tesseract runner ---------------- */
-async function runTesseract(filePath: string, psm: "13" | "7" | "6", tag: string): Promise<string> {
+/* ---------------- tesseract runner ---------------- */
+type PSM = "13" | "7" | "6";
+async function runTesseract(filePath: string, psm: PSM, tag: string): Promise<string> {
   log(`🧠 Tesseract PSM=${psm} on ${tag}`);
   const args = [
     filePath, "stdout",
@@ -74,20 +75,18 @@ async function runTesseract(filePath: string, psm: "13" | "7" | "6", tag: string
   return out;
 }
 
-/* ---------------- Preprocess variants (Sharp) ----------------
-   We’ll generate up to 4 PNG variants and try each with PSM 13 → 7 → 6
----------------------------------------------------------------- */
+/* ---------------- sharp variants (TS-safe) ---------------- */
+// base returns a Sharp pipeline (SYNC) so we can keep chaining methods.
+function base(img: sharp.Sharp): sharp.Sharp {
+  return img
+    .rotate() // honor EXIF
+    .grayscale()
+    .extend({ top: 8, bottom: 8, left: 0, right: 0, background: { r: 255, g: 255, b: 255, alpha: 1 } })
+    .resize({ width: 1600, withoutEnlargement: false });
+}
+
 async function makeVariants(inputPath: string, baseOut: string): Promise<string[]> {
   const outs: string[] = [];
-
-  // Common base: grayscale, +8px vertical padding, resize width 1600
-  async function base(img: sharp.Sharp) {
-    return img
-      .rotate() // respect EXIF, just in case
-      .grayscale()
-      .extend({ top: 8, bottom: 8, left: 0, right: 0, background: { r:255, g:255, b:255, alpha:1 } })
-      .resize({ width: 1600, withoutEnlargement: false });
-  }
 
   // V1: moderate sharpen + linear + threshold(210)
   {
@@ -103,13 +102,12 @@ async function makeVariants(inputPath: string, baseOut: string): Promise<string[
     log("✅ Prepped V1:", out);
   }
 
-  // V2: softer (no threshold) — helps when threshold wipes hyphens
+  // V2: softer (no threshold) — helps when threshold wipes thin glyphs/hyphens
   {
     const out = `${baseOut}.v2.png`;
     const buf = await base(sharp(inputPath))
       .sharpen(0.5)
       .linear(1.1, -5)
-      .normalize() // auto contrast
       .png()
       .toBuffer();
     await fs.writeFile(out, buf);
@@ -117,11 +115,11 @@ async function makeVariants(inputPath: string, baseOut: string): Promise<string[
     log("✅ Prepped V2:", out);
   }
 
-  // V3: lower threshold (190) + tiny median denoise
+  // V3: lower threshold(190)
   {
     const out = `${baseOut}.v3.png`;
     const buf = await base(sharp(inputPath))
-      .median(1)
+      .sharpen(0.8)
       .linear(1.15, -8)
       .threshold(190)
       .png()
@@ -131,7 +129,7 @@ async function makeVariants(inputPath: string, baseOut: string): Promise<string[
     log("✅ Prepped V3:", out);
   }
 
-  // V4: stronger threshold (225) + stronger sharpen
+  // V4: stronger threshold(225)
   {
     const out = `${baseOut}.v4.png`;
     const buf = await base(sharp(inputPath))
@@ -148,7 +146,7 @@ async function makeVariants(inputPath: string, baseOut: string): Promise<string[
   return outs;
 }
 
-/* ---------------- Controller ---------------- */
+/* ---------------- controller ---------------- */
 export async function ocrTesseract(req: Request, res: Response) {
   let tmpPath = "";
   const toCleanup: string[] = [];
@@ -158,36 +156,30 @@ export async function ocrTesseract(req: Request, res: Response) {
       return res.status(400).json({ ok: false, error: "No file uploaded (field must be 'img')." });
     }
 
-    // 1) Save upload to /tmp
+    // 1) save upload
     tmpPath = join(tmpdir(), `roi_${Date.now()}_${Math.random().toString(36).slice(2)}.jpg`);
     await fs.writeFile(tmpPath, req.file.buffer);
     log("📸 Saved upload:", tmpPath, "bytes:", req.file.buffer.length);
 
-    // 2) Create multiple preprocessed variants
+    // 2) preprocess variants
     const baseOut = tmpPath.replace(/\.jpg$/i, ".prep");
     const variants = await makeVariants(tmpPath, baseOut);
     toCleanup.push(...variants);
 
-    // 3) For each variant, try PSM 13 → 7 → 6
-    const psms: Array<"13"|"7"|"6"> = ["13", "7", "6"];
+    // 3) try each variant with PSM 13 → 7 → 6
+    const psms: PSM[] = ["13", "7", "6"];
     let bestRaw = "";
     let bestCode = "";
-
     outer:
     for (const v of variants) {
       for (const p of psms) {
-        const raw = await runTesseract(v, p, v.split(".").slice(-2).join(".")); // tag like "v1.png"
+        const raw = await runTesseract(v, p, v.split(".").slice(-2).join(".")); // tag like v1.png
         const code = extractActivationCode(raw);
         log(`🔎 Extracted (${v.split(".").slice(-2).join(".")}, PSM=${p}):`, code || "<none>");
-        if (code) {
-          bestRaw = raw;
-          bestCode = code;
-          break outer;
-        }
+        if (code) { bestRaw = raw; bestCode = code; break outer; }
       }
     }
 
-    // 4) Business replacements AFTER we have XXXXX-XXXXX-XXXXX
     const cleaned = normalizeSerialToBusinessRules(bestCode);
     log("✅ Final cleaned code:", cleaned || "<none>");
 
@@ -201,7 +193,7 @@ export async function ocrTesseract(req: Request, res: Response) {
     log("💥 Error:", err?.message || err);
     return res.status(500).json({ ok: false, error: err?.message || String(err) });
   } finally {
-    // 5) cleanup everything
+    // 4) cleanup
     const unique = Array.from(new Set(toCleanup.concat(tmpPath ? [tmpPath] : [])));
     await Promise.all(unique.map(p => fs.unlink(p).catch(() => {})));
   }
