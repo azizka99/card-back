@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import { promises as fs } from "fs";
 import { tmpdir } from "os";
 import { join } from "path";
-import sharp, { Sharp } from "sharp";
+import sharp from "sharp";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 const execFileAsync = promisify(execFile);
@@ -10,26 +10,37 @@ const execFileAsync = promisify(execFile);
 const TESSDATA_DIR = "/usr/share/tesseract-ocr/4.00/tessdata_best";
 const ts = () => new Date().toISOString().slice(11, 19);
 
-/* =========================
-   IMAGE PREP (Sharp variants)
-   ========================= */
+/* ---------------- Sharp variants ---------------- */
 async function prepVariants(inputPath: string) {
-  const png = async (pipeline: Sharp): Promise<Buffer> => pipeline.png().toBuffer();
+  const png = async (pipeline: sharp.Sharp) => pipeline.png().toBuffer();
   const read = sharp(inputPath);
 
+  // v1: BW, light threshold
   const v1 = await png(
     read.clone().grayscale().linear(1.15, -8).resize({ width: 1600 }).threshold(205)
   );
+
+  // v2: BW, stronger threshold
   const v2 = await png(
     read.clone().grayscale().linear(1.25, -12).resize({ width: 1600 }).threshold(215)
   );
-  const v3 = await png(read.clone().grayscale().linear(1.1, -5).resize({ width: 1800 }).sharpen(1));
+
+  // v3: softer (avoid over-threshold)
+  const v3 = await png(
+    read.clone().grayscale().linear(1.1, -5).resize({ width: 1800 }).sharpen(1)
+  );
+
+  // v4: high-res and hard threshold
   const v4 = await png(
     read.clone().grayscale().linear(1.35, -15).resize({ width: 2000 }).threshold(220)
   );
+
+  // v5: inverted
   const v5_neg = await png(
     read.clone().grayscale().linear(1.25, -12).resize({ width: 1600 }).threshold(215).negate()
   );
+
+  // v6: slight bolding
   const v6_boldx = await png(
     read
       .clone()
@@ -45,14 +56,13 @@ async function prepVariants(inputPath: string) {
   return { v1, v2, v3, v4, v5_neg, v6_boldx };
 }
 
-/* ===============
-   OCR RUNNERS
-   =============== */
+/* ---------------- Patterns & temp helpers ---------------- */
 async function writeTemp(buffer: Buffer, suffix: string): Promise<string> {
   const p = join(tmpdir(), `${suffix}_${Date.now()}_${Math.random().toString(36).slice(2)}.png`);
   await fs.writeFile(p, buffer);
   return p;
 }
+
 async function writePatternsFile(): Promise<string> {
   const content = `[A-Z0-9]{5}-[A-Z0-9]{5}-[A-Z0-9]{5}\n`;
   const p = join(tmpdir(), `patterns_${Date.now()}_${Math.random().toString(36).slice(2)}.txt`);
@@ -60,7 +70,9 @@ async function writePatternsFile(): Promise<string> {
   return p;
 }
 
-async function runTesseractText(imgPath: string, psm: "6" | "7" | "13", patternsPath: string) {
+/* ---------------- Tesseract runners ---------------- */
+// TXT to stdout (normal recognition)
+async function runTesseractTXT(imgPath: string, psm: "6" | "7" | "13", patternsPath: string) {
   const args = [
     imgPath,
     "stdout",
@@ -87,18 +99,16 @@ async function runTesseractText(imgPath: string, psm: "6" | "7" | "13", patterns
   ];
   const { stdout, stderr } = await execFileAsync("tesseract", args, {
     env: { ...process.env, OMP_THREAD_LIMIT: "2" },
-    encoding: "utf8",
     maxBuffer: 8 * 1024 * 1024,
   });
   return { out: (stdout || "").trim(), err: (stderr || "").trim() };
 }
 
+// TSV to stdout (box-level info) — options BEFORE "tsv"
 async function runTesseractTSV(imgPath: string, psm: "6" | "7" | "13", patternsPath: string) {
-  // TSV = word-level boxes + confidences. We'll split the word into 15 chars.
   const args = [
     imgPath,
     "stdout",
-    "tsv", // <- important
     "--oem",
     "1",
     "--psm",
@@ -119,37 +129,24 @@ async function runTesseractTSV(imgPath: string, psm: "6" | "7" | "13", patternsP
     patternsPath,
     "--tessdata-dir",
     TESSDATA_DIR,
+    "tsv",
   ];
   const { stdout, stderr } = await execFileAsync("tesseract", args, {
     env: { ...process.env, OMP_THREAD_LIMIT: "2" },
-    encoding: "utf8",
     maxBuffer: 8 * 1024 * 1024,
   });
   return { out: (stdout || "").trim(), err: (stderr || "").trim() };
 }
 
-/* ===========================
-   PATTERN EXTRACT + NORMALIZE
-   =========================== */
-function normalizeSerialBusiness(serial: string): string {
-  if (!serial) return "";
-  let s = serial;
-  s = s.replace(/O|o/gi, "0"); // O->0
-  s = s.replace(/S|s/gi, "5"); // S->5
-  s = s.replace(/1/g, "I"); // 1->I
-  return s;
-}
-
+/* ---------------- Extraction & scoring ---------------- */
 function extractActivationCode(rawText: string): string {
   if (!rawText) return "";
   const up = rawText.toUpperCase();
 
-  // Strict pattern first
-  const strict = /\b[A-Z0-9]{5}-[A-Z0-9]{5}-[A-Z0-9]{5}\b/;
-  const m1 = up.match(strict);
+  const exact = /\b[A-Z0-9]{5}-[A-Z0-9]{5}-[A-Z0-9]{5}\b/;
+  const m1 = up.match(exact);
   if (m1) return m1[0];
 
-  // Tolerant (spaces inside/around)
   const tolerant = new RegExp(
     String.raw`(?:[A-Z0-9]\s?){5}\s*-\s*(?:[A-Z0-9]\s?){5}\s*-\s*(?:[A-Z0-9]\s?){5}`.replace(
       /\s+/g,
@@ -164,7 +161,6 @@ function extractActivationCode(rawText: string): string {
     }
   }
 
-  // Contiguous 15 fallback
   const onlyAN = up.replace(/[^A-Z0-9]+/g, "");
   if (onlyAN.length >= 15) {
     return `${onlyAN.slice(0, 5)}-${onlyAN.slice(5, 10)}-${onlyAN.slice(10, 15)}`;
@@ -172,108 +168,135 @@ function extractActivationCode(rawText: string): string {
   return "";
 }
 
-/* ============================
-   PER-GLYPH VOTING + RESCORING
-   ============================ */
-type Votes = Array<Map<string, number>>; // length 15 (no hyphens)
-const AMBIG_PAIRS: Record<string, string> = { G: "6", "6": "G", Z: "2", "2": "Z", C: "0", "0": "C" };
-
-function initVotes(): Votes {
-  return Array.from({ length: 15 }, () => new Map<string, number>());
-}
-function addVote(votes: Votes, pos: number, ch: string, weight = 1) {
-  if (pos < 0 || pos >= 15) return;
-  if (!/^[A-Z0-9]$/.test(ch)) return;
-  const m = votes[pos];
-  m.set(ch, (m.get(ch) || 0) + weight);
-}
-
-function collapse15(s: string): string {
-  return s.replace(/-/g, "");
-}
-function reinflate15(s15: string): string {
-  return `${s15.slice(0, 5)}-${s15.slice(5, 10)}-${s15.slice(10, 15)}`;
-}
-
-function votesToString(votes: Votes): string {
-  const chars: string[] = [];
-  for (let i = 0; i < 15; i++) {
-    let bestCh = "";
-    let bestScore = -Infinity;
-    for (const [ch, sc] of votes[i]) {
-      if (sc > bestScore) {
-        bestScore = sc;
-        bestCh = ch;
-      }
-    }
-    chars.push(bestCh || "X");
-  }
-  return reinflate15(chars.join(""));
-}
-
 function scoreCandidate(s: string): number {
-  if (!s) return -1e9;
-  let score = 0;
-  if (/^[A-Z0-9]{5}-[A-Z0-9]{5}-[A-Z0-9]{5}$/.test(s)) score += 50;
-  const ambig = (c: string) => (s.match(new RegExp(c, "g")) || []).length;
-  score -= ambig("G") * 0.5;
-  score -= ambig("6") * 0.5;
-  score -= ambig("Z") * 0.5;
-  score -= ambig("2") * 0.5;
-  score -= ambig("C") * 0.4;
-  score -= ambig("0") * 0.4;
+  if (!/^[A-Z0-9]{5}-[A-Z0-9]{5}-[A-Z0-9]{5}$/.test(s)) return -1e9;
+  let score = 50; // shape bonus
+
+  const ambigPenalty: Record<string, number> = {
+    G: 0.5,
+    "6": 0.5,
+    Z: 0.5,
+    "2": 0.5,
+    C: 0.4,
+    "0": 0.4,
+    B: 0.5,
+    "8": 0.5,
+    O: 0.4,
+    D: 0.4,
+  };
+  for (const [k, p] of Object.entries(ambigPenalty)) {
+    const n = (s.match(new RegExp(k, "g")) || []).length;
+    score -= n * p;
+  }
+
+  // Prefer a mix of letters/digits per block
+  const blocks = s.split("-");
+  for (const b of blocks) {
+    const letters = (b.match(/[A-Z]/g) || []).length;
+    const digits = (b.match(/[0-9]/g) || []).length;
+    if (letters > 0 && digits > 0) score += 3;
+  }
+
+  // Light penalties for suspicious endings
+  const last = blocks[2];
+  if (/Z2Z$/.test(last)) score -= 2;
+  if (/^\d{5}$/.test(last)) score -= 2;
+
+  // Small bonus for hyphens in correct places
   if (s[5] === "-" && s[11] === "-") score += 5;
+
   return score;
 }
 
-function antiConfusionRescore(base: string, votes: Votes): string {
-  // Only tweak positions where the top vote is ambiguous and the runner is close.
-  const s15 = collapse15(base);
-  const out: string[] = s15.split("");
+const CONFUSIONS: Record<string, string[]> = {
+  "6": ["G"],
+  G: ["6"],
+  "2": ["Z"],
+  Z: ["2"],
+  "0": ["O", "D", "Q", "C"],
+  O: ["0"],
+  D: ["0"],
+  Q: ["0"],
+  C: ["0"],
+  "8": ["B"],
+  B: ["8"],
+  "1": ["I"],
+  I: ["1"],
+  "5": ["S"],
+  S: ["5"],
+};
 
-  for (let i = 0; i < 15; i++) {
-    const m = votes[i];
-    if (m.size === 0) continue;
-
-    // Sort choices by weight desc
-    const ranked = Array.from(m.entries()).sort((a, b) => b[1] - a[1]);
-    const top = ranked[0];
-    const second = ranked[1];
-
-    if (!top) continue;
-    const [topCh, topW] = top;
-
-    // If topCh is from an ambiguous pair, compare with its counterpart (if present)
-    if (AMBIG_PAIRS[topCh]) {
-      const altCh = AMBIG_PAIRS[topCh];
-      const altW = m.get(altCh) || 0;
-
-      // If alternative is close enough, prefer LETTER over DIGIT in a near-tie:
-      // Prefer G over 6, Z over 2, C over 0 when within 90% of the top.
-      const nearTie = altW >= topW * 0.90;
-      const preferLetters =
-        (topCh === "6" && altCh === "G") ||
-        (topCh === "2" && altCh === "Z") ||
-        (topCh === "0" && altCh === "C");
-
-      if (nearTie && preferLetters) {
-        out[i] = altCh;
-        continue;
-      }
+function* oneFlipNeighbors(s: string) {
+  for (let i = 0; i < s.length; i++) {
+    const alts = CONFUSIONS[s[i]] || [];
+    for (const a of alts) {
+      yield s.slice(0, i) + a + s.slice(i + 1);
     }
-
-    // Keep top
-    out[i] = topCh;
-    // If top missing (shouldn't), fill X
-    if (!out[i]) out[i] = "X";
   }
-
-  return reinflate15(out.join(""));
 }
 
-/* ============================
-   MAIN CONTROLLER
-   ============================ */
+function rescoreWithConfusions(top: string): string {
+  let best = top,
+    bestScore = scoreCandidate(top);
+  for (const cand of oneFlipNeighbors(top)) {
+    const sc = scoreCandidate(cand);
+    if (sc > bestScore) {
+      best = cand;
+      bestScore = sc;
+    }
+  }
+  return best;
+}
+
+// Try “business rule” variants as candidates, then score them (no global mutation)
+function businessVariants(s: string): string[] {
+  const up = s.toUpperCase();
+  const set = new Set<string>();
+  set.add(up);
+  set.add(up.replace(/O/g, "0"));
+  set.add(up.replace(/S/g, "5"));
+  set.add(up.replace(/1/g, "I"));
+  set.add(up.replace(/O/g, "0").replace(/1/g, "I"));
+  return Array.from(set);
+}
+
+// Per-glyph voting across many 17-char candidates (positions 5 and 11 are hyphens)
+function voteCandidates(codes: string[]): string {
+  if (!codes.length) return "";
+  const L = 17;
+  const posCounts: Array<Map<string, number>> = Array.from({ length: L }, () => new Map());
+  for (const c of codes) {
+    if (!/^[A-Z0-9-]{17}$/.test(c)) continue;
+    for (let i = 0; i < L; i++) {
+      const ch = i === 5 || i === 11 ? "-" : c[i];
+      if (!ch) continue;
+      const m = posCounts[i];
+      m.set(ch, (m.get(ch) || 0) + 1);
+    }
+  }
+  const out = Array<string>(L);
+  for (let i = 0; i < L; i++) {
+    if (i === 5 || i === 11) {
+      out[i] = "-";
+      continue;
+    }
+    const m = posCounts[i];
+    let bestCh = "";
+    let bestN = -1;
+    for (const [ch, n] of m) {
+      if (ch === "-") continue;
+      if (n > bestN) {
+        bestN = n;
+        bestCh = ch;
+      }
+    }
+    out[i] = bestCh || ""; // may be empty if no votes
+  }
+  const voted = out.join("");
+  return /^[A-Z0-9]{5}-[A-Z0-9]{5}-[A-Z0-9]{5}$/.test(voted) ? voted : "";
+}
+
+/* ---------------- Controller ---------------- */
 export async function ocrTesseract(req: Request, res: Response) {
   const toCleanup: string[] = [];
   let rawJpg = "";
@@ -282,14 +305,16 @@ export async function ocrTesseract(req: Request, res: Response) {
       return res.status(400).json({ ok: false, error: "No file uploaded (field must be 'img')." });
     }
 
-    // 1) Save upload
+    // Save original
     rawJpg = join(tmpdir(), `roi_${Date.now()}_${Math.random().toString(36).slice(2)}.jpg`);
     await fs.writeFile(rawJpg, req.file.buffer);
     toCleanup.push(rawJpg);
     console.log(`[OCR] ${ts()} 📸 Saved upload: ${rawJpg} bytes: ${req.file.buffer.length}`);
 
-    // 2) Preprocess → variants
+    // Build Sharp variants
     const v = await prepVariants(rawJpg);
+
+    // Persist variants for Tesseract
     const p1 = await writeTemp(v.v1, "prep.v1");
     const p2 = await writeTemp(v.v2, "prep.v2");
     const p3 = await writeTemp(v.v3, "prep.v3");
@@ -297,13 +322,13 @@ export async function ocrTesseract(req: Request, res: Response) {
     const p5 = await writeTemp(v.v5_neg, "prep.v5_neg");
     const p6 = await writeTemp(v.v6_boldx, "prep.v6_boldx");
     toCleanup.push(p1, p2, p3, p4, p5, p6);
+
     console.log(`[OCR] ${ts()} ✅ Prepped: ${[p1, p2, p3, p4, p5, p6].join(", ")}`);
 
-    // 3) Pattern prior file
+    // Patterns file
     const patternsPath = await writePatternsFile();
     toCleanup.push(patternsPath);
 
-    // 4) Runs (text + TSV)
     const runs: Array<{ img: string; psm: "6" | "7" | "13" }> = [
       { img: p2, psm: "6" },
       { img: p2, psm: "7" },
@@ -316,88 +341,73 @@ export async function ocrTesseract(req: Request, res: Response) {
       { img: p2, psm: "13" },
     ];
 
-    const candidatesText: string[] = [];
-    const votes: Votes = initVotes();
+    const rawCandidates: string[] = [];
 
+    // Collect TXT candidates
     for (const r of runs) {
-      // TEXT
-      {
-        console.log(`[OCR] ${ts()} 🧠 TXT PSM=${r.psm} on ${r.img}`);
-        const { out, err } = await runTesseractText(r.img, r.psm, patternsPath);
-        if (err) console.log(`[OCR] ${ts()} ⚠️ tesseract(txt) stderr: ${err.split("\n")[0] || ""}`);
-        const snippet = out ? out.slice(0, 120).replace(/\s+/g, " ") : "<empty>";
-        console.log(`[OCR] ${ts()} 🧾 TXT snippet: ${snippet}`);
-        const extracted = extractActivationCode(out);
-        if (extracted) {
-          candidatesText.push(extracted);
-          // Add votes (flat weight for text runs)
-          const s15 = collapse15(extracted);
-          for (let i = 0; i < 15; i++) addVote(votes, i, s15[i], 1.0);
-        }
+      console.log(`[OCR] ${ts()} 🧠 TXT PSM=${r.psm} on ${r.img}`);
+      const { out, err } = await runTesseractTXT(r.img, r.psm, patternsPath);
+      if (err) {
+        const oneLine = err.split("\n").slice(0, 4).join(" ");
+        console.log(`[OCR] ${ts()} ⚠️ tesseract(txt) stderr: ${oneLine}`);
       }
+      const snippet = out ? out.slice(0, 120).replace(/\s+/g, " ") : "<empty>";
+      console.log(`[OCR] ${ts()} 🧾 TXT snippet: ${snippet}`);
 
-      // TSV (word-level with confidence)
-      {
-        console.log(`[OCR] ${ts()} 🔬 TSV PSM=${r.psm} on ${r.img}`);
-        const { out, err } = await runTesseractTSV(r.img, r.psm, patternsPath);
-        if (err) console.log(`[OCR] ${ts()} ⚠️ tesseract(tsv) stderr: ${err.split("\n")[0] || ""}`);
-
-        // Parse TSV rows
-        // header: level page_num block_num par_num line_num word_num left top width height conf text
-        const lines = out.split(/\r?\n/);
-        const header = lines.shift() || "";
-        const cols = header.split("\t");
-        const idxConf = cols.indexOf("conf");
-        const idxText = cols.indexOf("text");
-        if (idxConf !== -1 && idxText !== -1) {
-          for (const row of lines) {
-            const parts = row.split("\t");
-            if (parts.length !== cols.length) continue;
-            const conf = Number(parts[idxConf]);
-            if (isNaN(conf) || conf < 0) continue; // skip non-words (-1 conf)
-            const text = (parts[idxText] || "").toUpperCase().trim();
-            if (!text) continue;
-
-            const ex = extractActivationCode(text);
-            if (!ex) continue;
-
-            // Weight by confidence (1.0 .. 2.0)
-            const w = 1.0 + Math.max(0, Math.min(100, conf)) / 100.0;
-            const s15 = collapse15(ex);
-            for (let i = 0; i < 15; i++) addVote(votes, i, s15[i], w);
-          }
-        }
-      }
+      const extracted = extractActivationCode(out);
+      console.log(`[OCR] ${ts()} 🔎 Extracted (${r.img}, PSM=${r.psm}): ${extracted || "<none>"}`);
+      if (extracted) rawCandidates.push(extracted);
     }
 
-    // 5) Build a voted string
-    const voted = votesToString(votes); // reinflated XXXXX-XXXXX-XXXXX
-    const votedScore = scoreCandidate(voted);
-
-    // 6) Compare with best of raw text candidates (fallback)
-    const uniqText = Array.from(new Set(candidatesText));
-    const bestText =
-      uniqText
-        .map((c) => ({ c, score: scoreCandidate(c) }))
-        .sort((a, b) => b.score - a.score)[0]?.c || "";
-
-    let pick = voted;
-    if (scoreCandidate(bestText) > votedScore + 2) {
-      pick = bestText;
+    // Optionally: run one TSV just to ensure args are correct and available (not used below)
+    try {
+      const sample = runs[0];
+      const { err: tsvErr } = await runTesseractTSV(sample.img, sample.psm, patternsPath);
+      if (tsvErr) {
+        const oneLine = tsvErr.split("\n").slice(0, 2).join(" ");
+        console.log(`[OCR] ${ts()} 🔬 TSV available but stderr: ${oneLine}`);
+      }
+    } catch (e: any) {
+      console.log(`[OCR] ${ts()} 🔬 TSV call failed (non-fatal): ${e?.message || e}`);
     }
 
-    // 7) Anti-confusion rescoring on the pick (use vote distributions)
-    const debiased = antiConfusionRescore(pick, votes);
-
-    // 8) Business mapping after extraction
-    const cleaned = normalizeSerialBusiness(debiased);
-
+    // Dedup and quick exit
+    const uniq = Array.from(new Set(rawCandidates));
     console.log(
-      `[OCR] ${ts()} 🗳️ Candidates(text): ${uniqText.map((c) => c.replace(/-/g, "")).join(" | ") || "<none>"}`
+      `[OCR] ${ts()} 🗳️ Candidates(text): ${uniq.length ? uniq.map(c => c.replace(/-/g, "")).join(" ") : "<none>"}`
     );
-    console.log(`[OCR] ${ts()} 🧮 VOTED: ${voted}  | RESCORED: ${debiased}  | FINAL: ${cleaned}`);
+    if (uniq.length === 0) {
+      return res.json({ ok: true, rawText: "", code: "" });
+    }
 
-    return res.json({ ok: true, rawText: uniqText.join("\n"), code: cleaned });
+    // 1) Per-glyph voting across candidates
+    const voted = voteCandidates(uniq);
+
+    // 2) Expand with “business rule” variants (no global mutation)
+    const allForScoring = new Set<string>();
+    for (const c of uniq) for (const v2 of businessVariants(c)) allForScoring.add(v2);
+    if (voted) for (const v2 of businessVariants(voted)) allForScoring.add(v2);
+
+    // 3) Pick best by scoring
+    let best = { c: "", score: -1e9 };
+    for (const c of allForScoring) {
+      const sc = scoreCandidate(c);
+      if (sc > best.score) best = { c, score: sc };
+    }
+
+    // 4) Anti-confusion rescoring on the top hypothesis
+    const rescored = rescoreWithConfusions(best.c);
+
+    // Log & return
+    console.log(
+      `[OCR] ${ts()} 🧮 VOTED: ${voted || "<none>"}  | RESCORED: ${rescored}  | FINAL: ${rescored}`
+    );
+
+    return res.json({
+      ok: true,
+      rawText: uniq.join("\n"),
+      code: rescored,
+    });
   } catch (err: any) {
     console.error(`[OCR] ${ts()} 💥 Error: ${err?.message || String(err)}`);
     return res.status(500).json({ ok: false, error: err?.message || String(err) });
@@ -405,7 +415,7 @@ export async function ocrTesseract(req: Request, res: Response) {
     const KEEP = process.env.KEEP_PREP_DEBUG === "1";
     if (!KEEP) {
       const unique = Array.from(new Set(toCleanup));
-      await Promise.all(unique.map((p) => fs.unlink(p).catch(() => {})));
+      await Promise.all(unique.map(p => fs.unlink(p).catch(() => {})));
     } else {
       console.log(`[OCR] ${ts()} 🧰 KEEP_PREP_DEBUG=1 — not deleting temp files`);
     }
