@@ -8,288 +8,262 @@ import { promisify } from "node:util";
 const execFileAsync = promisify(execFile);
 
 const TESSDATA_DIR = "/usr/share/tesseract-ocr/4.00/tessdata_best";
+const ts = () => new Date().toISOString().slice(11, 19);
 
-/* ---------------- small log helpers ---------------- */
-const now = () => new Date().toISOString().slice(11, 19);
-const log = (...a: any[]) => console.log("[OCR]", now(), ...a);
+/* ---------------- Sharp variants ---------------- */
+async function prepVariants(inputPath: string) {
+  const png = async (pipeline: sharp.Sharp) => pipeline.png().toBuffer();
+  const read = sharp(inputPath);
 
-/* ---------------- business helpers ---------------- */
-const normalizeBusiness = (s: string) =>
-  (s || "")
-    .replace(/O|o/g, "0")
-    .replace(/S|s/g, "5")
-    .replace(/1/g, "I");
-
-const wantFormat = (s: string) => /^[A-Z0-9]{5}-[A-Z0-9]{5}-[A-Z0-9]{5}$/.test(s);
-const insertHyphens15 = (raw15: string) =>
-  `${raw15.slice(0, 5)}-${raw15.slice(5, 10)}-${raw15.slice(10, 15)}`;
-
-/* ---------------- tolerant extractor ---------------- */
-function extractActivationCode(rawText: string): string {
-  if (!rawText) return "";
-  const up = String(rawText).toUpperCase().replace(/\r?\n/g, " ");
-  const tolerant = new RegExp(
-    String.raw`
-      (?:
-        (?:[A-Z0-9]\s?){5}
-      )\s*-\s*
-      (?:
-        (?:[A-Z0-9]\s?){5}
-      )\s*-\s*
-      (?:
-        (?:[A-Z0-9]\s?){5}
-      )
-    `.replace(/\s+/g, "")
+  // v1: BW, light threshold
+  const v1 = await png(
+    read.clone()
+      .grayscale()
+      .linear(1.15, -8)
+      .resize({ width: 1600 })
+      .threshold(205)
   );
-  const keepHyphens = up.replace(/[^\w-]+/g, " ").replace(/\s+/g, " ");
-  const m = tolerant.exec(keepHyphens);
-  if (!m) return "";
 
-  const compact = m[0].replace(/[^A-Z0-9]/g, "");
-  if (compact.length < 15) return "";
-  return insertHyphens15(compact.slice(0, 15));
+  // v2: BW, stronger threshold (often best)
+  const v2 = await png(
+    read.clone()
+      .grayscale()
+      .linear(1.25, -12)
+      .resize({ width: 1600 })
+      .threshold(215)
+  );
+
+  // v3: softer (avoid over-threshold)
+  const v3 = await png(
+    read.clone()
+      .grayscale()
+      .linear(1.1, -5)
+      .resize({ width: 1800 })
+      .sharpen(1)
+  );
+
+  // v4: high-res and hard threshold
+  const v4 = await png(
+    read.clone()
+      .grayscale()
+      .linear(1.35, -15)
+      .resize({ width: 2000 })
+      .threshold(220)
+  );
+
+  // v5: inverted (sometimes helps)
+  const v5_neg = await png(
+    read.clone()
+      .grayscale()
+      .linear(1.25, -12)
+      .resize({ width: 1600 })
+      .threshold(215)
+      .negate()
+  );
+
+  // v6: slight bolding (dilate by blurring + threshold again)
+  const v6_boldx = await png(
+    read.clone()
+      .grayscale()
+      .resize({ width: 1700 })
+      .linear(1.25, -12)
+      .threshold(210)
+      .blur(0.6)
+      .linear(1.25, -12)
+      .threshold(215)
+  );
+
+  return { v1, v2, v3, v4, v5_neg, v6_boldx };
 }
 
-/* ---------------- tesseract runners ---------------- */
-type PSM = "13" | "7" | "6";
+/* ---------------- Helpers ---------------- */
+function normalizeSerialBusiness(serial: string): string {
+  if (!serial) return "";
+  let s = serial;
+  s = s.replace(/O|o/gi, "0"); // O->0
+  s = s.replace(/S|s/gi, "5"); // S->5
+  s = s.replace(/1/g, "I");    // 1->I
+  return s;
+}
 
-async function runTesseract(filePath: string, psm: PSM, tag: string): Promise<string> {
-  log(`🧠 Tesseract PSM=${psm} on ${tag}`);
+function extractActivationCode(rawText: string): string {
+  if (!rawText) return "";
+  const up = rawText.toUpperCase();
+
+  // Prefer exact pattern first (we’re also feeding this pattern to Tesseract)
+  const exact = /\b[A-Z0-9]{5}-[A-Z0-9]{5}-[A-Z0-9]{5}\b/;
+  const m1 = up.match(exact);
+  if (m1) return m1[0];
+
+  // Tolerant: allow spaces/noise inside blocks
+  const tolerant = new RegExp(
+    String.raw`
+      (?:[A-Z0-9]\s?){5}\s*-\s*(?:[A-Z0-9]\s?){5}\s*-\s*(?:[A-Z0-9]\s?){5}
+    `.replace(/\s+/g, "")
+  );
+  const m2 = up.match(tolerant);
+  if (m2) {
+    const compact = m2[0].replace(/[^A-Z0-9]/g, "");
+    if (compact.length >= 15) {
+      return `${compact.slice(0,5)}-${compact.slice(5,10)}-${compact.slice(10,15)}`;
+    }
+  }
+
+  // Fallback: first contiguous 15
+  const onlyAN = up.replace(/[^A-Z0-9]+/g, "");
+  if (onlyAN.length >= 15) {
+    return `${onlyAN.slice(0,5)}-${onlyAN.slice(5,10)}-${onlyAN.slice(10,15)}`;
+  }
+  return "";
+}
+
+function scoreCandidate(s: string): number {
+  // Simple heuristic: penalize unlikely runs of very similar glyphs which cause G/6, Z/2, C/0 flops.
+  if (!s) return -1e9;
+  let score = 0;
+  // bonus for matching exact length/shape
+  if (/^[A-Z0-9]{5}-[A-Z0-9]{5}-[A-Z0-9]{5}$/.test(s)) score += 50;
+
+  // mild penalties for repeated ambiguous glyphs
+  const ambig = (c: string) => (s.match(new RegExp(c, "g")) || []).length;
+  score -= ambig("G") * 0.5;
+  score -= ambig("6") * 0.5;
+  score -= ambig("Z") * 0.5;
+  score -= ambig("2") * 0.5;
+  score -= ambig("C") * 0.4;
+  score -= ambig("0") * 0.4;
+
+  // tiny bonus for having at least one hyphen in the right places
+  if (s[5] === "-" && s[11] === "-") score += 5;
+
+  return score;
+}
+
+async function writeTemp(buffer: Buffer, suffix: string): Promise<string> {
+  const p = join(tmpdir(), `${suffix}_${Date.now()}_${Math.random().toString(36).slice(2)}.png`);
+  await fs.writeFile(p, buffer);
+  return p;
+}
+
+async function writePatternsFile(): Promise<string> {
+  // Tesseract user_patterns syntax supports regex-like lines. Keep it very strict.
+  const content = `[A-Z0-9]{5}-[A-Z0-9]{5}-[A-Z0-9]{5}\n`;
+  const p = join(tmpdir(), `patterns_${Date.now()}_${Math.random().toString(36).slice(2)}.txt`);
+  await fs.writeFile(p, content, "utf8");
+  return p;
+}
+
+async function runTesseract(imgPath: string, psm: "6" | "7" | "13", patternsPath: string) {
   const args = [
-    filePath, "stdout",
+    imgPath, "stdout",
     "--oem", "1",
     "--psm", psm,
     "-l", "eng",
+    // STRONG priors:
     "-c", "tessedit_char_whitelist=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-",
-    "-c", "tessedit_char_blacklist=abcdefghijklmnopqrstuvwxyz",
     "-c", "load_system_dawg=0",
     "-c", "load_freq_dawg=0",
-    "-c", "user_defined_dpi=350",
+    "-c", "wordrec_enable_assoc=0",
+    "-c", "user_defined_dpi=300",
+    "--user-patterns", patternsPath,
     "--tessdata-dir", TESSDATA_DIR,
   ];
   const { stdout, stderr } = await execFileAsync("tesseract", args, {
     env: { ...process.env, OMP_THREAD_LIMIT: "2" },
-    maxBuffer: 5 * 1024 * 1024,
+    maxBuffer: 8 * 1024 * 1024,
   });
-  if (stderr?.trim()) log("⚠️ Tesseract stderr:", stderr.trim().slice(0, 200));
-  const out = (stdout || "").trim();
-  log("🧾 Raw snippet:", out.slice(0, 120) || "<empty>");
-  return out;
+  return { out: (stdout || "").trim(), err: (stderr || "").trim() };
 }
 
-/* ---------------- voting across candidates ---------------- */
-const AMBIG_PAIRS: Record<string, string> = {
-  "6": "G", "G": "6",
-  "2": "Z", "Z": "2",
-  "0": "C", "C": "0",
-  "8": "B", "B": "8",
-  "7": "T", "T": "7",
-  "D": "0" // sometimes D looks like closed 0
-};
-
-type Cand = { code15: string; source: string };
-
-function pickByVoting(cands: Cand[]): string | null {
-  // Keep only 15-char (no hyphens) candidates
-  const raw15s = cands
-    .map(c => c.code15.replace(/-/g, ""))
-    .filter(s => /^[A-Z0-9]{15}$/.test(s));
-
-  if (raw15s.length === 0) return null;
-
-  // weights: favor PSM6, then PSM7, then PSM13; favor v2 slightly
-  const weightOf = (source: string) => {
-    let w = 1;
-    if (source.includes("PSM=6")) w += 0.8;
-    else if (source.includes("PSM=7")) w += 0.4;
-    if (source.includes(".v2")) w += 0.4;
-    if (source.includes(".v6_boldx")) w += 0.2;
-    return w;
-  };
-
-  const perPos: Record<number, Record<string, number>> = {};
-  for (let i = 0; i < 15; i++) perPos[i] = {};
-
-  cands.forEach(({ code15, source }) => {
-    const raw = code15.replace(/-/g, "");
-    if (!/^[A-Z0-9]{15}$/.test(raw)) return;
-    const baseW = weightOf(source);
-    for (let i = 0; i < 15; i++) {
-      const ch = raw[i];
-      perPos[i][ch] = (perPos[i][ch] || 0) + baseW;
-      // ambiguous shadow vote (small)
-      const alt = AMBIG_PAIRS[ch];
-      if (alt) perPos[i][alt] = (perPos[i][alt] || 0) + 0.35 * baseW;
-    }
-  });
-
-  const chosen: string[] = [];
-  for (let i = 0; i < 15; i++) {
-    const tally = perPos[i];
-    const best = Object.entries(tally).sort((a, b) => b[1] - a[1])[0];
-    if (!best) return null;
-    chosen.push(best[0]);
-  }
-
-  return insertHyphens15(chosen.join(""));
-}
-
-/* ---------------- sharp pipeline ---------------- */
-function base(img: sharp.Sharp): sharp.Sharp {
-  return img
-    .rotate()
-    .grayscale()
-    .extend({ top: 8, bottom: 8, left: 0, right: 0, background: { r: 255, g: 255, b: 255, alpha: 1 } })
-    .resize({ width: 1600, withoutEnlargement: false });
-}
-
-async function makeVariants(inputPath: string, baseOut: string): Promise<string[]> {
-  const outs: string[] = [];
-
-  // v1: threshold 210
-  {
-    const out = `${baseOut}.v1.png`;
-    const buf = await base(sharp(inputPath))
-      .sharpen(1)
-      .linear(1.2, -10)
-      .threshold(210)
-      .png()
-      .toBuffer();
-    await fs.writeFile(out, buf); outs.push(out); log("✅ Prepped V1:", out);
-  }
-  // v2: soft, no threshold (often best)
-  {
-    const out = `${baseOut}.v2.png`;
-    const buf = await base(sharp(inputPath))
-      .sharpen(0.5)
-      .linear(1.1, -5)
-      .png()
-      .toBuffer();
-    await fs.writeFile(out, buf); outs.push(out); log("✅ Prepped V2:", out);
-  }
-  // v3: threshold 190
-  {
-    const out = `${baseOut}.v3.png`;
-    const buf = await base(sharp(inputPath))
-      .sharpen(0.8)
-      .linear(1.15, -8)
-      .threshold(190)
-      .png()
-      .toBuffer();
-    await fs.writeFile(out, buf); outs.push(out); log("✅ Prepped V3:", out);
-  }
-  // v4: threshold 225
-  {
-    const out = `${baseOut}.v4.png`;
-    const buf = await base(sharp(inputPath))
-      .sharpen(1.2)
-      .linear(1.25, -12)
-      .threshold(225)
-      .png()
-      .toBuffer();
-    await fs.writeFile(out, buf); outs.push(out); log("✅ Prepped V4:", out);
-  }
-  // v5: negative + threshold
-  {
-    const out = `${baseOut}.v5_neg.png`;
-    const buf = await base(sharp(inputPath))
-      .negate()
-      .linear(1.2, -10)
-      .threshold(210)
-      .png()
-      .toBuffer();
-    await fs.writeFile(out, buf); outs.push(out); log("✅ Prepped V5 (neg):", out);
-  }
-  // v6: bold (3x3)
-  {
-    const out = `${baseOut}.v6_boldx.png`;
-    const kernel: any = { width: 3, height: 3, kernel: [
-      1,1,1,
-      1,1,1,
-      1,1,1
-    ], scale: 1 };
-    const buf = await base(sharp(inputPath))
-      .linear(1.15, -8)
-      .threshold(205)
-      .convolve(kernel as any)
-      .png()
-      .toBuffer();
-    await fs.writeFile(out, buf); outs.push(out); log("✅ Prepped V6 (bold-x):", out);
-  }
-
-  return outs;
-}
-
-/* ---------------- controller (ensemble voting) ---------------- */
+/* ---------------- Controller ---------------- */
 export async function ocrTesseract(req: Request, res: Response) {
-  let tmpPath = "";
   const toCleanup: string[] = [];
+  let rawJpg = "";
   try {
     if (!req.file?.buffer) {
-      log("❌ No file uploaded.");
       return res.status(400).json({ ok: false, error: "No file uploaded (field must be 'img')." });
     }
 
-    // save upload
-    tmpPath = join(tmpdir(), `roi_${Date.now()}_${Math.random().toString(36).slice(2)}.jpg`);
-    await fs.writeFile(tmpPath, req.file.buffer);
-    log("📸 Saved upload:", tmpPath, "bytes:", req.file.buffer.length);
+    // Save original
+    rawJpg = join(tmpdir(), `roi_${Date.now()}_${Math.random().toString(36).slice(2)}.jpg`);
+    await fs.writeFile(rawJpg, req.file.buffer);
+    toCleanup.push(rawJpg);
+    console.log(`[OCR] ${ts()} 📸 Saved upload: ${rawJpg} bytes: ${req.file.buffer.length}`);
 
-    // preprocess
-    const baseOut = tmpPath.replace(/\.jpg$/i, ".prep");
-    const variants = await makeVariants(tmpPath, baseOut);
-    toCleanup.push(...variants);
+    // Build Sharp variants
+    const v = await prepVariants(rawJpg);
 
-    // run all variants/psms -> collect candidates
-    const psms: PSM[] = ["13", "7", "6"];
-    const allCandidates: { code15: string; source: string }[] = [];
-    let firstGoodRaw = "";
-    let firstGoodPretty = "";
+    // Persist them (Tesseract needs files)
+    const p1 = await writeTemp(v.v1, "prep.v1");
+    const p2 = await writeTemp(v.v2, "prep.v2");
+    const p3 = await writeTemp(v.v3, "prep.v3");
+    const p4 = await writeTemp(v.v4, "prep.v4");
+    const p5 = await writeTemp(v.v5_neg, "prep.v5_neg");
+    const p6 = await writeTemp(v.v6_boldx, "prep.v6_boldx");
+    toCleanup.push(p1, p2, p3, p4, p5, p6);
 
-    for (const v of variants) {
-      const tag = v.split("/").pop() || v;
-      for (const p of psms) {
-        const raw = await runTesseract(v, p, tag);
-        const codePretty = extractActivationCode(raw);
-        if (codePretty) {
-          const code15 = codePretty.replace(/-/g, "");
-          allCandidates.push({ code15, source: `${tag} PSM=${p}` });
-          if (!firstGoodPretty) {
-            firstGoodRaw = raw;
-            firstGoodPretty = codePretty;
-          }
-        }
-      }
+    console.log(`[OCR] ${ts()} ✅ Prepped V1: ${p1}`);
+    console.log(`[OCR] ${ts()} ✅ Prepped V2: ${p2}`);
+    console.log(`[OCR] ${ts()} ✅ Prepped V3: ${p3}`);
+    console.log(`[OCR] ${ts()} ✅ Prepped V4: ${p4}`);
+    console.log(`[OCR] ${ts()} ✅ Prepped V5 (neg): ${p5}`);
+    console.log(`[OCR] ${ts()} ✅ Prepped V6 (bold-x): ${p6}`);
+
+    // Patterns file (very important!)
+    const patternsPath = await writePatternsFile();
+    toCleanup.push(patternsPath);
+
+    const runs: Array<{img: string; psm: "6"|"7"|"13"}> = [
+      { img: p2, psm: "6" },
+      { img: p2, psm: "7" },
+      { img: p1, psm: "6" },
+      { img: p1, psm: "7" },
+      { img: p3, psm: "6" },
+      { img: p4, psm: "6" },
+      { img: p5, psm: "6" },
+      { img: p6, psm: "6" },
+      { img: p2, psm: "13" },
+    ];
+
+    const candidates: string[] = [];
+    for (const r of runs) {
+      console.log(`[OCR] ${ts()} 🧠 Tesseract PSM=${r.psm} on ${r.img}`);
+      const { out, err } = await runTesseract(r.img, r.psm, patternsPath);
+      if (err) console.log(`[OCR] ${ts()} ⚠️ Tesseract stderr: ${err.split("\n").slice(0,5).join(" ")}`);
+      const snippet = out ? out.slice(0, 120).replace(/\s+/g, " ") : "<empty>";
+      console.log(`[OCR] ${ts()} 🧾 Raw snippet: ${snippet}`);
+
+      const extracted = extractActivationCode(out);
+      console.log(`[OCR] ${ts()} 🔎 Extracted (${r.img}, PSM=${r.psm}): ${extracted || "<none>"}`);
+      if (extracted) candidates.push(extracted);
     }
 
-    // fallback: if nothing extracted at all
-    if (allCandidates.length === 0) {
-      log("⚠️ No candidates from any variant/psm.");
+    // Deduplicate, score, pick best
+    const uniq = Array.from(new Set(candidates));
+    if (uniq.length === 0) {
+      console.log(`[OCR] ${ts()} 🗳️ Candidates: <none>`);
       return res.json({ ok: true, rawText: "", code: "" });
     }
+    const best = uniq
+      .map(c => ({ c, score: scoreCandidate(c) }))
+      .sort((a, b) => b.score - a.score)[0];
 
-    // ensemble vote
-    const voted = pickByVoting(allCandidates) || firstGoodPretty;
-    const cleaned = normalizeBusiness(voted);
+    console.log(`[OCR] ${ts()} 🗳️ Candidates: ${uniq.map(c => c.replace(/-/g,"")).join(" | ")}`);
+    const cleaned = normalizeSerialBusiness(best.c);
+    console.log(`[OCR] ${ts()} ✅ Final cleaned code: ${cleaned}`);
 
-    log("🗳️ Candidates:", allCandidates.map(c => `${c.code15} [${c.source}]`).join(" | "));
-    log("✅ Final cleaned code:", cleaned || "<none>");
-
-    return res.json({
-      ok: true,
-      rawText: firstGoodRaw,
-      code: cleaned,
-      debug: {
-        candidates: allCandidates,
-        voted: voted,
-      }
-    });
+    return res.json({ ok: true, rawText: uniq.join("\n"), code: cleaned });
   } catch (err: any) {
-    log("💥 Error:", err?.message || err);
+    console.error(`[OCR] ${ts()} 💥 Error: ${err?.message || String(err)}`);
     return res.status(500).json({ ok: false, error: err?.message || String(err) });
   } finally {
-    // cleanup everything (original + variants)
-    const unique = Array.from(new Set(toCleanup.concat(tmpPath ? [tmpPath] : [])));
-    await Promise.all(unique.map(p => fs.unlink(p).catch(() => {})));
+    // Cleanup temp files unless debugging
+    const KEEP = process.env.KEEP_PREP_DEBUG === "1";
+    if (!KEEP) {
+      const unique = Array.from(new Set(toCleanup));
+      await Promise.all(unique.map(p => fs.unlink(p).catch(() => {})));
+    } else {
+      console.log(`[OCR] ${ts()} 🧰 KEEP_PREP_DEBUG=1 — not deleting temp files`);
+    }
   }
 }
