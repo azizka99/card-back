@@ -1,0 +1,179 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const dotenv_1 = __importDefault(require("dotenv"));
+const express_1 = __importDefault(require("express"));
+const cors_1 = __importDefault(require("cors"));
+const cookie_parser_1 = __importDefault(require("cookie-parser"));
+const clientRoutes_1 = __importDefault(require("./routes/client/clientRoutes"));
+const errorMiddleware_1 = require("./middlewares/errorMiddleware");
+const express_async_handler_1 = __importDefault(require("express-async-handler"));
+const User_1 = require("./models/User");
+const path_1 = __importDefault(require("path"));
+const express_session_1 = __importDefault(require("express-session"));
+const client_s3_1 = require("@aws-sdk/client-s3");
+const s3_request_presigner_1 = require("@aws-sdk/s3-request-presigner");
+const dbConnection_1 = __importDefault(require("./constants/dbConnection"));
+const app = (0, express_1.default)();
+dotenv_1.default.config({ path: '.env' });
+app.set("view engine", "ejs");
+app.set("views", path_1.default.join(process.cwd(), "src/views"));
+app.use((0, cors_1.default)());
+app.use((0, cookie_parser_1.default)());
+app.use(express_1.default.urlencoded({ extended: true }));
+app.use(express_1.default.json());
+app.use((0, express_session_1.default)({
+    secret: process.env.SESSION_SECRET || "dev-secret-change-me",
+    resave: false,
+    saveUninitialized: false,
+    cookie: { maxAge: 1000 * 60 * 60 }, // 1h
+}));
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "admin@example.com";
+const ADMIN_PASS = process.env.ADMIN_PASS || "supersecret";
+function requireAuth(req, res, next) {
+    if (req.session?.isAuthed)
+        return next();
+    res.redirect("/admin/login");
+}
+const REGION = process.env.AWS_REGION || "eu-central-1";
+const BUCKET = process.env.AWS_BUCKET_NAME || "scanaras-steam-bucket";
+const s3 = new client_s3_1.S3Client({ region: REGION });
+app.get("/admin/login", (req, res) => {
+    res.render("login", { error: null });
+});
+app.post("/admin/login", async (req, res) => {
+    const { email, password } = req.body;
+    if (email === ADMIN_EMAIL && password === ADMIN_PASS) {
+        req.session.isAuthed = true;
+        return res.redirect("/admin");
+    }
+    res.status(401).render("login", { error: "Invalid credentials" });
+});
+app.post("/admin/logout", (req, res) => {
+    req.session.destroy(() => res.redirect("/admin/login"));
+});
+app.get("/admin", requireAuth, async (req, res) => {
+    const q = req.query.q || "";
+    const items = await dbConnection_1.default.steam_card.findMany({
+        where: q ? { barcode: { contains: q, mode: "insensitive" } } : {},
+        orderBy: { created_at: "desc" },
+        take: 200, // cap to keep page light
+        select: { id: true, barcode: true, activation_code: true, img_src: true, created_at: true }
+    });
+    res.render("dashboard", { items, q });
+});
+app.get("/admin/item/:id", requireAuth, async (req, res) => {
+    const item = await dbConnection_1.default.steam_card.findUnique({
+        where: { id: req.params.id },
+        select: { id: true, barcode: true, activation_code: true, img_src: true, created_at: true }
+    });
+    if (!item)
+        return res.status(404).send("Not found");
+    // img_src stores the S3 key (e.g. 'scans/123-file.jpg')
+    let signedUrl = null;
+    if (item.img_src) {
+        signedUrl = await (0, s3_request_presigner_1.getSignedUrl)(s3, new client_s3_1.GetObjectCommand({ Bucket: BUCKET, Key: item.img_src }), { expiresIn: 60 * 10 } // 10 minutes
+        );
+    }
+    res.render("item", { item, signedUrl });
+});
+app.use("/arascom-scan", clientRoutes_1.default);
+app.post("/test-start-end", async (req, res) => {
+    const { start, end } = req.body;
+    function luhnCheckDigit(payload15) {
+        // payload15: string of 15 digits
+        let sum = 0;
+        // Walk from right to left over the payload
+        for (let i = payload15.length - 1, posFromRight = 1; i >= 0; i--, posFromRight++) {
+            let d = Number(payload15[i]);
+            // Double every 1st,3rd,5th... position from the right (within the payload)
+            if (posFromRight % 2 === 1) {
+                d *= 2;
+                if (d > 9)
+                    d -= 9;
+            }
+            sum += d;
+        }
+        // Check digit makes (sum + check) % 10 === 0
+        return String((10 - (sum % 10)) % 10);
+    }
+    function generateBarcodes(startCode, endCode) {
+        if (!/^\d{16}$/.test(startCode) || !/^\d{16}$/.test(endCode)) {
+            throw new Error("Start and end must be 16 digits.");
+        }
+        const startPayload = BigInt(startCode.slice(0, -1)); // first 15 digits
+        const endPayload = BigInt(endCode.slice(0, -1));
+        if (startPayload > endPayload) {
+            throw new Error("Start must be <= end.");
+        }
+        const results = [];
+        const width = 15; // payload length
+        for (let core = startPayload; core <= endPayload; core++) {
+            const coreStr = core.toString().padStart(width, "0");
+            const check = luhnCheckDigit(coreStr);
+            results.push(String(coreStr + check) + ",");
+        }
+        return results;
+    }
+    res.json({
+        result: generateBarcodes(start, end)
+    });
+});
+app.post("/test-start-only", async (req, res) => {
+    const { start } = req.body;
+    function luhnCheckDigit(payload15) {
+        let sum = 0;
+        for (let i = payload15.length - 1, posFromRight = 1; i >= 0; i--, posFromRight++) {
+            let d = Number(payload15[i]);
+            if (posFromRight % 2 === 1) {
+                d *= 2;
+                if (d > 9)
+                    d -= 9;
+            }
+            sum += d;
+        }
+        return String((10 - (sum % 10)) % 10);
+    }
+    // Generate exactly 200 barcodes from the 15-digit payload of `start`
+    function generateFixed200(startCode) {
+        if (!/^\d{16}$/.test(startCode)) {
+            throw new Error("`start` must be exactly 16 digits.");
+        }
+        const width = 15; // payload length
+        let core = BigInt(startCode.slice(0, -1)); // work on the first 15 digits
+        const results = [];
+        for (let i = 0; i < 200; i++) {
+            const coreStr = core.toString().padStart(width, "0");
+            const check = luhnCheckDigit(coreStr);
+            results.push(coreStr + check);
+            core += 1n;
+            // prevent overflow beyond 15 digits
+            if (core > 999999999999999n && i < 199) {
+                throw new Error("Reached the maximum 15-digit payload limit.");
+            }
+        }
+        return results;
+    }
+    res.json({
+        result: generateFixed200(start)
+    });
+});
+app.post("/login", (0, express_async_handler_1.default)(async (req, res) => {
+    const { email } = req.body;
+    const user = await User_1.User.findUserByEmail(email);
+    if (!user) {
+        res.json({ result: null, error: "No such user found" });
+        return;
+    }
+}));
+app.use(errorMiddleware_1.notFound);
+app.use(errorMiddleware_1.errorHandler);
+app.listen(process.env.APP_PORT || 5500, () => {
+    console.log("ArascomScan Backend Has Started");
+    console.log(`Server is running at ${process.env.NODE_ENV} mode and at port |${process.env.APP_PORT}|`);
+    console.log('Server mode: ' + process.env.NODE_ENV);
+    console.log('Database url: ' + process.env.DATABASE_URL);
+    console.log("------------------------------------------------------------");
+});

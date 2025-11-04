@@ -20,7 +20,6 @@ dotenv.config({ path: '.env' });
 app.set("view engine", "ejs");
 app.set("views", path.join(process.cwd(), "src/views"));
 
-
 app.use(cors());
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));
