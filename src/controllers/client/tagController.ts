@@ -15,7 +15,7 @@ export const createTag = expressAsyncHandler(async (req, res) => {
         ? new Date(created_at)
         : new Date();
 
-    const tag = new Tag(id, name, safeCreatedAt);
+    const tag = new Tag(id, name, safeCreatedAt, userId);
 
     // 👇 await this line
     const result = await Tag.createTag(tag);

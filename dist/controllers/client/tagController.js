@@ -17,7 +17,7 @@ exports.createTag = (0, express_async_handler_1.default)(async (req, res) => {
     const safeCreatedAt = !isNaN(new Date(created_at).getTime())
         ? new Date(created_at)
         : new Date();
-    const tag = new Tag_1.Tag(id, name, safeCreatedAt);
+    const tag = new Tag_1.Tag(id, name, safeCreatedAt, userId);
     // 👇 await this line
     const result = await Tag_1.Tag.createTag(tag);
     res.json({
