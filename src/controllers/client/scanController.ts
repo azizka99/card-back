@@ -11,7 +11,7 @@ const s3 = new S3Client({ region: REGION });
 
 export const createScan = expressAsyncHandler(async (req, res) => {
   const file = req.file;
-  const { id, activationCode, barCode, email, tagId } = req.body;
+  const { id, activationCode, barCode, userId, tagId } = req.body;
   try {
 
 
@@ -33,17 +33,17 @@ export const createScan = expressAsyncHandler(async (req, res) => {
       })
     );
 
-    const user = await User.findUserByEmail(email);
+    const user = await User.findUserById(userId);
     const tag = await Tag.findTagById(tagId);
 
     if (!user) {
-      throw new Error(`User with email ${email} not found`);
+      throw new Error(`User with email ${userId} not found`);
     }
-    if(!tag){
-      throw new Error(`Tag with with Id ${email} not found`);
+    if (!tag) {
+      throw new Error(`Tag with with Id ${userId} not found`);
     }
 
-    const scannedSteam = new SteamCard(id, activationCode, barCode, key, user, new Tag(tag.id,tag.name, tag.created_at));
+    const scannedSteam = new SteamCard(id, activationCode, barCode, key, user, new Tag(tag.id, tag.name, tag.created_at));
 
     const send = await SteamCard.createSteamCard(scannedSteam);
 

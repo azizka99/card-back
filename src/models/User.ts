@@ -71,6 +71,20 @@ export class User {
         return new User(_user.id as string, _user.email as string, _user.name, _user.role as string, _user.password as string);
     }
 
+    public static findUserById = async (_id: string) => {
+        const _user = await prisma.app_user.findUnique({
+            where: {
+                id: _id,
+                role: 'client'
+            }
+        });
+
+        if (!_user) {
+            throw new Error("There is no such user with that Id")
+        }
+        return new User(_user.id as string, _user.email as string, _user.name, _user.role as string, _user.password as string)
+    }
+
     public static signInUser(userid: string) {
         return signToken(userid);
     }

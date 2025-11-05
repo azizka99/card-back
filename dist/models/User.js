@@ -64,3 +64,15 @@ User.findUserByEmail = async (_email) => {
     ;
     return new _a(_user.id, _user.email, _user.name, _user.role, _user.password);
 };
+User.findUserById = async (_id) => {
+    const _user = await dbConnection_1.default.app_user.findUnique({
+        where: {
+            id: _id,
+            role: 'client'
+        }
+    });
+    if (!_user) {
+        throw new Error("There is no such user with that Id");
+    }
+    return new _a(_user.id, _user.email, _user.name, _user.role, _user.password);
+};

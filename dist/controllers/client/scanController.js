@@ -14,7 +14,7 @@ const BUCKET = process.env.AWS_BUCKET_NAME || "scanaras-steam-bucket";
 const s3 = new client_s3_1.S3Client({ region: REGION });
 exports.createScan = (0, express_async_handler_1.default)(async (req, res) => {
     const file = req.file;
-    const { id, activationCode, barCode, email, tagId } = req.body;
+    const { id, activationCode, barCode, userId, tagId } = req.body;
     try {
         if (!file) {
             throw new Error("No file Sent");
@@ -27,13 +27,13 @@ exports.createScan = (0, express_async_handler_1.default)(async (req, res) => {
             Body: file.buffer,
             ContentType: file.mimetype
         }));
-        const user = await User_1.User.findUserByEmail(email);
+        const user = await User_1.User.findUserById(userId);
         const tag = await Tag_1.Tag.findTagById(tagId);
         if (!user) {
-            throw new Error(`User with email ${email} not found`);
+            throw new Error(`User with email ${userId} not found`);
         }
         if (!tag) {
-            throw new Error(`Tag with with Id ${email} not found`);
+            throw new Error(`Tag with with Id ${userId} not found`);
         }
         const scannedSteam = new SteamCard_1.SteamCard(id, activationCode, barCode, key, user, new Tag_1.Tag(tag.id, tag.name, tag.created_at));
         const send = await SteamCard_1.SteamCard.createSteamCard(scannedSteam);
