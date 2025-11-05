@@ -25,3 +25,22 @@ export const createTag = expressAsyncHandler(async (req, res) => {
         result: "created",
     });
 });
+
+
+
+export const getTagsByUserId = expressAsyncHandler(async (req, res) => {
+    const { userid } = req.body;
+
+    if (!userid) {
+        res.status(400);
+        throw new Error("Missing id");
+    }
+
+    const tags = await Tag.findTagByUserId(userid);
+
+    res.json({
+        errur: null,
+        result: tags
+    })
+
+});

@@ -63,4 +63,17 @@ export class Tag {
 
         return tag;
     }
+
+    public static findTagByUserId = async (userid: string) => {
+        const tags = await prisma.tag.findMany({
+            where: {
+                userId: userid
+            },
+            include: {
+                app_user: true
+            }
+        })
+
+        return tags;
+    }
 }

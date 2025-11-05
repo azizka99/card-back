@@ -11,6 +11,7 @@ import session from "express-session";
 import { S3Client, GetObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import prisma from "./constants/dbConnection";
+import { clientAuthMiddleWare } from "./middlewares/clientAuthMiddleware";
 
 
 const app = express();
@@ -35,12 +36,14 @@ app.use(
 );
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "admin@example.com";
-const ADMIN_PASS  = process.env.ADMIN_PASS  || "supersecret";
+const ADMIN_PASS = process.env.ADMIN_PASS || "supersecret";
 
 function requireAuth(req: any, res: any, next: any) {
   if (req.session?.isAuthed) return next();
   res.redirect("/admin/login");
 }
+
+
 
 const REGION = process.env.AWS_REGION || "eu-central-1";
 const BUCKET = process.env.AWS_BUCKET_NAME || "scanaras-steam-bucket";
@@ -97,9 +100,7 @@ app.get("/admin/item/:id", requireAuth, async (req, res) => {
 });
 
 
-
-
-app.use("/arascom-scan", clientRoutes);
+app.use("/arascom-scan", clientAuthMiddleWare, clientRoutes);
 
 
 app.post("/test-start-end", async (req, res) => {
