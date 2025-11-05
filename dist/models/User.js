@@ -52,7 +52,7 @@ class User {
 exports.User = User;
 _a = User;
 User.findUserByEmail = async (_email) => {
-    const _user = await dbConnection_1.default.app_user.findFirst({
+    const _user = await dbConnection_1.default.app_user.findUnique({
         where: {
             email: _email,
             role: "client"

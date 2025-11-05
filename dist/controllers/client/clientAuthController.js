@@ -22,6 +22,6 @@ exports.login = (0, express_async_handler_1.default)(async (req, res) => {
     const token = User_1.User.signInUser(user.getUser().id);
     res.json({
         error: null,
-        result: { token }
+        result: { token, userid: user.getUser().id }
     });
 });

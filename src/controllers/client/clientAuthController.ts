@@ -27,6 +27,6 @@ export const login = expressAsyncHandler(async (req, res) => {
 
     res.json({
         error: null,
-        result: { token }
+        result: { token, userid: user.getUser().id }
     })
 });
