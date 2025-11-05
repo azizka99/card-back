@@ -10,7 +10,7 @@ const isUndefined_1 = __importDefault(require("../helpers/isUndefined"));
 const uuid_1 = require("uuid");
 const isDate_1 = require("../helpers/isDate");
 class Tag {
-    constructor(_id, _name, _createdAt) {
+    constructor(_id, _name, _createdAt, _userId) {
         this.getTag = () => {
             return {
                 id: this.id,
@@ -31,6 +31,9 @@ class Tag {
         this.id = _id;
         this.name = _name;
         this.created_at = _createdAt;
+        if (_userId) {
+            this.userId = _userId;
+        }
     }
 }
 exports.Tag = Tag;
@@ -40,7 +43,8 @@ Tag.createTag = async (tag) => {
         data: {
             id: tag.id,
             name: tag.name,
-            created_at: tag.created_at
+            created_at: tag.created_at,
+            userId: tag.userId
         }
     });
     return createdTag;

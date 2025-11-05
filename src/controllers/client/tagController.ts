@@ -2,7 +2,7 @@ import expressAsyncHandler from "express-async-handler";
 import { Tag } from "../../models/Tag";
 
 export const createTag = expressAsyncHandler(async (req, res) => {
-    const { id, name, created_at } = req.body;
+    const { id, name, created_at, userId } = req.body;
 
     // Validate input
     if (!id || !name) {

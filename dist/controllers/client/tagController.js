@@ -7,7 +7,7 @@ exports.getTagsByUserId = exports.createTag = void 0;
 const express_async_handler_1 = __importDefault(require("express-async-handler"));
 const Tag_1 = require("../../models/Tag");
 exports.createTag = (0, express_async_handler_1.default)(async (req, res) => {
-    const { id, name, created_at } = req.body;
+    const { id, name, created_at, userId } = req.body;
     // Validate input
     if (!id || !name) {
         res.status(400);

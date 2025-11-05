@@ -7,8 +7,9 @@ export class Tag {
     private id: string;
     private name: string;
     private created_at: Date;
+    private userId?: string;
 
-    constructor(_id: string, _name: string, _createdAt: Date) {
+    constructor(_id: string, _name: string, _createdAt: Date, _userId?: string) {
         isUndefined(
             { id: _id },
             { name: _name },
@@ -30,6 +31,9 @@ export class Tag {
         this.id = _id;
         this.name = _name;
         this.created_at = _createdAt;
+        if (_userId) {
+            this.userId = _userId;
+        }
 
     }
 
@@ -47,7 +51,8 @@ export class Tag {
             data: {
                 id: tag.id,
                 name: tag.name,
-                created_at: tag.created_at
+                created_at: tag.created_at,
+                userId: tag.userId
             }
         });
 
