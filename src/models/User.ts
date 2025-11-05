@@ -56,7 +56,7 @@ export class User {
     };
 
     public static findUserByEmail = async (_email: string) => {
-        const _user = await prisma.app_user.findUnique({
+        const _user = await prisma.app_user.findFirst({
             where: {
                 email: _email,
                 role: "client"
