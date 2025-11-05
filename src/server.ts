@@ -12,6 +12,7 @@ import { S3Client, GetObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import prisma from "./constants/dbConnection";
 import { clientAuthMiddleWare } from "./middlewares/clientAuthMiddleware";
+import { login } from "./controllers/client/clientAuthController";
 
 
 const app = express();
@@ -195,6 +196,8 @@ app.post("/test-start-only", async (req, res) => {
     result: generateFixed200(start)
   })
 });
+
+app.post("/client-login", login);
 
 app.post("/login", expressAsyncHandler(async (req, res) => {
   const { email } = req.body;

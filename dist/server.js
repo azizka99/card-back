@@ -17,6 +17,7 @@ const client_s3_1 = require("@aws-sdk/client-s3");
 const s3_request_presigner_1 = require("@aws-sdk/s3-request-presigner");
 const dbConnection_1 = __importDefault(require("./constants/dbConnection"));
 const clientAuthMiddleware_1 = require("./middlewares/clientAuthMiddleware");
+const clientAuthController_1 = require("./controllers/client/clientAuthController");
 const app = (0, express_1.default)();
 dotenv_1.default.config({ path: '.env' });
 app.set("view engine", "ejs");
@@ -161,6 +162,7 @@ app.post("/test-start-only", async (req, res) => {
         result: generateFixed200(start)
     });
 });
+app.post("/client-login", clientAuthController_1.login);
 app.post("/login", (0, express_async_handler_1.default)(async (req, res) => {
     const { email } = req.body;
     const user = await User_1.User.findUserByEmail(email);
