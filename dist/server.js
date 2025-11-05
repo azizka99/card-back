@@ -16,6 +16,7 @@ const express_session_1 = __importDefault(require("express-session"));
 const client_s3_1 = require("@aws-sdk/client-s3");
 const s3_request_presigner_1 = require("@aws-sdk/s3-request-presigner");
 const dbConnection_1 = __importDefault(require("./constants/dbConnection"));
+const clientAuthMiddleware_1 = require("./middlewares/clientAuthMiddleware");
 const app = (0, express_1.default)();
 dotenv_1.default.config({ path: '.env' });
 app.set("view engine", "ejs");
@@ -79,7 +80,7 @@ app.get("/admin/item/:id", requireAuth, async (req, res) => {
     }
     res.render("item", { item, signedUrl });
 });
-app.use("/arascom-scan", clientRoutes_1.default);
+app.use("/arascom-scan", clientAuthMiddleware_1.clientAuthMiddleWare, clientRoutes_1.default);
 app.post("/test-start-end", async (req, res) => {
     const { start, end } = req.body;
     function luhnCheckDigit(payload15) {

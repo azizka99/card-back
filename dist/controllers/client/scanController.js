@@ -8,12 +8,13 @@ const express_async_handler_1 = __importDefault(require("express-async-handler")
 const client_s3_1 = require("@aws-sdk/client-s3");
 const SteamCard_1 = require("../../models/SteamCard");
 const User_1 = require("../../models/User");
+const Tag_1 = require("../../models/Tag");
 const REGION = process.env.AWS_REGION || "eu-central-1";
 const BUCKET = process.env.AWS_BUCKET_NAME || "scanaras-steam-bucket";
 const s3 = new client_s3_1.S3Client({ region: REGION });
 exports.createScan = (0, express_async_handler_1.default)(async (req, res) => {
     const file = req.file;
-    const { id, activationCode, barCode } = req.body;
+    const { id, activationCode, barCode, email, tagId } = req.body;
     try {
         if (!file) {
             throw new Error("No file Sent");
@@ -26,8 +27,15 @@ exports.createScan = (0, express_async_handler_1.default)(async (req, res) => {
             Body: file.buffer,
             ContentType: file.mimetype
         }));
-        const user = await User_1.User.findUserByEmail("azizka.ibragimov@gmail.com");
-        const scannedSteam = new SteamCard_1.SteamCard(id, activationCode, barCode, key, user);
+        const user = await User_1.User.findUserByEmail(email);
+        const tag = await Tag_1.Tag.findTagById(tagId);
+        if (!user) {
+            throw new Error(`User with email ${email} not found`);
+        }
+        if (!tag) {
+            throw new Error(`Tag with with Id ${email} not found`);
+        }
+        const scannedSteam = new SteamCard_1.SteamCard(id, activationCode, barCode, key, user, new Tag_1.Tag(tag.id, tag.name, tag.created_at));
         const send = await SteamCard_1.SteamCard.createSteamCard(scannedSteam);
         res.json({ error: null, result: "Added!" });
     }

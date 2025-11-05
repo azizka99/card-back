@@ -9,7 +9,7 @@ const isUndefined_1 = __importDefault(require("../helpers/isUndefined"));
 const uuid_1 = require("uuid");
 const dbConnection_1 = __importDefault(require("../constants/dbConnection"));
 class SteamCard {
-    constructor(_id, _activationCode, _barCode, _imgSrc, _user) {
+    constructor(_id, _activationCode, _barCode, _imgSrc, _user, _tag) {
         this.getSteamCard = () => {
             return {
                 id: this.id,
@@ -37,6 +37,7 @@ class SteamCard {
         this.barCode = _barCode;
         this.imgSrc = _imgSrc;
         this.user = _user;
+        this.tag = _tag;
     }
     ;
 }
@@ -49,7 +50,8 @@ SteamCard.createSteamCard = async (steam) => {
             activation_code: steam.activationCode,
             barcode: steam.barCode,
             img_src: steam.imgSrc,
-            user_id: steam.user.getUser().id
+            user_id: steam.user.getUser().id,
+            tag_id: steam.tag.getTag().id
         }
     });
 };
