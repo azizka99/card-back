@@ -75,10 +75,10 @@ export class Tag {
                 userId: userid
             },
             include: {
-                app_user: true
+                app_user: false
             }
         })
 
-        return tags;
+        return tags
     }
 }

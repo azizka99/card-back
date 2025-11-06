@@ -63,7 +63,7 @@ Tag.findTagByUserId = async (userid) => {
             userId: userid
         },
         include: {
-            app_user: true
+            app_user: false
         }
     });
     return tags;
