@@ -18,6 +18,9 @@ exports.clientAuthMiddleWare = (0, express_async_handler_1.default)(async (req, 
         return;
     }
     const payload = (0, jwt_1.verifyToken)(token);
+    if (!req.body) {
+        req.body = {}; // ✅ make sure it's at least an object
+    }
     req.body.userid = payload.userId;
     next();
 });

@@ -13,6 +13,9 @@ export const clientAuthMiddleWare = expressAsyncHandler(async (req, res, next) =
     if (!token) { res.status(401).json({ error: "No token" }); return; }
     const payload = verifyToken(token as string);
 
+    if (!req.body) {
+        req.body = {};           // ✅ make sure it's at least an object
+    }
     req.body.userid = payload.userId;
 
     next()
