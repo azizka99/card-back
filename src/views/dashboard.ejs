@@ -23,6 +23,22 @@
         <div class="flex-shrink-0">
           <h1 class="text-2xl font-bold" style="color: #6262A6;">Admin Panel</h1>
         </div>
+
+        <!-- Print by Tag Section -->
+        <div class="flex items-center gap-2">
+          <% if (typeof tags !== 'undefined' && tags.length > 0) { %>
+            <select id="printTagSelect" class="p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#6262A6] focus:border-transparent transition text-sm">
+              <option value="">Select a tag to print</option>
+              <% tags.forEach(tag => { %>
+                <option value="<%= tag.id %>"><%= tag.name %></option>
+              <% }) %>
+            </select>
+            <button id="printButton" type="button" class="text-white font-bold py-2 px-4 rounded-lg transition duration-200 hover:bg-[#505089] text-sm" style="background-color: #6262A6;">
+              Print
+            </button>
+          <% } %>
+        </div>
+
         <!-- Logout Button -->
         <div>
           <form method="post" action="/admin/logout">
@@ -133,7 +149,27 @@
     </div>
   </main>
 
+  <script>
+    const printButton = document.getElementById('printButton');
+    
+    if (printButton) {
+      printButton.addEventListener('click', function() {
+        const tagSelect = document.getElementById('printTagSelect');
+        const tagId = tagSelect.value;
+
+        if (tagId) {
+          // Construct the URL as requested
+          const printUrl = `/admin/print-scans/${tagId}`;
+          
+          // Open the URL in a new tab
+          window.open(printUrl, '_blank');
+        } else {
+          // Optional: handle no selection
+          alert('Please select a tag to print.');
+        }
+      });
+    }
+  </script>
+
 </body>
 </html>
-
-

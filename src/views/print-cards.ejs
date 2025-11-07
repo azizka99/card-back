@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Print Code List</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      body {
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+          Roboto, Arial, sans-serif;
+      }
+
+      /* --- Print-Specific Styles --- */
+      @media print {
+        /* Hide all UI elements that are not the code list */
+        header,
+        .print-hide {
+          display: none !important;
+        }
+
+        /* Reset body and main for printing */
+        body,
+        main {
+          background-color: #fff !important;
+          padding: 0 !important;
+          margin: 0 !important;
+          color: #000 !important;
+        }
+
+        /* Define A4 page layout */
+        @page {
+          size: A4;
+          margin: 1.5cm; /* Standard print margin */
+        }
+
+        /* Reset the main print area */
+        #print-area {
+          display: block !important;
+          padding: 0 !important;
+          margin: 0 !important;
+        }
+
+        /* This is the container that creates the 2-column layout */
+        #code-list-container {
+          display: block !important;
+          column-count: 2;
+          column-gap: 15px; /* Gap between columns */
+          width: 100%;
+        }
+
+        /* Style for each item in the printed list */
+        .code-item {
+          /* This is CRUCIAL: prevents items from splitting across columns or pages */
+          break-inside: avoid;
+          page-break-inside: avoid;
+
+          /* Simple styling for print */
+          border: 1px solid #aaa;
+          padding: 8px;
+          margin-bottom: 8px;
+          box-shadow: none !important;
+          background: #fff !important;
+        }
+
+        /* Ensure all text is black and uses a basic font */
+        .code-item p {
+          color: #000 !important;
+          font-family: sans-serif;
+          font-size: 10pt;
+        }
+        .code-item .font-mono {
+          font-family: "Courier New", Courier, monospace;
+          font-size: 11pt;
+          font-weight: bold;
+        }
+      }
+      /* --- End Print-Specific Styles --- */
+    </style>
+  </head>
+  <body class="bg-gray-100">
+    <!-- Header (Matches other pages, hidden on print) -->
+    <header class="bg-white shadow-md">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between items-center h-16">
+          <div class="flex-shrink-0">
+            <h1 class="text-2xl font-bold" style="color: #6262a6">
+              Admin Panel
+            </h1>
+          </div>
+          <div>
+            <form method="post" action="/admin/logout">
+              <button
+                type="submit"
+                class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg transition duration-200"
+              >
+                Logout
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
+      <!-- Top Controls (Hidden on print) -->
+      <div class="flex justify-between items-center mb-6 print-hide">
+        <!-- Back Link -->
+        <a
+          href="/admin"
+          class="text-sm font-medium transition hover:text-[#505089]"
+          style="color: #6262a6"
+        >
+          &larr; Back to all items
+        </a>
+
+        <h2 class="text-3xl font-semibold text-gray-800">
+          Printable Code List
+        </h2>
+
+        <!-- Print Button -->
+        <button
+          onclick="window.print()"
+          class="text-white font-bold py-2 px-4 rounded-lg transition duration-200 hover:bg-[#505089]"
+          style="background-color: #6262a6"
+        >
+          Print This List
+        </button>
+      </div>
+
+      <!-- This is the wrapper for the area that will be printed -->
+      <div id="print-area">
+        <!-- 
+        This is the on-screen layout. 
+        The print styles will override this and apply 2 columns.
+      -->
+        <div
+          id="code-list-container"
+          class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+        >
+          <% items.forEach(it => { %>
+          <!-- This is a single item card -->
+          <div
+            class="code-item bg-white p-4 rounded-lg shadow-sm border border-gray-200"
+          >
+            <p class="text-sm font-medium text-gray-500">Barcode</p>
+            <p class="text-lg font-mono text-gray-900 mb-2">
+              <%= it.barcode %>
+            </p>
+
+            <p class="text-sm font-medium text-gray-500">Activation Code</p>
+            <p class="text-lg font-mono text-gray-900">
+              <%= it.activation_code || "---" %>
+            </p>
+          </div>
+          <% }) %> <% if (items.length === 0) { %>
+          <p class="print-hide text-gray-500 col-span-3 text-center">
+            No items to display.
+          </p>
+          <% } %>
+        </div>
+      </div>
+    </main>
+  </body>
+</html>
+<!-- ```
+
+### **!! Important: How to Use This**
+
+This file won't work until you create a backend route for it. You need to add a new route in your `server.ts` (or similar file) that gets the items and renders this new page.
+
+Here's an example of what that route could look like:
+
+```javascript
+// Add this route to your server.ts file, near your other /admin routes
+
+app.get("/admin/print", requireAuth, async (req, res) => {
+  // You can either get all items, or get items based on
+  // the same filters as your main dashboard (q, tag, user)
+  // For this example, let's just get all of them.
+  
+  const items = await prisma.steam_card.findMany({
+    orderBy: { created_at: "desc" },
+    take: 500, // Or however many you want to allow printing
+    // We only need these fields, so it's more efficient
+    select: { 
+      barcode: true, 
+      activation_code: true 
+    },
+  });
+
+  // Render the new EJS file and pass the items to it
+  res.render("print-codes", { items });
+}); -->

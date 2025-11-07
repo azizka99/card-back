@@ -91,6 +91,9 @@ app.get("/admin", requireAuth, async (req, res) => {
             name: { contains: user, mode: "insensitive" }
         };
     }
+    const allTags = await dbConnection_1.default.tag.findMany({
+        orderBy: { created_at: "desc" },
+    });
     // 3. Run the query with the combined 'where' filters
     const items = await dbConnection_1.default.steam_card.findMany({
         where: where, // Use the new dynamic 'where' object
@@ -99,7 +102,7 @@ app.get("/admin", requireAuth, async (req, res) => {
         include: { tag: true, app_user: true }, // This is what gives you the data structure you showed!
     });
     // 4. FIX THE ERROR: Pass 'items', 'q', 'tag', AND 'user' to the template
-    res.render("dashboard", { items, q, tag, user });
+    res.render("dashboard", { items, q, tag, user, tags: allTags });
 });
 app.get("/admin/item/:id", requireAuth, async (req, res) => {
     const item = await dbConnection_1.default.steam_card.findUnique({
@@ -115,6 +118,21 @@ app.get("/admin/item/:id", requireAuth, async (req, res) => {
         );
     }
     res.render("item", { item, signedUrl });
+});
+app.get("/admin/print-scans/:tag_id", requireAuth, async (req, res) => {
+    const items = await dbConnection_1.default.steam_card.findMany({
+        where: {
+            tag_id: req.params.tag_id
+        },
+        select: {
+            activation_code: true,
+            barcode: true
+        }
+    });
+    if (!items) {
+        return res.status(404).send("Not Found");
+    }
+    res.render("print-cards", { items });
 });
 app.use("/arascom-scan", clientAuthMiddleware_1.clientAuthMiddleWare, clientRoutes_1.default);
 app.post("/test-start-end", async (req, res) => {
