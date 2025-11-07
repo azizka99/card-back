@@ -2,26 +2,217 @@
 <html>
 <head>
   <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Item · <%= item.barcode %></title>
+  <!-- Load Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    body { font-family: system-ui, Arial; padding: 24px; }
-    img { max-width: 100%; height: auto; border:1px solid #ddd; }
-    a { color:#0a58ca; }
+    /* Custom styles for the modal */
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+    }
+    /* Style for the image inside the modal when zoomed */
+    #modalImage.is-zoomed {
+      cursor: grab;
+    }
+    #modalImage.is-zoomed:active {
+      cursor: grabbing;
+    }
   </style>
 </head>
-<body>
-  <p><a href="/admin">&larr; Back</a></p>
-  <h2>Item</h2>
-  <p><b>Barcode:</b> <%= item.barcode %></p>
-  <p><b>Activation:</b> <%= item.activation_code || "-" %></p>
-  <p><b>Created:</b> <%= new Date(item.created_at).toLocaleString() %></p>
+<body class="bg-gray-100">
 
-  <% if (signedUrl) { %>
-    <h3>Image</h3>
-    <img src="<%= signedUrl %>" alt="Image for <%= item.barcode %>"/>
-    <p><small>Link expires in ~10 minutes.</small></p>
-  <% } else { %>
-    <p>No image for this item.</p>
-  <% } %>
+  <!-- Header -->
+  <header class="bg-white shadow-md">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex justify-between items-center h-16">
+        <!-- Logo/Title -->
+        <div class="flex-shrink-0">
+          <h1 class="text-2xl font-bold" style="color: #6262A6;">Admin Panel</h1>
+        </div>
+        <!-- Logout Button -->
+        <div>
+          <form method="post" action="/admin/logout">
+            <button type="submit" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg transition duration-200">
+              Logout
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
+
+    <!-- Back Link -->
+    <div class="mb-6">
+      <a href="/admin" class="text-sm font-medium transition hover:text-[#505089]" style="color: #6262A6;">
+        &larr; Back to all items
+      </a>
+    </div>
+
+    <!-- Item Card -->
+    <div class="bg-white rounded-lg shadow-md overflow-hidden">
+      <div class="md:flex">
+        
+        <!-- Image Section -->
+        <div class="md:w-1/2 p-6">
+          <% if (signedUrl) { %>
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">Image</h3>
+            <img 
+              id="mainImage"
+              src="<%= signedUrl %>" 
+              alt="Image for <%= item.barcode %>"
+              class="rounded-lg shadow-lg w-full cursor-pointer hover:opacity-80 transition duration-200"
+              onclick="openModal()"
+            />
+            <p class="text-xs text-gray-500 mt-3 text-center">
+              Click image to open preview.
+              <br>
+              <small>Link expires in ~10 minutes.</small>
+            </p>
+          <% } else { %>
+            <div class="p-6 h-full flex items-center justify-center bg-gray-50 rounded-lg">
+              <p class="text-gray-500">No image for this item.</p>
+            </div>
+          <% } %>
+        </div>
+
+        <!-- Details Section -->
+        <div class="md:w-1/2 p-6">
+          <h2 class="text-2xl font-bold text-gray-900 mb-6">Item Details</h2>
+          <dl>
+            <!-- Barcode -->
+            <div class="mb-4">
+              <dt class="text-sm font-medium text-gray-500">Barcode</dt>
+              <dd class="text-lg font-semibold text-gray-900"><%= item.barcode %></dd>
+            </div>
+            
+            <!-- Activation Code -->
+            <div class="mb-4">
+              <dt class="text-sm font-medium text-gray-500">Activation Code</dt>
+              <dd class="text-lg font-mono text-gray-900"><%= item.activation_code || "-" %></dd>
+            </div>
+            
+            <!-- User -->
+            <div class="mb-4">
+              <dt class="text-sm font-medium text-gray-500">User</dt>
+              <dd class="text-lg text-gray-900"><%= item.app_user ? item.app_user.name : 'N/A' %></dd>
+            </div>
+            
+            <!-- Tag -->
+            <div class="mb-4">
+              <dt class="text-sm font-medium text-gray-500">Tag</dt>
+              <dd class="text-lg text-gray-900"><%= item.tag ? item.tag.name : 'N/A' %></dd>
+            </div>
+            
+            <!-- Created -->
+            <div class="mb-4">
+              <dt class="text-sm font-medium text-gray-500">Created</dt>
+              <dd class="text-lg text-gray-900"><%= new Date(item.created_at).toLocaleString() %></dd>
+            </div>
+          </dl>
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+  <!-- Image Modal -->
+  <div id="imageModal" class="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center p-4 z-50 hidden" onclick="handleOverlayClick(event)">
+    
+    <!-- Close Button -->
+    <button onclick="closeModal()" class="absolute top-4 right-6 text-white text-5xl font-light z-[60] hover:text-gray-300 transition">&times;</button>
+    
+    <!-- Zoom Controls -->
+    <div class="absolute bottom-6 left-1/2 -translate-x-1/2 z-[60] flex gap-3 bg-black/30 backdrop-blur-sm p-2 rounded-lg">
+      <button onclick="zoom(-1)" class="w-10 h-10 text-white text-2xl font-bold bg-white/20 rounded-full hover:bg-white/30 transition">-</button>
+      <button onclick="zoom(1)" class="w-10 h-10 text-white text-2xl font-bold bg-white/20 rounded-full hover:bg-white/30 transition">+</button>
+    </div>
+
+    <!-- Image Container (for panning/scrolling) -->
+    <div id="imageContainer" class="relative w-full h-full max-w-6xl max-h-[90vh] overflow-auto rounded-lg">
+      <img id="modalImage" src="" alt="Item Preview" class="transition-transform duration-150" style="transform-origin: center center;">
+    </div>
+
+  </div>
+
+  <script>
+    // Modal elements
+    const modal = document.getElementById('imageModal');
+    const modalImage = document.getElementById('modalImage');
+    const imageContainer = document.getElementById('imageContainer');
+    const mainImage = document.getElementById('mainImage');
+    
+    // Zoom state
+    let currentZoom = 1;
+    const ZOOM_STEP = 0.2;
+    const MIN_ZOOM = 0.6;
+    const MAX_ZOOM = 3;
+
+    function openModal() {
+      if (!mainImage) return; // Exit if no image on page
+      
+      // Set the image source in the modal
+      modalImage.src = mainImage.src;
+      
+      // Show the modal
+      modal.classList.remove('hidden');
+      
+      // Prevent body from scrolling
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeModal() {
+      // Hide the modal
+      modal.classList.add('hidden');
+      
+      // Allow body to scroll again
+      document.body.style.overflow = 'auto';
+      
+      // Reset zoom and pan
+      currentZoom = 1;
+      modalImage.style.transform = 'scale(1)';
+      modalImage.classList.remove('is-zoomed');
+      imageContainer.scrollTop = 0;
+      imageContainer.scrollLeft = 0;
+    }
+
+    function zoom(direction) {
+      // Calculate new zoom level
+      if (direction > 0) {
+        currentZoom = Math.min(currentZoom + ZOOM_STEP, MAX_ZOOM);
+      } else {
+        currentZoom = Math.max(currentZoom - ZOOM_STEP, MIN_ZOOM);
+      }
+      
+      // Apply the new zoom level
+      modalImage.style.transform = `scale(${currentZoom})`;
+      
+      // Add/remove class for grab cursor
+      if (currentZoom > 1) {
+        modalImage.classList.add('is-zoomed');
+      } else {
+        modalImage.classList.remove('is-zoomed');
+      }
+    }
+
+    // Close modal if user clicks on the dark overlay (but not the image)
+    function handleOverlayClick(event) {
+      if (event.target === modal) {
+        closeModal();
+      }
+    }
+
+    // Close modal with the Escape key
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !modal.classList.contains('hidden')) {
+        closeModal();
+      }
+    });
+
+  </script>
+
 </body>
 </html>

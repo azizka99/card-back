@@ -2,20 +2,119 @@
 <html>
 <head>
   <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin Login</title>
   <style>
-    body { font-family: system-ui, Arial; max-width: 420px; margin: 8vh auto; }
-    input, button { width:100%; padding:10px; margin:8px 0; }
-    .error { color:#c00; margin-bottom:10px; }
+    :root {
+      --primary-color: #6262A6;
+      --primary-hover: #505089; /* A slightly darker shade for hover */
+      --error-color: #c00;
+      --error-bg: #fbebee;
+      --light-gray: #f4f7f6;
+      --border-color: #ddd;
+      --white: #ffffff;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+      background-color: var(--light-gray);
+      margin: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
+      box-sizing: border-box; /* Ensures padding doesn't break layout */
+    }
+
+    .login-container {
+      background-color: var(--white);
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+      padding: 2.5rem;
+      max-width: 420px;
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    .logo-container {
+      text-align: center;
+      margin-bottom: 1.5rem;
+    }
+
+    .logo-container img {
+      max-width: 120px; /* Adjust size as needed */
+      height: auto;
+    }
+
+    h2 {
+      text-align: center;
+      color: var(--primary-color);
+      margin-top: 0;
+      margin-bottom: 1.5rem;
+    }
+
+    input[type="email"],
+    input[type="password"] {
+      width: 100%;
+      padding: 12px;
+      margin: 8px 0 16px 0; /* Add more space below inputs */
+      border: 1px solid var(--border-color);
+      border-radius: 5px;
+      box-sizing: border-box; /* Important for width: 100% */
+      font-size: 1rem;
+    }
+
+    button[type="submit"] {
+      width: 100%;
+      padding: 12px;
+      margin: 8px 0;
+      border: none;
+      border-radius: 5px;
+      background-color: var(--primary-color);
+      color: var(--white);
+      font-size: 1rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    button[type="submit"]:hover {
+      background-color: var(--primary-hover);
+    }
+
+    .error {
+      color: var(--error-color);
+      background-color: var(--error-bg);
+      border: 1px solid var(--error-color);
+      padding: 10px;
+      margin-bottom: 1rem;
+      border-radius: 5px;
+      text-align: center;
+    }
   </style>
 </head>
 <body>
-  <h2>Admin Login</h2>
-  <% if (error) { %><div class="error"><%= error %></div><% } %>
-  <form method="post" action="/admin/login">
-    <input type="email" name="email" placeholder="Email" required />
-    <input type="password" name="password" placeholder="Password" required />
-    <button type="submit">Log in</button>
-  </form>
+
+  <div class="login-container">
+    <div class="logo-container">
+      <img src="https://placehold.co/150x150/6262A6/white?text=LOGO" alt="Your Company Logo" />
+    </div>
+
+    <h2>Admin Login</h2>
+
+    <% if (error) { %>
+      <div class="error"><%= error %></div>
+    <% } %>
+
+    <form method="post" action="/admin/login">
+      <label for="email" style="display: none;">Email</label> <input type="email" id="email" name="email" placeholder="Email" required />
+      
+      <label for="password" style="display: none;">Password</label> <input type="password" id="password" name="password" placeholder="Password" required />
+      
+      <button type="submit">Log in</button>
+    </form>
+  </div>
+
 </body>
 </html>

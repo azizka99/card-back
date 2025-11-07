@@ -67,18 +67,60 @@ app.post("/admin/logout", (req, res) => {
   req.session.destroy(() => res.redirect("/admin/login"));
 });
 
-app.get("/admin", requireAuth, async (req, res) => {
-  const q = (req.query.q as string) || "";
+// app.get("/admin", requireAuth, async (req, res) => {
+//   const q = (req.query.q as string) || "";
 
+//   const items = await prisma.steam_card.findMany({
+//     where: q ? { barcode: { contains: q, mode: "insensitive" } } : {},
+//     orderBy: { created_at: "desc" },
+//     take: 200, // cap to keep page light
+//     include: { tag: true, app_user: true },
+//     // select: { id: true, barcode: true, activation_code: true, img_src: true, created_at: true, tag_id }
+//   });
+
+//   // console.log(items);
+  
+//   res.render("dashboard", { items, q });
+// });
+
+app.get("/admin", requireAuth, async (req, res) => {
+  // 1. Get ALL three filter values from the query
+  const q = (req.query.q as string) || "";
+  const tag = (req.query.tag as string) || "";
+  const user = (req.query.user as string) || "";
+
+  // 2. Build the dynamic 'where' clause for Prisma
+  const where: any = {};
+
+  if (q) {
+    // Filter by barcode on the main table
+    where.barcode = { contains: q, mode: "insensitive" };
+  }
+  if (tag) {
+    // Filter by the 'name' field on the RELATED 'tag' table
+    where.tag = {
+      name: { contains: tag, mode: "insensitive" }
+    };
+  }
+  if (user) {
+    // Filter by the 'name' field on the RELATED 'app_user' table
+    where.app_user = {
+      name: { contains: user, mode: "insensitive" }
+    };
+  }
+
+  // 3. Run the query with the combined 'where' filters
   const items = await prisma.steam_card.findMany({
-    where: q ? { barcode: { contains: q, mode: "insensitive" } } : {},
+    where: where, // Use the new dynamic 'where' object
     orderBy: { created_at: "desc" },
-    take: 200, // cap to keep page light
-    select: { id: true, barcode: true, activation_code: true, img_src: true, created_at: true }
+    take: 200,
+    include: { tag: true, app_user: true }, // This is what gives you the data structure you showed!
   });
 
-  res.render("dashboard", { items, q });
+  // 4. FIX THE ERROR: Pass 'items', 'q', 'tag', AND 'user' to the template
+  res.render("dashboard", { items, q, tag, user });
 });
+
 
 app.get("/admin/item/:id", requireAuth, async (req, res) => {
   const item = await prisma.steam_card.findUnique({

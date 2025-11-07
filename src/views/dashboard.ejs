@@ -2,52 +2,138 @@
 <html>
 <head>
   <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin · Items</title>
-  <style>
-    body { font-family: system-ui, Arial; padding: 24px; }
-    form.search { margin-bottom: 16px; display:flex; gap:8px; }
-    input[type="text"] { padding:8px; flex:1; }
-    table { border-collapse: collapse; width:100%; }
-    th, td { border:1px solid #ddd; padding:8px; }
-    th { background:#f3f3f3; text-align:left; }
-    a { color:#0a58ca; text-decoration:none; }
+  <!-- Load Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style> 
+    /* You can add small overrides here if needed */
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+    }
   </style>
 </head>
-<body>
-  <h2>Items</h2>
+<body class="bg-gray-100">
 
-  <form class="search" method="get" action="/admin">
-    <input type="text" name="q" value="<%= q %>" placeholder="Search by barcode…" />
-    <button>Search</button>
-  </form>
+  <!-- Header -->
+  <header class="bg-white shadow-md">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex justify-between items-center h-16">
+        <!-- Logo/Title -->
+        <div class="flex-shrink-0">
+          <h1 class="text-2xl font-bold" style="color: #6262A6;">Admin Panel</h1>
+        </div>
+        <!-- Logout Button -->
+        <div>
+          <form method="post" action="/admin/logout">
+            <button type="submit" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg transition duration-200">
+              Logout
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </header>
 
-  <form method="post" action="/admin/logout" style="margin-bottom:16px;">
-    <button>Logout</button>
-  </form>
+  <!-- Main Content -->
+  <main class="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
+    
+    <h2 class="text-3xl font-semibold text-gray-800 mb-6">Items</h2>
 
-  <table>
-    <thead>
-      <tr>
-        <th>Barcode</th>
-        <th>Activation Code</th>
-        <th>Created</th>
-        <th>Image</th>
-      </tr>
-    </thead>
-    <tbody>
-      <% items.forEach(it => { %>
-        <tr>
-          <td><%= it.barcode %></td>
-          <td><%= it.activation_code || "-" %></td>
-          <td><%= new Date(it.created_at).toLocaleString() %></td>
-          <td>
-            <% if (it.img_src) { %>
-              <a href="/admin/item/<%= it.id %>">View</a>
-            <% } else { %>-<% } %>
-          </td>
-        </tr>
-      <% }) %>
-    </tbody>
-  </table>
+    <!-- Filter Card -->
+    <div class="bg-white p-6 rounded-lg shadow-md mb-8">
+      <form class="search" method="get" action="/admin">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+          
+          <!-- Barcode Search -->
+          <div>
+            <label for="q" class="block text-sm font-medium text-gray-700 mb-1">Barcode</label>
+            <input type="text" id="q" name="q" value="<%= q || '' %>" placeholder="Search by barcode…" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#6262A6] focus:border-transparent transition">
+          </div>
+          
+          <!-- Tag Filter -->
+          <div>
+            <label for="tag" class="block text-sm font-medium text-gray-700 mb-1">Tag Name</label>
+            <input type="text" id="tag" name="tag" value="<%= tag || '' %>" placeholder="Filter by tag name…" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#6262A6] focus:border-transparent transition">
+          </div>
+          
+          <!-- User Filter -->
+          <div>
+            <label for="user" class="block text-sm font-medium text-gray-700 mb-1">User Name</label>
+            <input type="text" id="user" name="user" value="<%= user || '' %>" placeholder="Filter by user name…" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#6262A6] focus:border-transparent transition">
+          </div>
+          
+          <!-- Submit Button -->
+          <div class="md:self-end">
+            <button type="submit" class="w-full text-white font-bold py-3 px-4 rounded-lg transition duration-200 hover:bg-[#505089]" style="background-color: #6262A6;" >
+              Apply Filters
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <!-- Items Table Card -->
+    <div class="bg-white rounded-lg shadow-md overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+          <thead class="bg-gray-50">
+            <tr>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Barcode</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tag</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Activation Code</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Image</th>
+            </tr>
+          </thead>
+          <tbody class="bg-white divide-y divide-gray-200">
+            <% items.forEach(it => { %>
+              <tr class="hover:bg-gray-50 transition duration-150">
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900"><%= it.barcode %></td>
+                
+                <!-- Safely access nested user name -->
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                  <%= it.app_user ? it.app_user.name : 'N/A' %>
+                </td>
+                
+                <!-- Safely access nested tag name -->
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                  <%= it.tag ? it.tag.name : 'N/A' %>
+                </td>
+                
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700"><%= it.activation_code || "-" %></td>
+                
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700"><%= new Date(it.created_at).toLocaleString() %></td>
+                
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                  <% if (it.img_src) { %>
+                    <a href="/admin/item/<%= it.id %>" class="inline-block bg-blue-100 text-blue-800 text-xs font-semibold px-3 py-1 rounded-full hover:bg-blue-200 transition">
+                      View Image
+                    </a>
+                  <% } else { %>
+                    <span class="text-gray-400">-</span>
+                  <% } %>
+                </td>
+              </tr>
+            <% }) %>
+
+            <!-- Handle empty state -->
+            <% if (items.length === 0) { %>
+              <tr>
+                <td colspan="6" class="px-6 py-12 text-center text-gray-500">
+                  No items found matching your criteria.
+                </td>
+              </tr>
+            <% } %>
+            
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
 </body>
 </html>
+
+
