@@ -7,7 +7,14 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.SteamCard = void 0;
 const isUndefined_1 = __importDefault(require("../helpers/isUndefined"));
 const uuid_1 = require("uuid");
+const User_1 = require("./User");
 const dbConnection_1 = __importDefault(require("../constants/dbConnection"));
+const Tag_1 = require("./Tag");
+const s3_request_presigner_1 = require("@aws-sdk/s3-request-presigner");
+const client_s3_1 = require("@aws-sdk/client-s3");
+const analizeImage_1 = require("../helpers/analizeImage");
+const ErrorCard_1 = require("./ErrorCard");
+const uuid_2 = require("uuid");
 class SteamCard {
     constructor(_id, _activationCode, _barCode, _imgSrc, _user, _tag) {
         this.getSteamCard = () => {
@@ -54,4 +61,33 @@ SteamCard.createSteamCard = async (steam) => {
             tag_id: steam.tag.getTag().id
         }
     });
+};
+SteamCard.checkErrorsByTagId = async (_tagId) => {
+    const REGION = process.env.AWS_REGION || "eu-central-1";
+    const BUCKET = process.env.AWS_BUCKET_NAME || "scanaras-steam-bucket";
+    const s3 = new client_s3_1.S3Client({ region: REGION });
+    const cards = await dbConnection_1.default.steam_card.findMany({
+        where: {
+            tag_id: _tagId
+        },
+        include: {
+            app_user: true,
+            tag: true
+        }
+    });
+    for (const i in cards) {
+        let signedUrl = null;
+        if (cards[i].img_src) {
+            signedUrl = await (0, s3_request_presigner_1.getSignedUrl)(s3, new client_s3_1.GetObjectCommand({
+                Bucket: BUCKET, Key: cards[i].img_src
+            }), { expiresIn: 60 * 2 } //2 minutes
+            );
+            const { cleanedText } = await (0, analizeImage_1.analyzeImage)(signedUrl);
+            if (cleanedText !== cards[i].activation_code) {
+                const user = new User_1.User(cards[i].app_user.id, cards[i].app_user.email, cards[i].app_user.name, cards[i].app_user.role);
+                const tag = new Tag_1.Tag(cards[i].tag?.id, cards[i].tag?.name, cards[i].tag?.created_at);
+                ErrorCard_1.ErrorCard.createErrorCard(new ErrorCard_1.ErrorCard((0, uuid_2.v4)(), cleanedText, new _a(cards[i].id, cards[i].activation_code, cards[i].barcode, cards[i].img_src, user, tag)));
+            }
+        }
+    }
 };

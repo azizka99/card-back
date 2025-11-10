@@ -18,15 +18,16 @@ model app_user {
 }
 
 model steam_card {
-  id              String   @id @db.Uuid
+  id              String      @id @db.Uuid
   activation_code String
   barcode         String
-  created_at      DateTime @default(now()) @db.Timestamptz(6)
+  created_at      DateTime    @default(now()) @db.Timestamptz(6)
   img_src         String?
-  user_id         String   @db.Uuid
-  tag_id          String?  @db.Uuid
-  tag             tag?     @relation(fields: [tag_id], references: [id], onUpdate: NoAction, map: "fk_steam_card_tag")
-  app_user        app_user @relation(fields: [user_id], references: [id], onUpdate: NoAction, map: "fk_steam_card_user")
+  user_id         String      @db.Uuid
+  tag_id          String?     @db.Uuid
+  errorCard       errorCard[]
+  tag             tag?        @relation(fields: [tag_id], references: [id], onUpdate: NoAction, map: "fk_steam_card_tag")
+  app_user        app_user    @relation(fields: [user_id], references: [id], onUpdate: NoAction, map: "fk_steam_card_user")
 }
 
 model tag {
@@ -36,4 +37,11 @@ model tag {
   userId     String?      @db.Uuid
   steam_card steam_card[]
   app_user   app_user?    @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model errorCard {
+  id            String     @id @db.Uuid
+  googleanswer  String?
+  steam_card_id String     @db.Uuid
+  steam_card    steam_card @relation(fields: [steam_card_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_steamcard")
 }
