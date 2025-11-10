@@ -83,36 +83,71 @@ export class SteamCard {
 
         const cards = await prisma.steam_card.findMany({
             where: {
-                tag_id: _tagId
+                tag_id: _tagId,
             },
             include: {
                 app_user: true,
-                tag: true
-            }
+                tag: true,
+            },
         });
 
-        for (const i in cards) {
-            let signedUrl: string | null = null;
+        // helper to process a single card
+        const processCard = async (card: any) => {
+            if (!card.img_src) return;
 
-            if (cards[i].img_src) {
-                signedUrl = await getSignedUrl(
-                    s3,
-                    new GetObjectCommand({
-                        Bucket: BUCKET, Key: cards[i].img_src
-                    }),
-                    { expiresIn: 60 * 2 } //2 minutes
-                )
+            const signedUrl = await getSignedUrl(
+                s3,
+                new GetObjectCommand({
+                    Bucket: BUCKET,
+                    Key: card.img_src,
+                }),
+                { expiresIn: 60 * 2 } // 2 minutes
+            );
 
-                const { cleanedText } = await analyzeImage(signedUrl);
-                if (cleanedText !== cards[i].activation_code) {
-                    const user = new User(cards[i].app_user.id, cards[i].app_user.email, cards[i].app_user.name, cards[i].app_user.role)
-                    const tag = new Tag(cards[i].tag?.id as string, cards[i].tag?.name as string, cards[i].tag?.created_at as Date)
-                    ErrorCard.createErrorCard(new ErrorCard(uuidv4(), cleanedText, new SteamCard(
-                        cards[i].id, cards[i].activation_code, cards[i].barcode, cards[i].img_src, user, tag)));
-                }
+            const { cleanedText } = await analyzeImage(signedUrl);
+
+            if (cleanedText !== card.activation_code) {
+                const user = new User(
+                    card.app_user.id,
+                    card.app_user.email,
+                    card.app_user.name,
+                    card.app_user.role
+                );
+
+                const tag = new Tag(
+                    card.tag?.id as string,
+                    card.tag?.name as string,
+                    card.tag?.created_at as Date
+                );
+
+                const steamCard = new SteamCard(
+                    card.id,
+                    card.activation_code,
+                    card.barcode,
+                    card.img_src,
+                    user,
+                    tag
+                );
+
+                await ErrorCard.createErrorCard(
+                    new ErrorCard(uuidv4(), cleanedText, card.id)
+                );
             }
+        };
 
+        // 🔥 run N cards in parallel at a time
+        const MAX_CONCURRENT = 5; // tweak this (5–10 is usually safe)
+
+        for (let i = 0; i < cards.length; i += MAX_CONCURRENT) {
+            const chunk = cards.slice(i, i + MAX_CONCURRENT);
+
+            await Promise.all(
+                chunk.map((card) =>
+                    processCard(card).catch((err) => {
+                        console.error("Error processing card", card.id, err);
+                    })
+                )
+            );
         }
-
-    }
+    };
 }

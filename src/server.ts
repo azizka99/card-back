@@ -13,6 +13,9 @@ import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import prisma from "./constants/dbConnection";
 import { clientAuthMiddleWare } from "./middlewares/clientAuthMiddleware";
 import { login } from "./controllers/client/clientAuthController";
+import { v4 as uuidv4 } from "uuid";
+import { ErrorCard } from "./models/ErrorCard";
+
 
 
 const app = express();
@@ -122,7 +125,7 @@ app.get("/admin", requireAuth, async (req, res) => {
   });
 
   // 4. FIX THE ERROR: Pass 'items', 'q', 'tag', AND 'user' to the template
-  res.render("dashboard", { items, q, tag, user, tags:allTags });
+  res.render("dashboard", { items, q, tag, user, tags: allTags });
 });
 
 
@@ -277,6 +280,12 @@ app.post("/login", expressAsyncHandler(async (req, res) => {
 
 }));
 
+
+app.get("/test-error", expressAsyncHandler(async (req, res) => {
+
+  const testError = await ErrorCard.createErrorCard(new ErrorCard(uuidv4(),'test', '1d3a265f-c59d-4343-bb34-506c273f9b8f' ))
+  res.json(testError)
+}));
 
 app.use(notFound);
 app.use(errorHandler);

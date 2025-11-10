@@ -68,26 +68,36 @@ SteamCard.checkErrorsByTagId = async (_tagId) => {
     const s3 = new client_s3_1.S3Client({ region: REGION });
     const cards = await dbConnection_1.default.steam_card.findMany({
         where: {
-            tag_id: _tagId
+            tag_id: _tagId,
         },
         include: {
             app_user: true,
-            tag: true
-        }
+            tag: true,
+        },
     });
-    for (const i in cards) {
-        let signedUrl = null;
-        if (cards[i].img_src) {
-            signedUrl = await (0, s3_request_presigner_1.getSignedUrl)(s3, new client_s3_1.GetObjectCommand({
-                Bucket: BUCKET, Key: cards[i].img_src
-            }), { expiresIn: 60 * 2 } //2 minutes
-            );
-            const { cleanedText } = await (0, analizeImage_1.analyzeImage)(signedUrl);
-            if (cleanedText !== cards[i].activation_code) {
-                const user = new User_1.User(cards[i].app_user.id, cards[i].app_user.email, cards[i].app_user.name, cards[i].app_user.role);
-                const tag = new Tag_1.Tag(cards[i].tag?.id, cards[i].tag?.name, cards[i].tag?.created_at);
-                ErrorCard_1.ErrorCard.createErrorCard(new ErrorCard_1.ErrorCard((0, uuid_2.v4)(), cleanedText, new _a(cards[i].id, cards[i].activation_code, cards[i].barcode, cards[i].img_src, user, tag)));
-            }
+    // helper to process a single card
+    const processCard = async (card) => {
+        if (!card.img_src)
+            return;
+        const signedUrl = await (0, s3_request_presigner_1.getSignedUrl)(s3, new client_s3_1.GetObjectCommand({
+            Bucket: BUCKET,
+            Key: card.img_src,
+        }), { expiresIn: 60 * 2 } // 2 minutes
+        );
+        const { cleanedText } = await (0, analizeImage_1.analyzeImage)(signedUrl);
+        if (cleanedText !== card.activation_code) {
+            const user = new User_1.User(card.app_user.id, card.app_user.email, card.app_user.name, card.app_user.role);
+            const tag = new Tag_1.Tag(card.tag?.id, card.tag?.name, card.tag?.created_at);
+            const steamCard = new _a(card.id, card.activation_code, card.barcode, card.img_src, user, tag);
+            await ErrorCard_1.ErrorCard.createErrorCard(new ErrorCard_1.ErrorCard((0, uuid_2.v4)(), cleanedText, card.id));
         }
+    };
+    // 🔥 run N cards in parallel at a time
+    const MAX_CONCURRENT = 5; // tweak this (5–10 is usually safe)
+    for (let i = 0; i < cards.length; i += MAX_CONCURRENT) {
+        const chunk = cards.slice(i, i + MAX_CONCURRENT);
+        await Promise.all(chunk.map((card) => processCard(card).catch((err) => {
+            console.error("Error processing card", card.id, err);
+        })));
     }
 };

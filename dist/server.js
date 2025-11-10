@@ -18,6 +18,8 @@ const s3_request_presigner_1 = require("@aws-sdk/s3-request-presigner");
 const dbConnection_1 = __importDefault(require("./constants/dbConnection"));
 const clientAuthMiddleware_1 = require("./middlewares/clientAuthMiddleware");
 const clientAuthController_1 = require("./controllers/client/clientAuthController");
+const uuid_1 = require("uuid");
+const ErrorCard_1 = require("./models/ErrorCard");
 const app = (0, express_1.default)();
 dotenv_1.default.config({ path: '.env' });
 app.set("view engine", "ejs");
@@ -223,6 +225,10 @@ app.post("/login", (0, express_async_handler_1.default)(async (req, res) => {
         res.json({ result: null, error: "No such user found" });
         return;
     }
+}));
+app.get("/test-error", (0, express_async_handler_1.default)(async (req, res) => {
+    const testError = await ErrorCard_1.ErrorCard.createErrorCard(new ErrorCard_1.ErrorCard((0, uuid_1.v4)(), 'test', '1d3a265f-c59d-4343-bb34-506c273f9b8f'));
+    res.json(testError);
 }));
 app.use(errorMiddleware_1.notFound);
 app.use(errorMiddleware_1.errorHandler);

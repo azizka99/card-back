@@ -9,7 +9,7 @@ const dbConnection_1 = __importDefault(require("../constants/dbConnection"));
 const isUndefined_1 = __importDefault(require("../helpers/isUndefined"));
 const uuid_1 = require("uuid");
 class ErrorCard {
-    constructor(_id, _googleAnswer, _steamCard) {
+    constructor(_id, _googleAnswer, _steamCardId, _steamCard) {
         this.getErrorCard = () => {
             return {
                 id: this.id,
@@ -25,6 +25,7 @@ class ErrorCard {
         this.id = _id;
         this.googleAnswer = _googleAnswer;
         this.steamCard = _steamCard;
+        this.steamCardId = _steamCardId;
     }
 }
 exports.ErrorCard = ErrorCard;
@@ -34,7 +35,7 @@ ErrorCard.createErrorCard = async (card) => {
         data: {
             id: card.id,
             googleanswer: card.googleAnswer,
-            steam_card_id: card.steamCard.getSteamCard().id
+            steam_card_id: card.steamCardId
         }
     });
     return errorCard;
