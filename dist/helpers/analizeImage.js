@@ -2,7 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.analyzeImage = analyzeImage;
 async function analyzeImage(signedUrl) {
-    const apiKey = '/Users/azizka99/Documents/Arascom/flutter/aras_scan/lib/src/services/google_vision_service.dart';
+    const apiKey = 'AIzaSyAEyiqaY8-XnciYf8yEMvOW692bCsAA_b4';
     const endpoint = `https://vision.googleapis.com/v1/images:annotate?key=${apiKey}`;
     // Prepare Vision API request body
     const body = {
