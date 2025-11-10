@@ -1,5 +1,5 @@
 export async function analyzeImage(signedUrl: string) {
-    const apiKey = process.env.VISION_API_KEY;
+    const apiKey = '/Users/azizka99/Documents/Arascom/flutter/aras_scan/lib/src/services/google_vision_service.dart';
     const endpoint = `https://vision.googleapis.com/v1/images:annotate?key=${apiKey}`;
 
     // Prepare Vision API request body
