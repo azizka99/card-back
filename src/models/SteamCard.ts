@@ -155,6 +155,8 @@ export class SteamCard {
         const cards = await prisma.steam_card.findMany({
             where: {
                 tag_id: _tagId
+            }, orderBy: {
+                created_at: 'desc'
             }
         });
         return cards;
