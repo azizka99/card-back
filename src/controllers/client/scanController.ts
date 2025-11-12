@@ -3,6 +3,7 @@ import expressAsyncHandler from "express-async-handler";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { SteamCard } from "../../models/SteamCard";
 import { User } from "../../models/User";
+import { Prisma } from "@prisma/client";
 import { Tag } from "../../models/Tag";
 
 const REGION = process.env.AWS_REGION || "eu-central-1";
@@ -51,8 +52,32 @@ export const createScan = expressAsyncHandler(async (req, res) => {
 
 
     res.json({ error: null, result: "Added!" });
-  } catch (e) {
+  } catch (e: any) {
+    // ✅ Handle Prisma unique constraint violations cleanly
+    if (
+      (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") ||
+      e?.code === "P2002"
+    ) {
+      // e.meta?.target often includes the field(s) that violated the constraint
+      const fields = (e.meta?.target as string[] | string | undefined) ?? [];
+      const fieldList = Array.isArray(fields) ? fields : [fields].filter(Boolean);
+
+      // Build a short, client-friendly message (matches your Flutter detector)
+      const msg =
+        fieldList.length === 1
+          ? `${fieldList[0]} already scanned`
+          : `already scanned`;
+
+      res.status(409).json({
+        error: "already scanned",
+        details: msg,
+        fields: fieldList,
+      });
+      return
+    }
+
     console.error(e);
     res.status(500).json({ error: "Upload failed" });
+    return;
   }
 });
