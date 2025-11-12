@@ -84,5 +84,5 @@ exports.getScannedCardsByTagId = (0, express_async_handler_1.default)(async (req
             });
         }
     }
-    res.json(steamCards);
+    res.json({ error: null, result: steamCards });
 });

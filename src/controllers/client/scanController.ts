@@ -111,5 +111,5 @@ export const getScannedCardsByTagId = expressAsyncHandler(async (req, res) => {
     }
   }
 
-  res.json(steamCards)
+  res.json({ error: null, result: steamCards })
 });
