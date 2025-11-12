@@ -101,3 +101,11 @@ SteamCard.checkErrorsByTagId = async (_tagId) => {
         })));
     }
 };
+SteamCard.getSteamCardsByTagId = async (_tagId) => {
+    const cards = await dbConnection_1.default.steam_card.findMany({
+        where: {
+            tag_id: _tagId
+        }
+    });
+    return cards;
+};

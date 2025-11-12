@@ -3,13 +3,14 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.createScan = void 0;
+exports.getScannedCardsByTagId = exports.createScan = void 0;
 const express_async_handler_1 = __importDefault(require("express-async-handler"));
 const client_s3_1 = require("@aws-sdk/client-s3");
 const SteamCard_1 = require("../../models/SteamCard");
 const User_1 = require("../../models/User");
 const client_1 = require("@prisma/client");
 const Tag_1 = require("../../models/Tag");
+const s3_request_presigner_1 = require("@aws-sdk/s3-request-presigner");
 const REGION = process.env.AWS_REGION || "eu-central-1";
 const BUCKET = process.env.AWS_BUCKET_NAME || "scanaras-steam-bucket";
 const s3 = new client_s3_1.S3Client({ region: REGION });
@@ -62,4 +63,26 @@ exports.createScan = (0, express_async_handler_1.default)(async (req, res) => {
         res.status(500).json({ error: "Upload failed" });
         return;
     }
+});
+exports.getScannedCardsByTagId = (0, express_async_handler_1.default)(async (req, res) => {
+    const { tagId } = req.body;
+    if (!tagId) {
+        res.json({ result: null, error: "No tagId" });
+        return;
+    }
+    const cards = await SteamCard_1.SteamCard.getSteamCardsByTagId(tagId);
+    let signedUrl = null;
+    const steamCards = [];
+    for (const i in cards) {
+        if (cards[i].img_src) {
+            signedUrl = await (0, s3_request_presigner_1.getSignedUrl)(s3, new client_s3_1.GetObjectCommand({ Bucket: BUCKET, Key: cards[i].img_src }), { expiresIn: 60 * 10 } // 10 minutes
+            );
+            steamCards.push({
+                activation_code: cards[i].activation_code,
+                barcode: cards[i].barcode,
+                img_src: signedUrl
+            });
+        }
+    }
+    res.json(steamCards);
 });

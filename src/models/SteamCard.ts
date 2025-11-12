@@ -150,4 +150,13 @@ export class SteamCard {
             );
         }
     };
+
+    public static getSteamCardsByTagId = async (_tagId: string) => {
+        const cards = await prisma.steam_card.findMany({
+            where: {
+                tag_id: _tagId
+            }
+        });
+        return cards;
+    }
 }

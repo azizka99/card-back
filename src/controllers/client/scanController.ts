@@ -1,10 +1,11 @@
 
 import expressAsyncHandler from "express-async-handler";
-import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import { S3Client, PutObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
 import { SteamCard } from "../../models/SteamCard";
 import { User } from "../../models/User";
 import { Prisma } from "@prisma/client";
 import { Tag } from "../../models/Tag";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 const REGION = process.env.AWS_REGION || "eu-central-1";
 const BUCKET = process.env.AWS_BUCKET_NAME || "scanaras-steam-bucket";
@@ -80,4 +81,35 @@ export const createScan = expressAsyncHandler(async (req, res) => {
     res.status(500).json({ error: "Upload failed" });
     return;
   }
+});
+
+
+export const getScannedCardsByTagId = expressAsyncHandler(async (req, res) => {
+  const { tagId } = req.body;
+
+  if (!tagId) {
+    res.json({ result: null, error: "No tagId" });
+    return;
+  }
+
+  const cards = await SteamCard.getSteamCardsByTagId(tagId);
+  let signedUrl: string | null = null;
+  const steamCards = [];
+
+  for (const i in cards) {
+    if (cards[i].img_src) {
+      signedUrl = await getSignedUrl(
+        s3,
+        new GetObjectCommand({ Bucket: BUCKET, Key: cards[i].img_src }),
+        { expiresIn: 60 * 10 } // 10 minutes
+      );
+      steamCards.push({
+        activation_code: cards[i].activation_code,
+        barcode: cards[i].barcode,
+        img_src: signedUrl
+      })
+    }
+  }
+
+  res.json(steamCards)
 });

@@ -1,6 +1,6 @@
 import express from "express";
 import { getApiVersion } from "../../controllers/client/versionController";
-import { createScan } from "../../controllers/client/scanController";
+import { createScan, getScannedCardsByTagId } from "../../controllers/client/scanController";
 import multer from "multer";
 import { createTag, getTagsByUserId } from "../../controllers/client/tagController";
 import { checkScannedCards } from "../../controllers/client/errorCardsController";
@@ -21,6 +21,7 @@ router.post("/get-tags-by-userid", getTagsByUserId);
 router.post("/scannedSteam", upload.single("img"), createScan);
 
 router.post('/check-scanned-cards', checkScannedCards);
+router.post('/get-cards-by-tagId', getScannedCardsByTagId);
 
 
 
