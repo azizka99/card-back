@@ -39,14 +39,32 @@ export async function analyzeImage(signedUrl: string) {
         data?.responses?.[0]?.textAnnotations?.[0]?.description ||
         "";
 
-    // Cleanup and replace common OCR misreads
-    const cleanedText = rawText
-        .toUpperCase()
-        .replaceAll(/o/g, "0")
-        .replaceAll(/[1l]/g, "I")
-        .replaceAll(/s/gi, "5")
-        .replaceAll(" ", "")
-        .trim();
+    // Cleanup and replace  OCR misreads
+    const cleanedText = cleanActivationCode(rawText)
+
 
     return { rawText, cleanedText };
+}
+
+
+function cleanActivationCode(input: string): string {
+    if (!input) return "";
+
+    let t = input.normalize("NFKD").toUpperCase();
+
+    t = t
+        .replace(/O/g, "0")
+        .replace(/İ/g, "I")
+        .replace(/[1l|]/gi, "I")
+        .replace(/S/g, "5");
+
+    t = t.replace(/[^A-Z0-9]/g, "").trim();
+
+    // keep only first 15 characters
+    if (t.length >= 15) {
+        t = t.substring(0, 15);
+        t = t.replace(/(.{5})(.{5})(.{5})/, "$1-$2-$3");
+    }
+
+    return t;
 }
