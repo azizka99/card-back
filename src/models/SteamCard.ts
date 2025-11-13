@@ -5,7 +5,7 @@ import prisma from "../constants/dbConnection";
 import { Tag } from "./Tag";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { GetObjectCommand, S3Client } from "@aws-sdk/client-s3";
-import { analyzeImage } from "../helpers/analizeImage";
+import { analyzeImage, equalsIgnoringLToI } from "../helpers/analizeImage";
 import { ErrorCard } from "./ErrorCard";
 import { v4 as uuidv4 } from "uuid";
 
@@ -106,7 +106,8 @@ export class SteamCard {
 
             const { cleanedText } = await analyzeImage(signedUrl);
 
-            if (cleanedText !== card.activation_code) {
+            const isSame = equalsIgnoringLToI(card.activation_code, cleanedText);
+            if (!isSame) {
                 const user = new User(
                     card.app_user.id,
                     card.app_user.email,

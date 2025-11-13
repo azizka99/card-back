@@ -85,7 +85,8 @@ SteamCard.checkErrorsByTagId = async (_tagId) => {
         }), { expiresIn: 60 * 2 } // 2 minutes
         );
         const { cleanedText } = await (0, analizeImage_1.analyzeImage)(signedUrl);
-        if (cleanedText !== card.activation_code) {
+        const isSame = (0, analizeImage_1.equalsIgnoringLToI)(card.activation_code, cleanedText);
+        if (!isSame) {
             const user = new User_1.User(card.app_user.id, card.app_user.email, card.app_user.name, card.app_user.role);
             const tag = new Tag_1.Tag(card.tag?.id, card.tag?.name, card.tag?.created_at);
             const steamCard = new _a(card.id, card.activation_code, card.barcode, card.img_src, user, tag);

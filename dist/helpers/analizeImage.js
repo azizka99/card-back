@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.analyzeImage = analyzeImage;
+exports.equalsIgnoringLToI = equalsIgnoringLToI;
 async function analyzeImage(signedUrl) {
     const apiKey = 'AIzaSyAEyiqaY8-XnciYf8yEMvOW692bCsAA_b4';
     const endpoint = `https://vision.googleapis.com/v1/images:annotate?key=${apiKey}`;
@@ -55,4 +56,22 @@ function cleanActivationCode(input) {
         t = t.replace(/(.{5})(.{5})(.{5})/, "$1-$2-$3");
     }
     return t;
+}
+function equalsIgnoringLToI(a, b) {
+    if (!a || !b)
+        return false;
+    if (a.length !== b.length)
+        return false;
+    for (let i = 0; i < a.length; i++) {
+        const ca = a[i];
+        const cb = b[i];
+        if (ca === cb)
+            continue;
+        // only ignore the L → I mismatch
+        const isLI = ca === 'L' && cb === 'I';
+        if (!isLI) {
+            return false; // any other mismatch → not equal
+        }
+    }
+    return true; // all mismatches were allowed L→I
 }

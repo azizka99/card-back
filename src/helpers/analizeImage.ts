@@ -68,3 +68,25 @@ function cleanActivationCode(input: string): string {
 
     return t;
 }
+
+
+export function equalsIgnoringLToI(a: string, b: string): boolean {
+    if (!a || !b) return false;
+    if (a.length !== b.length) return false;
+
+    for (let i = 0; i < a.length; i++) {
+        const ca = a[i];
+        const cb = b[i];
+
+        if (ca === cb) continue;
+
+        // only ignore the L → I mismatch
+        const isLI =
+            ca === 'L' && cb === 'I';
+
+        if (!isLI) {
+            return false; // any other mismatch → not equal
+        }
+    }
+    return true; // all mismatches were allowed L→I
+}
