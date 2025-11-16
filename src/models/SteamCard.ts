@@ -91,7 +91,7 @@ export class SteamCard {
             },
         });
 
-        // helper to process a single card
+
         const processCard = async (card: any) => {
             if (!card.img_src) return;
 

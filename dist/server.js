@@ -20,6 +20,7 @@ const clientAuthMiddleware_1 = require("./middlewares/clientAuthMiddleware");
 const clientAuthController_1 = require("./controllers/client/clientAuthController");
 const uuid_1 = require("uuid");
 const ErrorCard_1 = require("./models/ErrorCard");
+const specialClientRoutes_1 = __importDefault(require("./routes/client/specialClientRoutes"));
 const app = (0, express_1.default)();
 dotenv_1.default.config({ path: '.env' });
 app.set("view engine", "ejs");
@@ -217,6 +218,7 @@ app.post("/test-start-only", async (req, res) => {
         result: generateFixed200(start)
     });
 });
+app.use('/special-client', specialClientRoutes_1.default);
 app.post("/client-login", clientAuthController_1.login);
 app.post("/login", (0, express_async_handler_1.default)(async (req, res) => {
     const { email } = req.body;

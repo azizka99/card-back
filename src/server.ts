@@ -15,6 +15,7 @@ import { clientAuthMiddleWare } from "./middlewares/clientAuthMiddleware";
 import { login } from "./controllers/client/clientAuthController";
 import { v4 as uuidv4 } from "uuid";
 import { ErrorCard } from "./models/ErrorCard";
+import special_client from "./routes/client/specialClientRoutes";
 
 
 
@@ -264,6 +265,7 @@ app.post("/test-start-only", async (req, res) => {
   })
 });
 
+app.use('/special-client', special_client);
 app.post("/client-login", login);
 
 app.post("/login", expressAsyncHandler(async (req, res) => {
@@ -283,7 +285,7 @@ app.post("/login", expressAsyncHandler(async (req, res) => {
 
 app.get("/test-error", expressAsyncHandler(async (req, res) => {
 
-  const testError = await ErrorCard.createErrorCard(new ErrorCard(uuidv4(),'test', '1d3a265f-c59d-4343-bb34-506c273f9b8f' ))
+  const testError = await ErrorCard.createErrorCard(new ErrorCard(uuidv4(), 'test', '1d3a265f-c59d-4343-bb34-506c273f9b8f'))
   res.json(testError)
 }));
 

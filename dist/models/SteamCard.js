@@ -75,7 +75,6 @@ SteamCard.checkErrorsByTagId = async (_tagId) => {
             tag: true,
         },
     });
-    // helper to process a single card
     const processCard = async (card) => {
         if (!card.img_src)
             return;
