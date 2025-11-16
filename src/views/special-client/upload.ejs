@@ -3,13 +3,340 @@
   <head>
     <meta charset="UTF-8" />
     <title>Client Upload</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+          sans-serif;
+        background: #f3f4f6;
+        margin: 0;
+        padding: 24px;
+        display: flex;
+        justify-content: center;
+      }
+      .container {
+        width: 100%;
+        max-width: 900px;
+        background: #ffffff;
+        border-radius: 16px;
+        padding: 24px 24px 32px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+      }
+      h1 {
+        margin-top: 0;
+        font-size: 22px;
+        margin-bottom: 8px;
+      }
+      p {
+        margin-top: 0;
+        color: #4b5563;
+        font-size: 14px;
+      }
+      .section {
+        margin-top: 24px;
+      }
+      .section-title {
+        font-weight: 600;
+        margin-bottom: 8px;
+        font-size: 14px;
+      }
+      .tag-search {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .tag-search-row {
+        display: flex;
+        gap: 8px;
+      }
+      .tag-search input[type="text"] {
+        flex: 1;
+        padding: 8px 10px;
+        border-radius: 8px;
+        border: 1px solid #d1d5db;
+        font-size: 14px;
+      }
+      .tag-search select {
+        width: 100%;
+        height: 180px;
+        border-radius: 8px;
+        border: 1px solid #d1d5db;
+        padding: 6px;
+        font-size: 14px;
+      }
+      .tag-hint {
+        font-size: 12px;
+        color: #6b7280;
+      }
+      .upload-box {
+        border: 2px dashed #d1d5db;
+        border-radius: 12px;
+        padding: 20px;
+        text-align: center;
+        background: #f9fafb;
+      }
+      .upload-box p {
+        margin: 4px 0;
+        font-size: 13px;
+      }
+      .upload-box input[type="file"] {
+        margin-top: 8px;
+      }
+      .info {
+        font-size: 12px;
+        color: #6b7280;
+        margin-top: 6px;
+      }
+      .actions {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 24px;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 10px 16px;
+        border-radius: 999px;
+        border: none;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      .btn-primary {
+        background: #111827;
+        color: #ffffff;
+      }
+      .btn-secondary {
+        background: #e5e7eb;
+        color: #111827;
+      }
+      #status {
+        font-size: 13px;
+        color: #374151;
+      }
+      #status.error {
+        color: #b91c1c;
+      }
+      #status.success {
+        color: #047857;
+      }
+      #fileSummary {
+        font-size: 13px;
+        color: #374151;
+        margin-top: 8px;
+      }
+      progress {
+        width: 100%;
+        margin-top: 8px;
+      }
+    </style>
   </head>
   <body>
-    <h1>Special Client Upload</h1>
-    <p>Here will be the big 4–7k image upload form.</p>
+    <div class="container">
+      <h1>Special Client Upload</h1>
+      <p>
+        Wähle zuerst den richtigen <strong>Tag</strong>, danach den Ordner mit
+        allen Bildern. Die Dateinamen müssen im Format
+        <code>BARCODE_AKTIVATIONSCODE.jpg</code> sein.
+      </p>
 
-    <form method="post" action="/special-client/logout">
-      <button type="submit">Logout</button>
-    </form>
+      <!-- TAG SELECTION -->
+      <div class="section">
+        <div class="section-title">1. Tag auswählen</div>
+        <div class="tag-search">
+          <div class="tag-search-row">
+            <input
+              type="text"
+              id="tagSearch"
+              placeholder="Tag suchen (Name eingeben)..."
+            />
+          </div>
+
+          <select id="tagSelect" size="8">
+            <% if (tags && tags.length) { %>
+              <% tags.forEach(function(tag) { %>
+                <option value="<%= tag.id %>"><%= tag.name %></option>
+              <% }) %>
+            <% } %>
+          </select>
+
+          <div class="tag-hint">
+            Tipp: Oben nach Namen filtern, dann Tag anklicken. Der ausgewählte
+            Tag wird für alle hochgeladenen Bilder verwendet.
+          </div>
+        </div>
+      </div>
+
+      <!-- FILE/FOLDER UPLOAD -->
+      <div class="section">
+        <div class="section-title">2. Ordner mit Bildern auswählen</div>
+        <div class="upload-box">
+          <p><strong>Ordner wählen</strong> mit allen Kartenbildern.</p>
+          <p>(4.000–7.000 Dateien sind in Ordnung.)</p>
+          <input
+            type="file"
+            id="fileInput"
+            name="files"
+            multiple
+            webkitdirectory
+          />
+          <div class="info">
+            Hinweis: Die Bilder werden in kleineren Blöcken hochgeladen, um
+            Verbindungsprobleme zu vermeiden.
+          </div>
+          <div id="fileSummary"></div>
+        </div>
+      </div>
+
+      <!-- ACTIONS & STATUS -->
+      <div class="section">
+        <div class="actions">
+          <div style="flex: 2 1 200px">
+            <button id="uploadBtn" class="btn btn-primary" type="button">
+              Upload starten
+            </button>
+            <button
+              class="btn btn-secondary"
+              type="button"
+              onclick="document.getElementById('logoutForm').submit()"
+            >
+              Logout
+            </button>
+          </div>
+          <div style="flex: 3 1 250px">
+            <div id="status"></div>
+            <progress id="progress" value="0" max="100" style="display:none;"></progress>
+          </div>
+        </div>
+      </div>
+
+      <form
+        id="logoutForm"
+        method="post"
+        action="/special-client/logout"
+        style="display: none"
+      ></form>
+    </div>
+
+    <script>
+      // --- TAG SEARCH ---
+      const tagSearchInput = document.getElementById("tagSearch");
+      const tagSelect = document.getElementById("tagSelect");
+      const fileInput = document.getElementById("fileInput");
+      const fileSummary = document.getElementById("fileSummary");
+      const uploadBtn = document.getElementById("uploadBtn");
+      const statusEl = document.getElementById("status");
+      const progressEl = document.getElementById("progress");
+
+      if (tagSearchInput && tagSelect) {
+        tagSearchInput.addEventListener("input", () => {
+          const q = tagSearchInput.value.toLowerCase();
+          for (const opt of tagSelect.options) {
+            const text = opt.textContent.toLowerCase();
+            opt.style.display = text.includes(q) ? "" : "none";
+          }
+        });
+      }
+
+      // --- FILE SUMMARY ---
+      if (fileInput) {
+        fileInput.addEventListener("change", () => {
+          const files = fileInput.files;
+          if (!files || files.length === 0) {
+            fileSummary.textContent = "Keine Dateien ausgewählt.";
+          } else {
+            fileSummary.textContent =
+              files.length + " Datei(en) ausgewählt.";
+          }
+        });
+      }
+
+      function setStatus(msg, type) {
+        statusEl.textContent = msg;
+        statusEl.className = "";
+        if (type) {
+          statusEl.classList.add(type);
+        }
+      }
+
+      // --- UPLOAD LOGIC (CHUNKED) ---
+      async function uploadFiles() {
+        const selectedOption = tagSelect.options[tagSelect.selectedIndex];
+        if (!selectedOption) {
+          setStatus("Bitte zuerst einen Tag auswählen.", "error");
+          return;
+        }
+        const tagId = selectedOption.value;
+
+        const files = Array.from(fileInput.files || []);
+        if (!files.length) {
+          setStatus("Bitte zuerst einen Ordner / Dateien auswählen.", "error");
+          return;
+        }
+
+        const total = files.length;
+        const chunkSize = 50; // 50 files per request – can be tuned
+        let uploaded = 0;
+
+        setStatus("Upload gestartet...", "");
+        progressEl.style.display = "block";
+        progressEl.value = 0;
+
+        try {
+          for (let i = 0; i < total; i += chunkSize) {
+            const chunk = files.slice(i, i + chunkSize);
+
+            const formData = new FormData();
+            formData.append("tagId", tagId);
+            // server can take userId from session, no need to send here
+            for (const file of chunk) {
+              formData.append("files", file);
+            }
+
+            const res = await fetch("/special-client/upload-files", {
+              method: "POST",
+              body: formData,
+            });
+
+            if (!res.ok) {
+              const text = await res.text();
+              throw new Error(
+                "Fehler beim Upload (Status " + res.status + "): " + text
+              );
+            }
+
+            uploaded += chunk.length;
+            const percent = Math.round((uploaded / total) * 100);
+            progressEl.value = percent;
+            setStatus(
+              "Hochgeladen: " +
+                uploaded +
+                " / " +
+                total +
+                " Dateien (" +
+                percent +
+                "%)...",
+              ""
+            );
+          }
+
+          setStatus("Upload vollständig abgeschlossen ✅", "success");
+        } catch (err) {
+          console.error(err);
+          setStatus("Fehler: " + err.message, "error");
+        }
+      }
+
+      uploadBtn.addEventListener("click", () => {
+        uploadFiles();
+      });
+    </script>
   </body>
 </html>
