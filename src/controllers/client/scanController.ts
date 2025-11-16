@@ -24,7 +24,7 @@ export const createScan = expressAsyncHandler(async (req, res) => {
 
 
     // Generate a clean key/path
-    const key = `scans/${Date.now()}-${file?.originalname.replace(/\s+/g, "_")}`;
+    const key = `scans/${Date.now()}-${barCode}-${file?.originalname.replace(/\s+/g, "_",)}`;
 
     await s3.send(
       new PutObjectCommand({

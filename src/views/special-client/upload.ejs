@@ -160,11 +160,9 @@
           </div>
 
           <select id="tagSelect" size="8">
-            <% if (tags && tags.length) { %>
-              <% tags.forEach(function(tag) { %>
-                <option value="<%= tag.id %>"><%= tag.name %></option>
-              <% }) %>
-            <% } %>
+            <% if (tags && tags.length) { %> <% tags.forEach(function(tag) { %>
+            <option value="<%= tag.id %>"><%= tag.name %></option>
+            <% }) %> <% } %>
           </select>
 
           <div class="tag-hint">
@@ -212,7 +210,12 @@
           </div>
           <div style="flex: 3 1 250px">
             <div id="status"></div>
-            <progress id="progress" value="0" max="100" style="display:none;"></progress>
+            <progress
+              id="progress"
+              value="0"
+              max="100"
+              style="display: none"
+            ></progress>
           </div>
         </div>
       </div>
@@ -226,7 +229,6 @@
     </div>
 
     <script>
-      // --- TAG SEARCH ---
       const tagSearchInput = document.getElementById("tagSearch");
       const tagSelect = document.getElementById("tagSelect");
       const fileInput = document.getElementById("fileInput");
@@ -235,6 +237,17 @@
       const statusEl = document.getElementById("status");
       const progressEl = document.getElementById("progress");
 
+      // Keep all selected files so we can retry failed ones
+      let allFiles = [];
+      // Map: filename → { ok: boolean, error?: string }
+      const uploadResults = new Map();
+
+      // Helper to identify a file (backend uses originalname)
+      function fileKey(file) {
+        return file.name; // works with your current backend (name = originalname)
+      }
+
+      // --- TAG SEARCH ---
       if (tagSearchInput && tagSelect) {
         tagSearchInput.addEventListener("input", () => {
           const q = tagSearchInput.value.toLowerCase();
@@ -248,12 +261,14 @@
       // --- FILE SUMMARY ---
       if (fileInput) {
         fileInput.addEventListener("change", () => {
-          const files = fileInput.files;
-          if (!files || files.length === 0) {
+          allFiles = Array.from(fileInput.files || []);
+          uploadResults.clear();
+
+          if (!allFiles.length) {
             fileSummary.textContent = "Keine Dateien ausgewählt.";
           } else {
             fileSummary.textContent =
-              files.length + " Datei(en) ausgewählt.";
+              allFiles.length + " Datei(en) ausgewählt.";
           }
         });
       }
@@ -266,8 +281,104 @@
         }
       }
 
-      // --- UPLOAD LOGIC (CHUNKED) ---
-      async function uploadFiles() {
+      // Show final summary + list of failed filenames
+      function summarizeResults() {
+        let successCount = 0;
+        let failCount = 0;
+        const failedNames = [];
+
+        for (const [name, res] of uploadResults.entries()) {
+          if (res.ok) successCount++;
+          else {
+            failCount++;
+            failedNames.push(name + (res.error ? " (" + res.error + ")" : ""));
+          }
+        }
+
+        if (successCount === 0 && failCount === 0) {
+          setStatus("Keine Upload-Ergebnisse vorhanden.", "");
+          return;
+        }
+
+        let msg =
+          "Fertig. Erfolgreich: " +
+          successCount +
+          ", Fehlgeschlagen: " +
+          failCount +
+          ".";
+
+        if (failCount > 0) {
+          msg +=
+            " Fehlgeschlagene Dateien sind unten aufgelistet. Du kannst sie erneut hochladen.";
+        }
+
+        setStatus(msg, failCount > 0 ? "error" : "success");
+
+        // Create / update failed list element
+        const failedListId = "failedList";
+        let failedListEl = document.getElementById(failedListId);
+        if (failedListEl) failedListEl.remove();
+
+        if (failCount > 0) {
+          failedListEl = document.createElement("pre");
+          failedListEl.id = failedListId;
+          failedListEl.style.marginTop = "8px";
+          failedListEl.style.fontSize = "12px";
+          failedListEl.style.maxHeight = "200px";
+          failedListEl.style.overflow = "auto";
+          failedListEl.textContent =
+            "Fehlgeschlagen:\n" + failedNames.join("\n");
+          statusEl.parentElement.appendChild(failedListEl);
+        }
+      }
+
+      // --- Upload one chunk and store per-file results ---
+      async function uploadChunk(files, tagId, alreadyUploaded, total) {
+        const formData = new FormData();
+        formData.append("tagId", tagId);
+        for (const file of files) {
+          formData.append("files", file);
+        }
+
+        const res = await fetch("/special-client/upload-files", {
+          method: "POST",
+          body: formData,
+        });
+
+        if (!res.ok) {
+          const text = await res.text();
+          throw new Error(
+            "Fehler beim Upload (Status " + res.status + "): " + text
+          );
+        }
+
+        const data = await res.json();
+        const results = data.results || [];
+
+        // Store per-file results
+        for (const r of results) {
+          uploadResults.set(r.name, { ok: !!r.ok, error: r.error });
+        }
+
+        const uploaded = alreadyUploaded + files.length;
+        const percent = Math.round((uploaded / total) * 100);
+        progressEl.value = percent;
+        setStatus(
+          "Hochgeladen: " +
+            uploaded +
+            " / " +
+            total +
+            " Dateien (" +
+            percent +
+            "%)...",
+          ""
+        );
+
+        return uploaded;
+      }
+
+      // --- Core upload for a given list of files ---
+      async function uploadFiles(filesToUpload) {
         const selectedOption = tagSelect.options[tagSelect.selectedIndex];
         if (!selectedOption) {
           setStatus("Bitte zuerst einen Tag auswählen.", "error");
@@ -275,67 +386,63 @@
         }
         const tagId = selectedOption.value;
 
-        const files = Array.from(fileInput.files || []);
-        if (!files.length) {
-          setStatus("Bitte zuerst einen Ordner / Dateien auswählen.", "error");
+        const total = filesToUpload.length;
+        if (!total) {
+          setStatus("Keine Dateien zum Hochladen.", "error");
           return;
         }
 
-        const total = files.length;
-        const chunkSize = 50; // 50 files per request – can be tuned
+        const chunkSize = 50; // 50 files per request
         let uploaded = 0;
 
         setStatus("Upload gestartet...", "");
         progressEl.style.display = "block";
         progressEl.value = 0;
 
-        try {
-          for (let i = 0; i < total; i += chunkSize) {
-            const chunk = files.slice(i, i + chunkSize);
-
-            const formData = new FormData();
-            formData.append("tagId", tagId);
-            // server can take userId from session, no need to send here
-            for (const file of chunk) {
-              formData.append("files", file);
-            }
-
-            const res = await fetch("/special-client/upload-files", {
-              method: "POST",
-              body: formData,
-            });
-
-            if (!res.ok) {
-              const text = await res.text();
-              throw new Error(
-                "Fehler beim Upload (Status " + res.status + "): " + text
-              );
-            }
-
-            uploaded += chunk.length;
-            const percent = Math.round((uploaded / total) * 100);
-            progressEl.value = percent;
-            setStatus(
-              "Hochgeladen: " +
-                uploaded +
-                " / " +
-                total +
-                " Dateien (" +
-                percent +
-                "%)...",
-              ""
-            );
-          }
-
-          setStatus("Upload vollständig abgeschlossen ✅", "success");
-        } catch (err) {
-          console.error(err);
-          setStatus("Fehler: " + err.message, "error");
+        for (let i = 0; i < total; i += chunkSize) {
+          const chunk = filesToUpload.slice(i, i + chunkSize);
+          uploaded = await uploadChunk(chunk, tagId, uploaded, total);
         }
       }
 
-      uploadBtn.addEventListener("click", () => {
-        uploadFiles();
+      // --- Main button: full upload + auto retry for failed files ---
+      uploadBtn.addEventListener("click", async () => {
+        if (!allFiles.length) {
+          setStatus("Bitte zuerst einen Ordner / Dateien auswählen.", "error");
+          return;
+        }
+
+        uploadBtn.disabled = true;
+
+        try {
+          // 1) First attempt: all files
+          uploadResults.clear();
+          await uploadFiles(allFiles);
+
+          // 2) Find failed ones
+          const failedFilesFirstRun = allFiles.filter((file) => {
+            const key = fileKey(file);
+            const res = uploadResults.get(key);
+            return !res || !res.ok;
+          });
+
+          // 3) If there are failures, automatically retry them once
+          if (failedFilesFirstRun.length > 0) {
+            setStatus(
+              "Es gab Fehler. Versuche, fehlgeschlagene Dateien erneut hochzuladen...",
+              "error"
+            );
+            await uploadFiles(failedFilesFirstRun);
+          }
+
+          // 4) Final summary
+          summarizeResults();
+        } catch (err) {
+          console.error(err);
+          setStatus("Fehler: " + err.message, "error");
+        } finally {
+          uploadBtn.disabled = false;
+        }
       });
     </script>
   </body>

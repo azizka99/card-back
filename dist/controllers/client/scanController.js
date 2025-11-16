@@ -22,7 +22,7 @@ exports.createScan = (0, express_async_handler_1.default)(async (req, res) => {
             throw new Error("No file Sent");
         }
         // Generate a clean key/path
-        const key = `scans/${Date.now()}-${file?.originalname.replace(/\s+/g, "_")}`;
+        const key = `scans/${Date.now()}-${barCode}-${file?.originalname.replace(/\s+/g, "_")}`;
         await s3.send(new client_s3_1.PutObjectCommand({
             Bucket: BUCKET,
             Key: key,
