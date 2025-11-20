@@ -122,6 +122,21 @@ app.get("/admin/item/:id", requireAuth, async (req, res) => {
     }
     res.render("item", { item, signedUrl });
 });
+app.get("/admin/download-scans/:tag_id", requireAuth, async (req, res) => {
+    const items = await dbConnection_1.default.steam_card.findMany({
+        where: {
+            tag_id: req.params.tag_id
+        },
+        select: {
+            barcode: true,
+            activation_code: true,
+        }
+    });
+    if (!items) {
+        res.status(404).send("Not Found");
+    }
+    res.render("download-cards", { items });
+});
 app.get("/admin/print-scans/:tag_id", requireAuth, async (req, res) => {
     const items = await dbConnection_1.default.steam_card.findMany({
         where: {
