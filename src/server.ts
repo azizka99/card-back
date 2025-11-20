@@ -168,6 +168,23 @@ app.get("/admin/print-scans/:tag_id", requireAuth, async (req, res) => {
   res.render("print-cards", { items })
 });
 
+app.get("/admin/download-scans/:tag_id", requireAuth, async (req, res) => {
+  const items = await prisma.steam_card.findMany({
+    where: {
+      tag_id: req.params.tag_id
+    },
+    select: {
+      barcode: true,
+      activation_code: true,
+    }
+  });
+
+  if (!items) {
+    res.status(404).send("Not Found");
+  }
+
+  res.render("download-cards", { items });
+});
 
 app.use("/arascom-scan", clientAuthMiddleWare, clientRoutes);
 

@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Download Scans</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 20px;
+      }
+
+      h1 {
+        margin-bottom: 20px;
+      }
+
+      .controls {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        margin-bottom: 15px;
+        flex-wrap: wrap;
+      }
+
+      .controls input[type="text"] {
+        padding: 6px 8px;
+        min-width: 220px;
+      }
+
+      .controls button {
+        padding: 6px 12px;
+        cursor: pointer;
+      }
+
+      table {
+        border-collapse: collapse;
+        width: 100%;
+        margin-bottom: 15px;
+      }
+
+      th,
+      td {
+        border: 1px solid #ccc;
+        padding: 8px;
+        text-align: left;
+        font-size: 14px;
+      }
+
+      th {
+        background-color: #f5f5f5;
+      }
+
+      #pagination {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+      }
+
+      #pagination button {
+        padding: 4px 8px;
+        cursor: pointer;
+        border: 1px solid #ccc;
+        background-color: #fff;
+      }
+
+      #pagination button.active {
+        font-weight: bold;
+        background-color: #eee;
+      }
+
+      #pagination button:disabled {
+        opacity: 0.5;
+        cursor: default;
+      }
+
+      .info {
+        margin-bottom: 8px;
+        font-size: 13px;
+        color: #555;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Scanned Cards</h1>
+
+    <div class="controls">
+      <input type="text" id="searchInput" placeholder="Search by barcode..." />
+      <button id="exportBtn">Export as .txt</button>
+    </div>
+
+    <div class="info" id="infoText"></div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Barcode</th>
+          <th>Activation Code</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody">
+        <!-- rows rendered by JS -->
+      </tbody>
+    </table>
+
+    <div id="pagination">
+      <!-- pagination buttons rendered by JS -->
+    </div>
+
+    <script>
+      // Items from backend
+      const items = <%- JSON.stringify(items || []) %>;
+
+      const pageSize = 20;
+      let currentPage = 1;
+
+      const searchInput = document.getElementById('searchInput');
+      const tableBody = document.getElementById('tableBody');
+      const paginationContainer = document.getElementById('pagination');
+      const infoText = document.getElementById('infoText');
+      const exportBtn = document.getElementById('exportBtn');
+
+      function getFilteredItems() {
+        const term = searchInput.value.trim();
+        if (!term) return items;
+        return items.filter((item) =>
+          (item.barcode || '').toString().includes(term)
+        );
+      }
+
+      function renderTable() {
+        const filtered = getFilteredItems();
+        const total = filtered.length;
+        const totalPages = Math.max(1, Math.ceil(total / pageSize));
+
+        if (currentPage > totalPages) currentPage = totalPages;
+
+        const startIndex = (currentPage - 1) * pageSize;
+        const pageItems = filtered.slice(startIndex, startIndex + pageSize);
+
+        // Info text
+        const from = total === 0 ? 0 : startIndex + 1;
+        const to = startIndex + pageItems.length;
+        infoText.textContent = `Showing ${from}–${to} of ${total} items`;
+
+        tableBody.innerHTML = '';
+        if (pageItems.length === 0) {
+          const tr = document.createElement('tr');
+          const td = document.createElement('td');
+          td.colSpan = 2;
+          td.textContent = 'No items found.';
+          tr.appendChild(td);
+          tableBody.appendChild(tr);
+          return;
+        }
+
+        pageItems.forEach((item) => {
+          const tr = document.createElement('tr');
+
+          const tdBarcode = document.createElement('td');
+          tdBarcode.textContent = item.barcode || '';
+          tr.appendChild(tdBarcode);
+
+          const tdActivation = document.createElement('td');
+          tdActivation.textContent = item.activation_code || '';
+          tr.appendChild(tdActivation);
+
+          tableBody.appendChild(tr);
+        });
+
+        renderPagination(totalPages);
+      }
+
+      function renderPagination(totalPages) {
+        paginationContainer.innerHTML = '';
+
+        // Prev button
+        const prevBtn = document.createElement('button');
+        prevBtn.textContent = 'Prev';
+        prevBtn.disabled = currentPage === 1;
+        prevBtn.addEventListener('click', () => {
+          if (currentPage > 1) {
+            currentPage--;
+            renderTable();
+          }
+        });
+        paginationContainer.appendChild(prevBtn);
+
+        // Page number buttons (simple version)
+        for (let i = 1; i <= totalPages; i++) {
+          const btn = document.createElement('button');
+          btn.textContent = i;
+          if (i === currentPage) btn.classList.add('active');
+          btn.addEventListener('click', () => {
+            currentPage = i;
+            renderTable();
+          });
+          paginationContainer.appendChild(btn);
+        }
+
+        // Next button
+        const nextBtn = document.createElement('button');
+        nextBtn.textContent = 'Next';
+        nextBtn.disabled = currentPage === totalPages;
+        nextBtn.addEventListener('click', () => {
+          if (currentPage < totalPages) {
+            currentPage++;
+            renderTable();
+          }
+        });
+        paginationContainer.appendChild(nextBtn);
+      }
+
+      // Export ALL items (not just current page)
+      exportBtn.addEventListener('click', () => {
+        if (!items || items.length === 0) {
+          alert('No items to export.');
+          return;
+        }
+
+        const lines = items.map((item) =>
+          `${item.barcode || ''},${item.activation_code || ''}`
+        );
+        const content = lines.join('\n');
+
+        const blob = new Blob([content], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'scans.txt';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      });
+
+      // Search handler
+      searchInput.addEventListener('input', () => {
+        currentPage = 1;
+        renderTable();
+      });
+
+      // Initial render
+      renderTable();
+    </script>
+  </body>
+</html>
