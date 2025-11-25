@@ -304,8 +304,8 @@ app.post("/login", expressAsyncHandler(async (req, res) => {
 
 app.get("/app/update.json", (req, res) => {
   const latestVersion = {
-    versionCode: 1,
-    versionName: "1.2.0",
+    versionCode: 2,
+    versionName: "1.3.0",
     apkUrl: "https://arascom-public-access-files.s3.eu-central-1.amazonaws.com/app/app-release.apk"
   };
 
