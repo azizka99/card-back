@@ -302,6 +302,17 @@ app.post("/login", expressAsyncHandler(async (req, res) => {
 }));
 
 
+app.get("/app/update.json", (req, res) => {
+  const latestVersion = {
+    versionCode: 1,
+    versionName: "1.2.0",
+    apkUrl: "https://arascom-public-access-files.s3.eu-central-1.amazonaws.com/app/app-release.apk"
+  };
+
+  res.json(latestVersion);
+});
+
+
 app.get("/test-error", expressAsyncHandler(async (req, res) => {
 
   const testError = await ErrorCard.createErrorCard(new ErrorCard(uuidv4(), 'test', '1d3a265f-c59d-4343-bb34-506c273f9b8f'))
