@@ -245,8 +245,8 @@ app.post("/login", (0, express_async_handler_1.default)(async (req, res) => {
 }));
 app.get("/app/update.json", (req, res) => {
     const latestVersion = {
-        versionCode: 3,
-        versionName: "1.3.0",
+        versionCode: 4,
+        versionName: "2.0.0",
         apkUrl: "https://arascom-public-access-files.s3.eu-central-1.amazonaws.com/app/app-release.apk"
     };
     res.json(latestVersion);
