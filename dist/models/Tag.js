@@ -63,7 +63,12 @@ Tag.findTagByUserId = async (userid) => {
             userId: userid
         },
         include: {
-            app_user: false
+            app_user: false,
+            _count: {
+                select: {
+                    steam_card: true
+                }
+            }
         }
     });
     return tags;

@@ -75,7 +75,12 @@ export class Tag {
                 userId: userid
             },
             include: {
-                app_user: false
+                app_user: false,
+                _count: {
+                    select: {
+                        steam_card: true
+                    }
+                }
             }
         })
 
@@ -83,5 +88,5 @@ export class Tag {
     }
 
 
-    
+
 }
