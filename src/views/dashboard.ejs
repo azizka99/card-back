@@ -42,7 +42,7 @@
                 <option value="">Select User ➜ Tag</option>
                 
                 <% allUsers.forEach(user => { %>
-                  <% if (user.tags && user.tags.length > 0) { %>
+                  <% if (user.tag && user.tag.length > 0) { %>
                     <optgroup label="<%= user.name %>">
                       <% user.tags.forEach(tag => { %>
                         <option value="<%= tag.id %>">↳ <%= tag.name %></option>
