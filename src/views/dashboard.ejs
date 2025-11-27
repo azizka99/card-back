@@ -4,67 +4,100 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Admin · Items</title>
-    <!-- Load Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-      /* You can add small overrides here if needed */
       body {
         font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
           Roboto, Arial, sans-serif;
       }
+      /* Custom style to make the optgroup label stand out */
+      optgroup {
+        font-weight: 700;
+        font-style: normal;
+        color: #6262a6;
+      }
     </style>
   </head>
-  <body class="bg-gray-100">
-    <!-- Header -->
-    <header class="bg-white shadow-md">
+  <body class="bg-gray-100 flex flex-col min-h-screen">
+    
+    <header class="bg-white shadow-md z-10 relative">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex justify-between items-center h-16">
-          <!-- Logo/Title -->
-          <div class="flex-shrink-0">
-            <h1 class="text-2xl font-bold" style="color: #6262a6">
+        <div class="flex flex-col md:flex-row justify-between items-center h-auto md:h-16 py-4 md:py-0 gap-4">
+          
+          <div class="flex-shrink-0 flex items-center">
+            <h1 class="text-2xl font-bold tracking-tight" style="color: #6262a6">
               Admin Panel
             </h1>
           </div>
 
-          <!-- Print by Tag Section -->
-          <div class="flex items-center gap-2">
-            <% if (typeof tags !== 'undefined' && tags.length > 0) { %>
-            <select
-              id="printTagSelect"
-              class="p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#6262A6] focus:border-transparent transition text-sm"
-            >
-              <option value="">Select a tag to print</option>
-              <% tags.forEach(tag => { %>
-              <option value="<%= tag.id %>"><%= tag.name %></option>
-              <% }) %>
-            </select>
+          <div class="flex items-center bg-gray-50 border border-gray-200 p-1.5 rounded-xl shadow-sm gap-2">
+            
+            <% if (typeof allUsers !== 'undefined' && allUsers.length > 0) { %>
+            
+            <div class="relative group">
+              <select
+                id="printTagSelect"
+                class="appearance-none bg-white pl-3 pr-8 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#6262A6] focus:border-transparent cursor-pointer min-w-[200px]"
+              >
+                <option value="">Select User ➜ Tag</option>
+                
+                <% allUsers.forEach(user => { %>
+                  <% if (user.tags && user.tags.length > 0) { %>
+                    <optgroup label="<%= user.name %>">
+                      <% user.tags.forEach(tag => { %>
+                        <option value="<%= tag.id %>">↳ <%= tag.name %></option>
+                      <% }) %>
+                    </optgroup>
+                  <% } %>
+                <% }) %>
+
+              </select>
+              <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500">
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+              </div>
+            </div>
+
+            <div class="h-6 w-px bg-gray-300 mx-1"></div>
+
             <button
               id="printButton"
               type="button"
-              class="text-white font-bold py-2 px-4 rounded-lg transition duration-200 hover:bg-[#505089] text-sm"
+              disabled
+              class="flex items-center gap-2 text-white font-semibold py-2 px-4 rounded-lg text-sm transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-md"
               style="background-color: #6262a6"
             >
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+              </svg>
               Print
             </button>
+
             <button
               id="downloadButton"
               type="button"
-              class="text-white font-bold py-2 px-4 rounded-lg transition duration-200 hover:bg-[#505089] text-sm"
-              style="background-color: #6262a6"
+              disabled
+              class="flex items-center gap-2 bg-gray-700 hover:bg-gray-800 text-white font-semibold py-2 px-4 rounded-lg text-sm transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-md"
             >
-              download
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
+              Download
             </button>
+            <% } else { %>
+              <span class="text-sm text-gray-500 italic px-2">No users/tags available</span>
             <% } %>
           </div>
 
-          <!-- Logout Button -->
           <div>
             <form method="post" action="/admin/logout">
               <button
                 type="submit"
-                class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg transition duration-200"
+                class="text-red-500 hover:text-red-700 font-semibold text-sm py-2 px-4 transition duration-200 flex items-center gap-1"
               >
                 Logout
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
               </button>
             </form>
           </div>
@@ -72,70 +105,57 @@
       </div>
     </header>
 
-    <!-- Main Content -->
-    <main class="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
-      <h2 class="text-3xl font-semibold text-gray-800 mb-6">Items</h2>
+    <main class="flex-grow max-w-7xl mx-auto w-full p-4 sm:p-6 lg:p-8">
+      <div class="flex items-center justify-between mb-6">
+        <h2 class="text-3xl font-bold text-gray-800">Items Database</h2>
+        <span class="bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-0.5 rounded border border-blue-400">
+           Total: <%= items.length %>
+        </span>
+      </div>
 
-      <!-- Filter Card -->
-      <div class="bg-white p-6 rounded-lg shadow-md mb-8">
+      <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 mb-8">
         <form class="search" method="get" action="/admin">
-          <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <!-- Barcode Search -->
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-5">
             <div>
-              <label
-                for="q"
-                class="block text-sm font-medium text-gray-700 mb-1"
-                >Barcode</label
-              >
+              <label for="q" class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1">Barcode</label>
               <input
                 type="text"
                 id="q"
                 name="q"
                 value="<%= q || '' %>"
-                placeholder="Search by barcode…"
-                class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#6262A6] focus:border-transparent transition"
+                placeholder="Search..."
+                class="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#6262A6] focus:bg-white focus:border-transparent transition text-sm"
               />
             </div>
 
-            <!-- Tag Filter -->
             <div>
-              <label
-                for="tag"
-                class="block text-sm font-medium text-gray-700 mb-1"
-                >Tag Name</label
-              >
+              <label for="tag" class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1">Tag Name</label>
               <input
                 type="text"
                 id="tag"
                 name="tag"
                 value="<%= tag || '' %>"
-                placeholder="Filter by tag name…"
-                class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#6262A6] focus:border-transparent transition"
+                placeholder="Filter tag..."
+                class="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#6262A6] focus:bg-white focus:border-transparent transition text-sm"
               />
             </div>
 
-            <!-- User Filter -->
             <div>
-              <label
-                for="user"
-                class="block text-sm font-medium text-gray-700 mb-1"
-                >User Name</label
-              >
+              <label for="user" class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1">User Name</label>
               <input
                 type="text"
                 id="user"
                 name="user"
                 value="<%= user || '' %>"
-                placeholder="Filter by user name…"
-                class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#6262A6] focus:border-transparent transition"
+                placeholder="Filter user..."
+                class="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#6262A6] focus:bg-white focus:border-transparent transition text-sm"
               />
             </div>
 
-            <!-- Submit Button -->
             <div class="md:self-end">
               <button
                 type="submit"
-                class="w-full text-white font-bold py-3 px-4 rounded-lg transition duration-200 hover:bg-[#505089]"
+                class="w-full text-white font-bold py-2.5 px-4 rounded-lg transition duration-200 hover:bg-[#505089] hover:shadow-lg text-sm"
                 style="background-color: #6262a6"
               >
                 Apply Filters
@@ -145,97 +165,70 @@
         </form>
       </div>
 
-      <!-- Items Table Card -->
-      <div class="bg-white rounded-lg shadow-md overflow-hidden">
+      <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
         <div class="overflow-x-auto">
           <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gray-50">
               <tr>
-                <th
-                  scope="col"
-                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                >
-                  Barcode
-                </th>
-                <th
-                  scope="col"
-                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                >
-                  User
-                </th>
-                <th
-                  scope="col"
-                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                >
-                  Tag
-                </th>
-                <th
-                  scope="col"
-                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                >
-                  Activation Code
-                </th>
-                <th
-                  scope="col"
-                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                >
-                  Created
-                </th>
-                <th
-                  scope="col"
-                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                >
-                  Image
-                </th>
+                <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Barcode</th>
+                <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">User</th>
+                <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Tag</th>
+                <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Activation</th>
+                <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Created</th>
+                <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Image</th>
               </tr>
             </thead>
             <tbody class="bg-white divide-y divide-gray-200">
               <% items.forEach(it => { %>
-              <tr class="hover:bg-gray-50 transition duration-150">
-                <td
-                  class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900"
-                >
-                  <%= it.barcode %>
-                </td>
-
-                <!-- Safely access nested user name -->
+              <tr class="hover:bg-blue-50 transition duration-150 group">
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-mono font-medium text-gray-900 select-all"><%= it.barcode %></td>
+                
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                  <%= it.app_user ? it.app_user.name : 'N/A' %>
-                </td>
-
-                <!-- Safely access nested tag name -->
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                  <%= it.tag ? it.tag.name : 'N/A' %>
+                    <div class="flex items-center">
+                        <div class="h-6 w-6 rounded-full bg-gray-200 flex items-center justify-center text-xs font-bold text-gray-600 mr-2">
+                            <%= it.app_user ? it.app_user.name.charAt(0).toUpperCase() : '?' %>
+                        </div>
+                        <%= it.app_user ? it.app_user.name : 'N/A' %>
+                    </div>
                 </td>
 
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                  <% if(it.tag) { %>
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                      <%= it.tag.name %>
+                    </span>
+                  <% } else { %>
+                    <span class="text-gray-400">N/A</span>
+                  <% } %>
+                </td>
+
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-mono">
                   <%= it.activation_code || "-" %>
                 </td>
 
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                  <%= new Date(it.created_at).toLocaleString() %>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <%= new Date(it.created_at).toLocaleDateString() %> <span class="text-xs text-gray-400"><%= new Date(it.created_at).toLocaleTimeString() %></span>
                 </td>
 
                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                   <% if (it.img_src) { %>
-                  <a
-                    href="/admin/item/<%= it.id %>"
-                    class="inline-block bg-blue-100 text-blue-800 text-xs font-semibold px-3 py-1 rounded-full hover:bg-blue-200 transition"
-                  >
-                    View Image
+                  <a href="/admin/item/<%= it.id %>" class="text-blue-600 hover:text-blue-900 hover:underline">
+                    View
                   </a>
                   <% } else { %>
-                  <span class="text-gray-400">-</span>
+                  <span class="text-gray-300">-</span>
                   <% } %>
                 </td>
               </tr>
               <% }) %>
 
-              <!-- Handle empty state -->
               <% if (items.length === 0) { %>
               <tr>
-                <td colspan="6" class="px-6 py-12 text-center text-gray-500">
-                  No items found matching your criteria.
+                <td colspan="6" class="px-6 py-12 text-center">
+                    <div class="flex flex-col items-center justify-center text-gray-400">
+                        <svg class="w-12 h-12 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        <p>No items found matching your criteria.</p>
+                    </div>
                 </td>
               </tr>
               <% } %>
@@ -248,35 +241,50 @@
     <script>
       const printButton = document.getElementById("printButton");
       const downloadButton = document.getElementById("downloadButton");
+      const tagSelect = document.getElementById("printTagSelect");
+
+      // Helper function to check if tag is selected and toggle buttons
+      function toggleActionButtons() {
+        const tagId = tagSelect ? tagSelect.value : null;
+        const isDisabled = !tagId; // Disabled if no ID
+
+        if (printButton) {
+            printButton.disabled = isDisabled;
+            // Update styling based on disabled state (Tailwind classes handle opacity, but we can do more if needed)
+            if(isDisabled) {
+                printButton.style.backgroundColor = '#6262a6'; // Keep base color but let opacity handle the visual "disabled" look
+            }
+        }
+        
+        if (downloadButton) {
+            downloadButton.disabled = isDisabled;
+        }
+      }
+
+      // Initial check on load
+      toggleActionButtons();
+
+      // Listen for changes
+      if (tagSelect) {
+        tagSelect.addEventListener("change", toggleActionButtons);
+      }
 
       if (printButton) {
         printButton.addEventListener("click", function () {
-          const tagSelect = document.getElementById("printTagSelect");
           const tagId = tagSelect.value;
-
           if (tagId) {
-            // Construct the URL as requested
             const printUrl = `/admin/print-scans/${tagId}`;
-
-            // Open the URL in a new tab
             window.open(printUrl, "_blank");
-          } else {
-            // Optional: handle no selection
-            alert("Please select a tag to print.");
           }
         });
       }
 
       if (downloadButton) {
         downloadButton.addEventListener("click", function () {
-          const tagselect = document.getElementById("printTagSelect");
-          const tagId = tagselect.value;
-
+          const tagId = tagSelect.value;
           if (tagId) {
             const downloadUrl = `/admin/download-scans/${tagId}`;
             window.open(downloadUrl, "_blank");
-          } else {
-            alert("Please select a tag to print.");
           }
         });
       }

@@ -97,6 +97,15 @@ app.get("/admin", requireAuth, async (req, res) => {
     const allTags = await dbConnection_1.default.tag.findMany({
         orderBy: { created_at: "desc" },
     });
+    const allUsers = await dbConnection_1.default.app_user.findMany({
+        include: {
+            tag: {
+                orderBy: {
+                    created_at: "desc"
+                }
+            }
+        }
+    });
     // 3. Run the query with the combined 'where' filters
     const items = await dbConnection_1.default.steam_card.findMany({
         where: where, // Use the new dynamic 'where' object
@@ -105,7 +114,7 @@ app.get("/admin", requireAuth, async (req, res) => {
         include: { tag: true, app_user: true }, // This is what gives you the data structure you showed!
     });
     // 4. FIX THE ERROR: Pass 'items', 'q', 'tag', AND 'user' to the template
-    res.render("dashboard", { items, q, tag, user, tags: allTags });
+    res.render("dashboard", { items, q, tag, user, tags: allTags, allUsers });
 });
 app.get("/admin/item/:id", requireAuth, async (req, res) => {
     const item = await dbConnection_1.default.steam_card.findUnique({

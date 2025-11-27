@@ -117,6 +117,16 @@ app.get("/admin", requireAuth, async (req, res) => {
     orderBy: { created_at: "desc" },
   });
 
+  const allUsers = await prisma.app_user.findMany({
+    include: {
+      tag: {
+        orderBy: {
+          created_at: "desc"
+        }
+      }
+    }
+  })
+
   // 3. Run the query with the combined 'where' filters
   const items = await prisma.steam_card.findMany({
     where: where, // Use the new dynamic 'where' object
@@ -126,7 +136,7 @@ app.get("/admin", requireAuth, async (req, res) => {
   });
 
   // 4. FIX THE ERROR: Pass 'items', 'q', 'tag', AND 'user' to the template
-  res.render("dashboard", { items, q, tag, user, tags: allTags });
+  res.render("dashboard", { items, q, tag, user, tags: allTags, allUsers });
 });
 
 
