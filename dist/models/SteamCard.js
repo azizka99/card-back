@@ -111,3 +111,15 @@ SteamCard.getSteamCardsByTagId = async (_tagId) => {
     });
     return cards;
 };
+SteamCard.editSteamCardById = async (_id, _barcode, _activation_code) => {
+    const card = await dbConnection_1.default.steam_card.update({
+        where: {
+            id: _id
+        },
+        data: {
+            barcode: _barcode,
+            activation_code: _activation_code
+        }
+    });
+    return card;
+};

@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getScannedCardsByTagId = exports.createScan = void 0;
+exports.editSteamCard = exports.getScannedCardsByTagId = exports.createScan = void 0;
 const express_async_handler_1 = __importDefault(require("express-async-handler"));
 const client_s3_1 = require("@aws-sdk/client-s3");
 const SteamCard_1 = require("../../models/SteamCard");
@@ -85,4 +85,18 @@ exports.getScannedCardsByTagId = (0, express_async_handler_1.default)(async (req
         }
     }
     res.json({ error: null, result: steamCards });
+});
+exports.editSteamCard = (0, express_async_handler_1.default)(async (req, res) => {
+    const { id, barcode, activation_code } = req.body;
+    if (!id || !barcode || !activation_code) {
+        res.json({
+            error: "there is something missing, id|barcode|activation-cde"
+        });
+        return;
+    }
+    const card = await SteamCard_1.SteamCard.editSteamCardById(id, barcode, activation_code);
+    res.json({
+        error: null,
+        result: "edited"
+    });
 });

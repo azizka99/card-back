@@ -162,4 +162,18 @@ export class SteamCard {
         });
         return cards;
     }
+
+    public static editSteamCardById = async (_id: string, _barcode: string, _activation_code: string) => {
+        const card = await prisma.steam_card.update({
+            where: {
+                id: _id
+            },
+            data: {
+                barcode: _barcode,
+                activation_code: _activation_code
+            }
+        });
+
+        return card;
+    }
 }

@@ -17,4 +17,5 @@ router.post("/get-tags-by-userid", tagController_1.getTagsByUserId);
 router.post("/scannedSteam", upload.single("img"), scanController_1.createScan);
 router.post('/check-scanned-cards', errorCardsController_1.checkScannedCards);
 router.post('/get-cards-by-tagId', scanController_1.getScannedCardsByTagId);
+router.post('/edit-steam-card', scanController_1.editSteamCard);
 exports.default = router;

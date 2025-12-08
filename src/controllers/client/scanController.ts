@@ -113,3 +113,22 @@ export const getScannedCardsByTagId = expressAsyncHandler(async (req, res) => {
 
   res.json({ error: null, result: steamCards })
 });
+
+
+export const editSteamCard = expressAsyncHandler(async (req, res) => {
+  const { id, barcode, activation_code } = req.body;
+
+  if (!id || !barcode || !activation_code) {
+    res.json({
+      error: "there is something missing, id|barcode|activation-cde"
+    });
+    return;
+  }
+
+  const card = await SteamCard.editSteamCardById(id, barcode, activation_code);
+
+  res.json({
+    error: null,
+    result: "edited"
+  });
+});
