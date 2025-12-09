@@ -51,8 +51,11 @@ export const createScan = expressAsyncHandler(async (req, res) => {
     }
 
     if (packId) {
+      console.log(packId, pack);
       pack = await Pack.findPackById(packId);
-
+      console.log(pack);
+      
+      
       if (!pack) {
         throw new Error(`Pack with Id ${packId} not found`);
       }

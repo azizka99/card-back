@@ -41,7 +41,9 @@ exports.createScan = (0, express_async_handler_1.default)(async (req, res) => {
             throw new Error(`Tag with with Id ${userId} not found`);
         }
         if (packId) {
+            console.log(packId, pack);
             pack = await Pack_1.Pack.findPackById(packId);
+            console.log(pack);
             if (!pack) {
                 throw new Error(`Pack with Id ${packId} not found`);
             }
