@@ -16,7 +16,7 @@ const analizeImage_1 = require("../helpers/analizeImage");
 const ErrorCard_1 = require("./ErrorCard");
 const uuid_2 = require("uuid");
 class SteamCard {
-    constructor(_id, _activationCode, _barCode, _imgSrc, _user, _tag) {
+    constructor(_id, _activationCode, _barCode, _imgSrc, _user, _tag, _pack) {
         this.getSteamCard = () => {
             return {
                 id: this.id,
@@ -51,15 +51,20 @@ class SteamCard {
 exports.SteamCard = SteamCard;
 _a = SteamCard;
 SteamCard.createSteamCard = async (steam) => {
+    const data = {
+        id: steam.id,
+        activation_code: steam.activationCode,
+        barcode: steam.barCode,
+        img_src: steam.imgSrc,
+        user_id: steam.user.getUser().id,
+        tag_id: steam.tag.getTag().id,
+        pack_id: steam.pack?.getPack().id || null
+    };
+    if (steam.pack) {
+        data.pack_id = steam.pack.id; // or steam.pack.getPack().id
+    }
     const createdSteam = await dbConnection_1.default.steam_card.create({
-        data: {
-            id: steam.id,
-            activation_code: steam.activationCode,
-            barcode: steam.barCode,
-            img_src: steam.imgSrc,
-            user_id: steam.user.getUser().id,
-            tag_id: steam.tag.getTag().id
-        }
+        data
     });
 };
 SteamCard.checkErrorsByTagId = async (_tagId) => {
@@ -107,7 +112,8 @@ SteamCard.getSteamCardsByTagId = async (_tagId) => {
             tag_id: _tagId
         }, orderBy: {
             created_at: 'desc'
-        }
+        },
+        take: 300
     });
     return cards;
 };
@@ -122,4 +128,12 @@ SteamCard.editSteamCardById = async (_id, _barcode, _activation_code) => {
         }
     });
     return card;
+};
+SteamCard.deleteSteamCardById = async (_id) => {
+    const deleted = await dbConnection_1.default.steam_card.delete({
+        where: {
+            id: _id
+        }
+    });
+    return deleted;
 };

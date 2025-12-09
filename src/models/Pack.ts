@@ -94,4 +94,14 @@ export class Pack {
             matched
         };
     };
+
+    public static findPackById = async (_id: string) => {
+        const pack = await prisma.pack.findUnique({
+            where: {
+                id: _id
+            }
+        });
+
+        return pack;
+    }
 }

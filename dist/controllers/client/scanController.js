@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.editSteamCard = exports.getScannedCardsByTagId = exports.createScan = void 0;
+exports.deleteSteamCard = exports.editSteamCard = exports.getScannedCardsByTagId = exports.createScan = void 0;
 const express_async_handler_1 = __importDefault(require("express-async-handler"));
 const client_s3_1 = require("@aws-sdk/client-s3");
 const SteamCard_1 = require("../../models/SteamCard");
@@ -11,12 +11,14 @@ const User_1 = require("../../models/User");
 const client_1 = require("@prisma/client");
 const Tag_1 = require("../../models/Tag");
 const s3_request_presigner_1 = require("@aws-sdk/s3-request-presigner");
+const Pack_1 = require("../../models/Pack");
 const REGION = process.env.AWS_REGION || "eu-central-1";
 const BUCKET = process.env.AWS_BUCKET_NAME || "scanaras-steam-bucket";
 const s3 = new client_s3_1.S3Client({ region: REGION });
 exports.createScan = (0, express_async_handler_1.default)(async (req, res) => {
     const file = req.file;
-    const { id, activationCode, barCode, userId, tagId } = req.body;
+    const { id, activationCode, barCode, userId, tagId, packId } = req.body;
+    let pack = null;
     try {
         if (!file) {
             throw new Error("No file Sent");
@@ -37,8 +39,18 @@ exports.createScan = (0, express_async_handler_1.default)(async (req, res) => {
         if (!tag) {
             throw new Error(`Tag with with Id ${userId} not found`);
         }
-        const scannedSteam = new SteamCard_1.SteamCard(id, activationCode, barCode, key, user, new Tag_1.Tag(tag.id, tag.name, tag.created_at));
-        const send = await SteamCard_1.SteamCard.createSteamCard(scannedSteam);
+        if (packId) {
+            pack = await Pack_1.Pack.findPackById(packId);
+            if (!pack) {
+                throw new Error(`Pack with Id ${packId} not found`);
+            }
+            const scannedSteam = new SteamCard_1.SteamCard(id, activationCode, barCode, key, user, new Tag_1.Tag(tag.id, tag.name, tag.created_at), new Pack_1.Pack(pack.id, pack.start_number));
+            const send = await SteamCard_1.SteamCard.createSteamCard(scannedSteam);
+        }
+        else {
+            const scannedSteam = new SteamCard_1.SteamCard(id, activationCode, barCode, key, user, new Tag_1.Tag(tag.id, tag.name, tag.created_at));
+            const send = await SteamCard_1.SteamCard.createSteamCard(scannedSteam);
+        }
         res.json({ error: null, result: "Added!" });
     }
     catch (e) {
@@ -99,4 +111,34 @@ exports.editSteamCard = (0, express_async_handler_1.default)(async (req, res) =>
         error: null,
         result: "edited"
     });
+});
+exports.deleteSteamCard = (0, express_async_handler_1.default)(async (req, res) => {
+    const { id } = req.body;
+    if (!id) {
+        res.json({
+            error: "there is no Id"
+        });
+        return;
+    }
+    const card = await SteamCard_1.SteamCard.deleteSteamCardById(id);
+    if (!card) {
+        res.status(404).json({ error: "Card not found" });
+        return;
+    }
+    const key = card.img_src;
+    ;
+    if (!key) {
+        res.status(404).json({ error: "no img key found" });
+        return;
+    }
+    try {
+        await s3.send(new client_s3_1.DeleteObjectCommand({
+            Bucket: BUCKET,
+            Key: key
+        }));
+    }
+    catch (e) {
+        console.error("S3 deletion failed:", e);
+    }
+    res.json({ ok: true, deletedId: id });
 });

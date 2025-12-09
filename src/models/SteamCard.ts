@@ -8,6 +8,7 @@ import { GetObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { analyzeImage, equalsIgnoringLToI } from "../helpers/analizeImage";
 import { ErrorCard } from "./ErrorCard";
 import { v4 as uuidv4 } from "uuid";
+import { Pack } from "./Pack";
 
 
 export class SteamCard {
@@ -17,9 +18,10 @@ export class SteamCard {
     private imgSrc: string;
     private user: User;
     private tag: Tag;
+    private pack?: Pack;
 
 
-    constructor(_id: string, _activationCode: string, _barCode: string, _imgSrc: string, _user: User, _tag: Tag) {
+    constructor(_id: string, _activationCode: string, _barCode: string, _imgSrc: string, _user: User, _tag: Tag, _pack?: Pack) {
         isUndefined(
             { id: _id },
             { activationCode: _activationCode },
@@ -64,16 +66,21 @@ export class SteamCard {
 
 
     public static createSteamCard = async (steam: SteamCard) => {
+        const data: any = {
+            id: steam.id,
+            activation_code: steam.activationCode,
+            barcode: steam.barCode,
+            img_src: steam.imgSrc,
+            user_id: steam.user.getUser().id,
+            tag_id: steam.tag.getTag().id,
+            pack_id: steam.pack?.getPack().id || null
+        }
+        if (steam.pack) {
+            data.pack_id = steam.pack.id;              // or steam.pack.getPack().id
+        }
         const createdSteam = await prisma.steam_card.create({
-            data: {
-                id: steam.id,
-                activation_code: steam.activationCode,
-                barcode: steam.barCode,
-                img_src: steam.imgSrc,
-                user_id: steam.user.getUser().id,
-                tag_id: steam.tag.getTag().id
-            }
-        })
+            data
+        });
     }
 
     public static checkErrorsByTagId = async (_tagId: string) => {
@@ -158,7 +165,8 @@ export class SteamCard {
                 tag_id: _tagId
             }, orderBy: {
                 created_at: 'desc'
-            }
+            },
+            take: 300
         });
         return cards;
     }
@@ -175,5 +183,15 @@ export class SteamCard {
         });
 
         return card;
+    }
+
+    public static deleteSteamCardById = async (_id: string) => {
+        const deleted = await prisma.steam_card.delete({
+            where: {
+                id: _id
+            }
+        });
+
+        return deleted;
     }
 }

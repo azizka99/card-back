@@ -33,13 +33,14 @@ model steam_card {
 }
 
 model tag {
-  id           String       @id @db.Uuid
-  name         String       @unique
-  created_at   DateTime     @default(now()) @db.Timestamptz(6)
-  userId       String?      @db.Uuid
-  is_activated Boolean      @default(false)
-  steam_card   steam_card[]
-  app_user     app_user?    @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  id                 String       @id @db.Uuid
+  name               String       @unique
+  created_at         DateTime     @default(now()) @db.Timestamptz(6)
+  userId             String?      @db.Uuid
+  is_activated       Boolean      @default(false)
+  is_visible_to_user Boolean      @default(true)
+  steam_card         steam_card[]
+  app_user           app_user?    @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 }
 
 model errorCard {
@@ -50,9 +51,7 @@ model errorCard {
 }
 
 model pack {
-  id                 String       @id @db.Uuid
-  start_number       String
-  is_finished        Boolean      @default(false)
-  is_visible_to_user Boolean      @default(true)
-  steam_card         steam_card[]
+  id           String       @id @db.Uuid
+  start_number String
+  steam_card   steam_card[]
 }

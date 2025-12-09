@@ -87,3 +87,11 @@ Pack.checkPack = async (_pack) => {
         matched
     };
 };
+Pack.findPackById = async (_id) => {
+    const pack = await dbConnection_1.default.pack.findUnique({
+        where: {
+            id: _id
+        }
+    });
+    return pack;
+};
