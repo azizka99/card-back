@@ -25,7 +25,7 @@ exports.checkPack = (0, express_async_handler_1.default)(async (req, res) => {
     if (!pack) {
         res.json({ error: `Couldn't find a pack by this ${id} Id ` });
     }
-    const checked = await Pack_1.Pack.checkPack(new Pack_1.Pack(pack?.id, pack?.start_number));
+    const checked = await Pack_1.Pack.checkPack(new Pack_1.Pack(pack?.start_number, pack?.id));
     res.json({
         result: { checked }
     });

@@ -30,7 +30,7 @@ export const checkPack = expressAsyncHandler(async (req, res) => {
     if (!pack) {
         res.json({ error: `Couldn't find a pack by this ${id} Id ` })
     }
-    const checked = await Pack.checkPack(new Pack(pack?.id as string, pack?.start_number as string));
+    const checked = await Pack.checkPack(new Pack(pack?.start_number as string, pack?.id as string));
 
     res.json({
         result: { checked }
