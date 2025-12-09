@@ -25,13 +25,23 @@ export class Pack {
     };
 
     public static createPack = async (_pack: Pack) => {
-        const pack = await prisma.pack.create({
-            data: {
-                id: _pack.id,
-                start_number: _pack.start_number
+        try {
+            return await prisma.pack.create({
+                data: {
+                    id: _pack.id,
+                    start_number: _pack.start_number,
+                },
+            });
+        } catch (e: any) {
+            if (e.code === 'P2002') {
+                // Unique constraint violation
+                const existing = await prisma.pack.findUnique({
+                    where: { start_number: _pack.start_number },
+                });
+                return existing;
             }
-        });
-        return pack;
+            throw e;
+        }
     };
 
 

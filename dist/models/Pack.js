@@ -28,13 +28,24 @@ class Pack {
 exports.Pack = Pack;
 _a = Pack;
 Pack.createPack = async (_pack) => {
-    const pack = await dbConnection_1.default.pack.create({
-        data: {
-            id: _pack.id,
-            start_number: _pack.start_number
+    try {
+        return await dbConnection_1.default.pack.create({
+            data: {
+                id: _pack.id,
+                start_number: _pack.start_number,
+            },
+        });
+    }
+    catch (e) {
+        if (e.code === 'P2002') {
+            // Unique constraint violation
+            const existing = await dbConnection_1.default.pack.findUnique({
+                where: { start_number: _pack.start_number },
+            });
+            return existing;
         }
-    });
-    return pack;
+        throw e;
+    }
 };
 Pack.checkPack = async (_pack) => {
     const expected = (0, generateLuhn_1.generateFixed200)(_pack.start_number);

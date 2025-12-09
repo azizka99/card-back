@@ -15,7 +15,7 @@ export const createPack = expressAsyncHandler(async (req, res) => {
     }
     const pack = await Pack.createPack(new Pack(number, id));
 
-    res.json({ result: { id: pack.id } });
+    res.json({ result: { id: pack?.id } });
 });
 
 

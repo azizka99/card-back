@@ -53,6 +53,6 @@ model errorCard {
 
 model pack {
   id           String       @id @db.Uuid
-  start_number String
+  start_number String       @unique(map: "pack_start_number_unique")
   steam_card   steam_card[]
 }
