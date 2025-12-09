@@ -20,6 +20,7 @@ exports.createScan = (0, express_async_handler_1.default)(async (req, res) => {
     const { id, activationCode, barCode, userId, tagId, packId } = req.body;
     let pack = null;
     try {
+        console.log("Skana Gelenler", id, activationCode, barCode, userId, tagId, packId);
         if (!file) {
             throw new Error("No file Sent");
         }
