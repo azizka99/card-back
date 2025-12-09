@@ -46,3 +46,18 @@ export const getTagsByUserId = expressAsyncHandler(async (req, res) => {
 });
 
 
+
+export const approveTagByUserById = expressAsyncHandler(async (req, res) => {
+    const { id } = req.body;
+
+    if (!id) {
+        throw new Error("There is no id");
+        return;
+    }
+
+    const tag = await Tag.findTagById(id);
+
+    const change = await Tag.approveByUserById(new Tag(tag.id, tag.name, tag.created_at, tag.userId as string));
+
+    res.json({ result: "Changed!" });
+});

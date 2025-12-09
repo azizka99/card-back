@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getTagsByUserId = exports.createTag = void 0;
+exports.approveTagByUserById = exports.getTagsByUserId = exports.createTag = void 0;
 const express_async_handler_1 = __importDefault(require("express-async-handler"));
 const Tag_1 = require("../../models/Tag");
 exports.createTag = (0, express_async_handler_1.default)(async (req, res) => {
@@ -36,4 +36,14 @@ exports.getTagsByUserId = (0, express_async_handler_1.default)(async (req, res) 
         errur: null,
         result: tags
     });
+});
+exports.approveTagByUserById = (0, express_async_handler_1.default)(async (req, res) => {
+    const { id } = req.body;
+    if (!id) {
+        throw new Error("There is no id");
+        return;
+    }
+    const tag = await Tag_1.Tag.findTagById(id);
+    const change = await Tag_1.Tag.approveByUserById(new Tag_1.Tag(tag.id, tag.name, tag.created_at, tag.userId));
+    res.json({ result: "Changed!" });
 });

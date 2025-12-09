@@ -73,3 +73,16 @@ Tag.findTagByUserId = async (userid) => {
     });
     return tags;
 };
+Tag.approveByUserById = async (_tag) => {
+    const tag = await dbConnection_1.default.tag.update({
+        where: {
+            id: _tag.id
+        },
+        data: {
+            approved_by_user: true
+        },
+        include: {
+            app_user: true
+        }
+    });
+};

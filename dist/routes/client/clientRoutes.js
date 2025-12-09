@@ -22,4 +22,5 @@ router.post('/edit-steam-card', scanController_1.editSteamCard);
 router.post('/delete-steam-card', scanController_1.deleteSteamCard);
 router.post("/create-pack", packController_1.createPack);
 router.post("/check-pack-by-id", packController_1.checkPack);
+router.post("/approve-tag-by-id");
 exports.default = router;

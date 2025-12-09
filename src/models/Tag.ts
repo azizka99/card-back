@@ -87,6 +87,20 @@ export class Tag {
         return tags
     }
 
+    public static approveByUserById = async (_tag: Tag) => {
+        const tag = await prisma.tag.update({
+            where: {
+                id: _tag.id
+            },
+            data: {
+                approved_by_user: true
+            },
+            include: {
+                app_user: true
+            }
+        });
 
+
+    }
 
 }

@@ -28,7 +28,10 @@ router.post('/edit-steam-card', editSteamCard);
 router.post('/delete-steam-card', deleteSteamCard);
 
 router.post("/create-pack", createPack);
-router.post("/check-pack-by-id", checkPack)
+router.post("/check-pack-by-id", checkPack);
+
+router.post("/approve-tag-by-id");
+
 
 
 

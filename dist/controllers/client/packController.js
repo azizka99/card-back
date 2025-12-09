@@ -13,7 +13,7 @@ exports.createPack = (0, express_async_handler_1.default)(async (req, res) => {
         return;
     }
     const pack = await Pack_1.Pack.createPack(new Pack_1.Pack(number, id));
-    res.json({ result: "Created!" });
+    res.json({ result: { id: pack.id } });
 });
 exports.checkPack = (0, express_async_handler_1.default)(async (req, res) => {
     const { id } = req.body;
