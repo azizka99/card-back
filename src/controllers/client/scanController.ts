@@ -20,7 +20,7 @@ export const createScan = expressAsyncHandler(async (req, res) => {
   try {
 
 
-    console.log("Skana Gelenler", id, activationCode, barCode, userId, tagId, packId);
+    console.log("Skana Gelenler", id, activationCode, barCode, userId, tagId, 'packId', packId);
 
     if (!file) {
       throw new Error("No file Sent");
@@ -54,12 +54,12 @@ export const createScan = expressAsyncHandler(async (req, res) => {
       console.log(packId, pack);
       pack = await Pack.findPackById(packId);
       console.log(pack);
-      
-      
+
+
       if (!pack) {
         throw new Error(`Pack with Id ${packId} not found`);
       }
-      const scannedSteam = new SteamCard(id, activationCode, barCode, key, user, new Tag(tag.id, tag.name, tag.created_at), new Pack(pack.id, pack.start_number));
+      const scannedSteam = new SteamCard(id, activationCode, barCode, key, user, new Tag(tag.id, tag.name, tag.created_at), new Pack(pack.start_number, pack.id));
       const send = await SteamCard.createSteamCard(scannedSteam);
     } else {
       const scannedSteam = new SteamCard(id, activationCode, barCode, key, user, new Tag(tag.id, tag.name, tag.created_at));

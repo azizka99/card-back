@@ -20,7 +20,7 @@ exports.createScan = (0, express_async_handler_1.default)(async (req, res) => {
     const { id, activationCode, barCode, userId, tagId, packId } = req.body;
     let pack = null;
     try {
-        console.log("Skana Gelenler", id, activationCode, barCode, userId, tagId, packId);
+        console.log("Skana Gelenler", id, activationCode, barCode, userId, tagId, 'packId', packId);
         if (!file) {
             throw new Error("No file Sent");
         }
@@ -47,7 +47,7 @@ exports.createScan = (0, express_async_handler_1.default)(async (req, res) => {
             if (!pack) {
                 throw new Error(`Pack with Id ${packId} not found`);
             }
-            const scannedSteam = new SteamCard_1.SteamCard(id, activationCode, barCode, key, user, new Tag_1.Tag(tag.id, tag.name, tag.created_at), new Pack_1.Pack(pack.id, pack.start_number));
+            const scannedSteam = new SteamCard_1.SteamCard(id, activationCode, barCode, key, user, new Tag_1.Tag(tag.id, tag.name, tag.created_at), new Pack_1.Pack(pack.start_number, pack.id));
             const send = await SteamCard_1.SteamCard.createSteamCard(scannedSteam);
         }
         else {
