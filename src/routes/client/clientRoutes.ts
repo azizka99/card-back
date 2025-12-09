@@ -2,7 +2,7 @@ import express from "express";
 import { getApiVersion } from "../../controllers/client/versionController";
 import { createScan, deleteSteamCard, editSteamCard, getScannedCardsByTagId } from "../../controllers/client/scanController";
 import multer from "multer";
-import { createTag, getTagsByUserId } from "../../controllers/client/tagController";
+import { approveTagByUserById, createTag, getTagsByUserId } from "../../controllers/client/tagController";
 import { checkScannedCards } from "../../controllers/client/errorCardsController";
 import { checkPack, createPack } from "../../controllers/client/packController";
 
@@ -30,7 +30,7 @@ router.post('/delete-steam-card', deleteSteamCard);
 router.post("/create-pack", createPack);
 router.post("/check-pack-by-id", checkPack);
 
-router.post("/approve-tag-by-id");
+router.post("/approve-tag-by-id", approveTagByUserById);
 
 
 
