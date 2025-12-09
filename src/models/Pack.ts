@@ -9,7 +9,7 @@ export class Pack {
     constructor(_start_number: string, _id: string) {
         isUndefined({ start_number: _start_number });
 
-        if (_start_number.length === 16) {
+        if (_start_number.length !== 16) {
             throw new Error("Barcode should be 16 digits");
         }
 
