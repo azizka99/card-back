@@ -47,6 +47,7 @@ export class Pack {
 
 
     public static checkPack = async (_pack: Pack) => {
+        console.log('packs', _pack);
 
         const expected = generateFixed200(_pack.start_number);
         const expectedSet = new Set(expected);
