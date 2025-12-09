@@ -51,7 +51,7 @@ export class Pack {
 
         const expected = generateFixed200(_pack.start_number);
         const expectedSet = new Set(expected);
-
+        console.log('expected', expected);
 
         const cards = await prisma.steam_card.findMany({
             where: { pack_id: _pack.id },
