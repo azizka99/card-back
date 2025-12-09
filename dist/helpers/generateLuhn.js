@@ -16,6 +16,7 @@ function luhnCheckDigit(payload15) {
 }
 // Generate exactly 200 barcodes from the 15-digit payload of `start`
 function generateFixed200(startCode) {
+    console.log('startCode', startCode);
     if (!/^\d{16}$/.test(startCode)) {
         throw new Error("`start` must be exactly 16 digits.");
     }

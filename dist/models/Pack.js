@@ -27,6 +27,7 @@ class Pack {
 }
 exports.Pack = Pack;
 _a = Pack;
+// {"success":false,"message":"`start` must be exactly 16 digits.","statusCode":200,"stack":"Error: `start` must be exactly 16 digits.\n    at generateFixed200 (/home/ubuntu/card-back/dist/helpers/generateLuhn.js:20:15)\n    at Pack.checkPack (/home/ubuntu/card-back/dist/models/Pack.js:51:58)\n    at /home/ubuntu/card-back/dist/controllers/client/packController.js:28:39"}
 Pack.createPack = async (_pack) => {
     try {
         return await dbConnection_1.default.pack.create({

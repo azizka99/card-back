@@ -23,6 +23,7 @@ export class Pack {
             start_number: this.start_number
         }
     };
+    // {"success":false,"message":"`start` must be exactly 16 digits.","statusCode":200,"stack":"Error: `start` must be exactly 16 digits.\n    at generateFixed200 (/home/ubuntu/card-back/dist/helpers/generateLuhn.js:20:15)\n    at Pack.checkPack (/home/ubuntu/card-back/dist/models/Pack.js:51:58)\n    at /home/ubuntu/card-back/dist/controllers/client/packController.js:28:39"}
 
     public static createPack = async (_pack: Pack) => {
         try {
