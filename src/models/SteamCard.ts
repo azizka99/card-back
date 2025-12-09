@@ -51,6 +51,7 @@ export class SteamCard {
         this.imgSrc = _imgSrc;
         this.user = _user;
         this.tag = _tag;
+        this.pack = _pack;
     };
 
     public getSteamCard = () => {
