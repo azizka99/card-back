@@ -116,7 +116,8 @@ export const getScannedCardsByTagId = expressAsyncHandler(async (req, res) => {
       steamCards.push({
         activation_code: cards[i].activation_code,
         barcode: cards[i].barcode,
-        img_src: signedUrl
+        img_src: signedUrl,
+        id: cards[i].id
       })
     }
   }

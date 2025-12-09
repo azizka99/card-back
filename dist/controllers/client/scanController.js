@@ -92,7 +92,8 @@ exports.getScannedCardsByTagId = (0, express_async_handler_1.default)(async (req
             steamCards.push({
                 activation_code: cards[i].activation_code,
                 barcode: cards[i].barcode,
-                img_src: signedUrl
+                img_src: signedUrl,
+                id: cards[i].id
             });
         }
     }
