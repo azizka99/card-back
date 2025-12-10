@@ -101,7 +101,6 @@ export class Pack {
             packId: _pack.id,
             totalExpected: expected.length,
             totalFound: cards.length,
-            missing,
             extra,
             duplicates,
             matched
@@ -111,10 +110,9 @@ export class Pack {
             packId: _pack.id,
             totalExpected: expected.length,
             totalFound: cards.length,
-            missing,
             extra,
-            duplicates,
-            matched
+            // duplicates,
+            // matched
         };
     };
 

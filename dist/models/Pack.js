@@ -95,7 +95,6 @@ Pack.checkPack = async (_pack) => {
         packId: _pack.id,
         totalExpected: expected.length,
         totalFound: cards.length,
-        missing,
         extra,
         duplicates,
         matched
@@ -104,10 +103,9 @@ Pack.checkPack = async (_pack) => {
         packId: _pack.id,
         totalExpected: expected.length,
         totalFound: cards.length,
-        missing,
         extra,
-        duplicates,
-        matched
+        // duplicates,
+        // matched
     };
 };
 Pack.findPackById = async (_id) => {
