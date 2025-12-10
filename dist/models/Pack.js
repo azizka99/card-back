@@ -91,6 +91,15 @@ Pack.checkPack = async (_pack) => {
             extra.push(...group);
         }
     }
+    console.log("Packin icinden", {
+        packId: _pack.id,
+        totalExpected: expected.length,
+        totalFound: cards.length,
+        missing,
+        extra,
+        duplicates,
+        matched
+    });
     return {
         packId: _pack.id,
         totalExpected: expected.length,
