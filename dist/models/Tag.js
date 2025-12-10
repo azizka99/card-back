@@ -60,7 +60,8 @@ Tag.findTagById = async (id) => {
 Tag.findTagByUserId = async (userid) => {
     const tags = await dbConnection_1.default.tag.findMany({
         where: {
-            userId: userid
+            userId: userid,
+            is_visible_to_user: true
         },
         include: {
             app_user: false,
