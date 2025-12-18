@@ -110,7 +110,7 @@ special_client.post(
             try {
                 // 🔹 Safer filename parsing
                 // Expect: BARCODE_ACTIVATIONCODE.ext
-                const parts = name.split(",");
+                const parts = name.split("_");
                 if (parts.length < 2) {
                     results.push({
                         name,
@@ -121,7 +121,7 @@ special_client.post(
                 }
 
                 const barcodePart = parts[0].trim();
-                const activationWithExt = parts.slice(1).join(",").trim(); // just in case of extra '_'s
+                const activationWithExt = parts.slice(1).join("_").trim(); // just in case of extra '_'s
 
                 const activationPart = activationWithExt.replace(
                     /\.(jpg|jpeg|png)$/i,
