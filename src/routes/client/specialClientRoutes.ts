@@ -119,30 +119,35 @@ special_client.post(
                 });
                 continue;
             }
-            const name = m.join();
+            const name = m[0];
             try {
                 // 🔹 Safer filename parsing
                 // Expect: BARCODE_ACTIVATIONCODE.ext
-                const parts = name.split("_");
-                if (parts.length < 2) {
-                    results.push({
-                        name,
-                        ok: false,
-                        error: "Filename must be BARCODE_ACTIVATIONCODE.ext",
-                    });
-                    continue;
-                }
+                // const parts = name.split("_");
+                // if (parts.length < 2) {
+                //     results.push({
+                //         name,
+                //         ok: false,
+                //         error: "Filename must be BARCODE_ACTIVATIONCODE.ext",
+                //     });
+                //     continue;
+                // }
 
-                const barcodePart = parts[0].trim();
-                const activationWithExt = parts.slice(1).join("_").trim(); // just in case of extra '_'s
+                // const barcodePart = parts[0].trim();
+                // const activationWithExt = parts.slice(1).join("_").trim(); // just in case of extra '_'s
 
-                const activationPart = activationWithExt.replace(
-                    /\.(jpg|jpeg|png)$/i,
-                    ""
-                );
+                const barcodePart = m[1];
+                const activationPart = m[2];
 
+                console.log("original:", original);
+                console.log("normalized:", normalized);
                 console.log("barcode:", barcodePart);
-                console.log("activation-code:", activationPart);
+                console.log("activation:", activationPart);
+                // const activationPart = activationWithExt.replace(
+                //     /\.(jpg|jpeg|png)$/i,
+                //     ""
+                // );
+
 
 
                 if (!barcodePart || !activationPart) {
@@ -168,17 +173,17 @@ special_client.post(
                 );
 
                 // 🔹 Create domain objects
-                const tagEntity = new Tag(tag.id, tag.name, tag.created_at);
-                const steamCard = new SteamCard(
-                    randomUUID(),
-                    activationPart,
-                    barcodePart,
-                    key,
-                    user,
-                    tagEntity
-                );
+                // const tagEntity = new Tag(tag.id, tag.name, tag.created_at);
+                // const steamCard = new SteamCard(
+                //     randomUUID(),
+                //     activationPart,
+                //     barcodePart,
+                //     key,
+                //     user,
+                //     tagEntity
+                // );
 
-                await SteamCard.createSteamCard(steamCard);
+                // await SteamCard.createSteamCard(steamCard);
 
                 results.push({ name, ok: true });
             } catch (e: any) {

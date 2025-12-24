@@ -10,7 +10,6 @@ const multer_1 = __importDefault(require("multer"));
 const client_s3_1 = require("@aws-sdk/client-s3");
 const User_1 = require("../../models/User");
 const Tag_1 = require("../../models/Tag");
-const SteamCard_1 = require("../../models/SteamCard");
 const crypto_1 = require("crypto");
 const client_1 = require("@prisma/client");
 const special_client = express_1.default.Router();
@@ -101,22 +100,31 @@ special_client.post("/upload-files", requireSpecialClientAuth, upload.array("fil
             });
             continue;
         }
-        const name = m.join();
+        const name = m[0];
         try {
             // 🔹 Safer filename parsing
             // Expect: BARCODE_ACTIVATIONCODE.ext
-            const parts = name.split("_");
-            if (parts.length < 2) {
-                results.push({
-                    name,
-                    ok: false,
-                    error: "Filename must be BARCODE_ACTIVATIONCODE.ext",
-                });
-                continue;
-            }
-            const barcodePart = parts[0].trim();
-            const activationWithExt = parts.slice(1).join("_").trim(); // just in case of extra '_'s
-            const activationPart = activationWithExt.replace(/\.(jpg|jpeg|png)$/i, "");
+            // const parts = name.split("_");
+            // if (parts.length < 2) {
+            //     results.push({
+            //         name,
+            //         ok: false,
+            //         error: "Filename must be BARCODE_ACTIVATIONCODE.ext",
+            //     });
+            //     continue;
+            // }
+            // const barcodePart = parts[0].trim();
+            // const activationWithExt = parts.slice(1).join("_").trim(); // just in case of extra '_'s
+            const barcodePart = m[1];
+            const activationPart = m[2];
+            console.log("original:", original);
+            console.log("normalized:", normalized);
+            console.log("barcode:", barcodePart);
+            console.log("activation:", activationPart);
+            // const activationPart = activationWithExt.replace(
+            //     /\.(jpg|jpeg|png)$/i,
+            //     ""
+            // );
             if (!barcodePart || !activationPart) {
                 results.push({
                     name,
@@ -135,9 +143,16 @@ special_client.post("/upload-files", requireSpecialClientAuth, upload.array("fil
                 ContentType: file.mimetype,
             }));
             // 🔹 Create domain objects
-            const tagEntity = new Tag_1.Tag(tag.id, tag.name, tag.created_at);
-            const steamCard = new SteamCard_1.SteamCard((0, crypto_1.randomUUID)(), activationPart, barcodePart, key, user, tagEntity);
-            await SteamCard_1.SteamCard.createSteamCard(steamCard);
+            // const tagEntity = new Tag(tag.id, tag.name, tag.created_at);
+            // const steamCard = new SteamCard(
+            //     randomUUID(),
+            //     activationPart,
+            //     barcodePart,
+            //     key,
+            //     user,
+            //     tagEntity
+            // );
+            // await SteamCard.createSteamCard(steamCard);
             results.push({ name, ok: true });
         }
         catch (e) {
