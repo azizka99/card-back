@@ -88,11 +88,24 @@ special_client.post("/upload-files", requireSpecialClientAuth, upload.array("fil
             .json({ error: `Tag with id ${tagId} not found` });
     }
     for (const file of files) {
-        const name = file.originalname;
+        const original = file.originalname.trim();
+        const normalized = original
+            .replace(/[‐-‒–—−]/g, "-") // all dash variants -> "-"
+            .replace(/[＿﹍﹎]/g, "_");
+        const m = normalized.match(/^(\d{16})_(.+?)\.(jpg|jpeg|png)$/i);
+        if (!m) {
+            results.push({
+                name: original,
+                ok: false,
+                error: "Filename must be 16DIGITBARCODE_ACTIVATIONCODE.jpg (use '_' and normal '-')",
+            });
+            continue;
+        }
+        const name = m.join();
         try {
             // 🔹 Safer filename parsing
             // Expect: BARCODE_ACTIVATIONCODE.ext
-            const parts = name.split(",");
+            const parts = name.split("_");
             if (parts.length < 2) {
                 results.push({
                     name,
@@ -102,7 +115,7 @@ special_client.post("/upload-files", requireSpecialClientAuth, upload.array("fil
                 continue;
             }
             const barcodePart = parts[0].trim();
-            const activationWithExt = parts.slice(1).join(",").trim(); // just in case of extra '_'s
+            const activationWithExt = parts.slice(1).join("_").trim(); // just in case of extra '_'s
             const activationPart = activationWithExt.replace(/\.(jpg|jpeg|png)$/i, "");
             if (!barcodePart || !activationPart) {
                 results.push({

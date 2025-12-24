@@ -105,8 +105,21 @@ special_client.post(
         }
 
         for (const file of files) {
-            const name = file.originalname;
+            const original = file.originalname.trim();
+            const normalized = original
+                .replace(/[‐-‒–—−]/g, "-")     // all dash variants -> "-"
+                .replace(/[＿﹍﹎]/g, "_");
 
+            const m = normalized.match(/^(\d{16})_(.+?)\.(jpg|jpeg|png)$/i);
+            if (!m) {
+                results.push({
+                    name: original,
+                    ok: false,
+                    error: "Filename must be 16DIGITBARCODE_ACTIVATIONCODE.jpg (use '_' and normal '-')",
+                });
+                continue;
+            }
+            const name = m.join();
             try {
                 // 🔹 Safer filename parsing
                 // Expect: BARCODE_ACTIVATIONCODE.ext
