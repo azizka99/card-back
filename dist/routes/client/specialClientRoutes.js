@@ -10,6 +10,7 @@ const multer_1 = __importDefault(require("multer"));
 const client_s3_1 = require("@aws-sdk/client-s3");
 const User_1 = require("../../models/User");
 const Tag_1 = require("../../models/Tag");
+const SteamCard_1 = require("../../models/SteamCard");
 const crypto_1 = require("crypto");
 const client_1 = require("@prisma/client");
 const special_client = express_1.default.Router();
@@ -143,16 +144,9 @@ special_client.post("/upload-files", requireSpecialClientAuth, upload.array("fil
                 ContentType: file.mimetype,
             }));
             // 🔹 Create domain objects
-            // const tagEntity = new Tag(tag.id, tag.name, tag.created_at);
-            // const steamCard = new SteamCard(
-            //     randomUUID(),
-            //     activationPart,
-            //     barcodePart,
-            //     key,
-            //     user,
-            //     tagEntity
-            // );
-            // await SteamCard.createSteamCard(steamCard);
+            const tagEntity = new Tag_1.Tag(tag.id, tag.name, tag.created_at);
+            const steamCard = new SteamCard_1.SteamCard((0, crypto_1.randomUUID)(), activationPart, barcodePart, key, user, tagEntity);
+            await SteamCard_1.SteamCard.createSteamCard(steamCard);
             results.push({ name, ok: true });
         }
         catch (e) {

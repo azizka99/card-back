@@ -173,17 +173,17 @@ special_client.post(
                 );
 
                 // 🔹 Create domain objects
-                // const tagEntity = new Tag(tag.id, tag.name, tag.created_at);
-                // const steamCard = new SteamCard(
-                //     randomUUID(),
-                //     activationPart,
-                //     barcodePart,
-                //     key,
-                //     user,
-                //     tagEntity
-                // );
+                const tagEntity = new Tag(tag.id, tag.name, tag.created_at);
+                const steamCard = new SteamCard(
+                    randomUUID(),
+                    activationPart,
+                    barcodePart,
+                    key,
+                    user,
+                    tagEntity
+                );
 
-                // await SteamCard.createSteamCard(steamCard);
+                await SteamCard.createSteamCard(steamCard);
 
                 results.push({ name, ok: true });
             } catch (e: any) {
