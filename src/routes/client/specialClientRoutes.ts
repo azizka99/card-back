@@ -141,6 +141,10 @@ special_client.post(
                     ""
                 );
 
+                console.log("barcode:", barcodePart);
+                console.log("activation-code:", activationPart);
+
+
                 if (!barcodePart || !activationPart) {
                     results.push({
                         name,
