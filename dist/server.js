@@ -201,7 +201,7 @@ app.post("/admin/2fa", (req, res) => {
     const { token } = req.body; // 6 digits from app
     const secret = process.env.ADMIN_TOTP_SECRET || "Helloo";
     // allow slight clock drift (otplib default window is 0; we can set window = 1)
-    otplib_1.authenticator.options = { window: 1 };
+    // authenticator.options = { window: 1 };
     const ok = otplib_1.authenticator.check((token || "").replace(/\s/g, ""), secret);
     if (!ok) {
         return res.status(401).render("2fa", { error: "Invalid code" });

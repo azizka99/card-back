@@ -254,7 +254,7 @@ app.post("/admin/2fa", (req, res) => {
   const secret = process.env.ADMIN_TOTP_SECRET || "Helloo";
 
   // allow slight clock drift (otplib default window is 0; we can set window = 1)
-  authenticator.options = { window: 1 };
+  // authenticator.options = { window: 1 };
 
   const ok = authenticator.check((token || "").replace(/\s/g, ""), secret);
 
