@@ -22,7 +22,6 @@ const uuid_1 = require("uuid");
 const ErrorCard_1 = require("./models/ErrorCard");
 const specialClientRoutes_1 = __importDefault(require("./routes/client/specialClientRoutes"));
 const otplib_1 = require("otplib");
-const qrcode_1 = __importDefault(require("qrcode"));
 const app = (0, express_1.default)();
 dotenv_1.default.config({ path: '.env' });
 app.set("view engine", "ejs");
@@ -170,22 +169,22 @@ app.get("/admin/print-scans/:tag_id", requireAuth, async (req, res) => {
     }
     res.render("print-cards", { items });
 });
-app.get("/admin/2fa/setup", async (req, res) => {
-    // Protect this route (IP restriction + maybe temporary password)
-    // Ideally: remove/disable after setup
-    const label = "Scan App";
-    const issuer = "Arascom"; // shown in authenticator app
-    const secret = otplib_1.authenticator.generateSecret(); // base32
-    const otpauth = otplib_1.authenticator.keyuri(label, issuer, secret);
-    const qrDataUrl = await qrcode_1.default.toDataURL(otpauth);
-    // IMPORTANT: print/store secret ONCE and then put it into env (ADMIN_TOTP_SECRET)
-    res.send(`
-    <h2>Scan this QR in Google Authenticator</h2>
-    <img src="${qrDataUrl}" />
-    <p><b>Secret (store in ADMIN_TOTP_SECRET):</b> ${secret}</p>
-    <p>After saving it in env, delete/disable this route.</p>
-  `);
-});
+// app.get("/admin/2fa/setup", async (req, res) => {
+//   // Protect this route (IP restriction + maybe temporary password)
+//   // Ideally: remove/disable after setup
+//   const label = "Scan App"
+//   const issuer = "Arascom"; // shown in authenticator app
+//   const secret = authenticator.generateSecret(); // base32
+//   const otpauth = authenticator.keyuri(label, issuer, secret);
+//   const qrDataUrl = await QRCode.toDataURL(otpauth);
+//   // IMPORTANT: print/store secret ONCE and then put it into env (ADMIN_TOTP_SECRET)
+//   res.send(`
+//     <h2>Scan this QR in Google Authenticator</h2>
+//     <img src="${qrDataUrl}" />
+//     <p><b>Secret (store in ADMIN_TOTP_SECRET):</b> ${secret}</p>
+//     <p>After saving it in env, delete/disable this route.</p>
+//   `);
+// });
 app.get("/admin/2fa", (req, res) => {
     if (!req.session.pending2fa)
         return res.redirect("/admin/login");

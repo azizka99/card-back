@@ -212,28 +212,28 @@ app.get("/admin/print-scans/:tag_id", requireAuth, async (req, res) => {
 });
 
 
-app.get("/admin/2fa/setup", async (req, res) => {
-  // Protect this route (IP restriction + maybe temporary password)
-  // Ideally: remove/disable after setup
+// app.get("/admin/2fa/setup", async (req, res) => {
+//   // Protect this route (IP restriction + maybe temporary password)
+//   // Ideally: remove/disable after setup
 
-  const label = "Scan App"
+//   const label = "Scan App"
 
-  const issuer = "Arascom"; // shown in authenticator app
+//   const issuer = "Arascom"; // shown in authenticator app
 
-  const secret = authenticator.generateSecret(); // base32
+//   const secret = authenticator.generateSecret(); // base32
 
-  const otpauth = authenticator.keyuri(label, issuer, secret);
+//   const otpauth = authenticator.keyuri(label, issuer, secret);
 
-  const qrDataUrl = await QRCode.toDataURL(otpauth);
+//   const qrDataUrl = await QRCode.toDataURL(otpauth);
 
-  // IMPORTANT: print/store secret ONCE and then put it into env (ADMIN_TOTP_SECRET)
-  res.send(`
-    <h2>Scan this QR in Google Authenticator</h2>
-    <img src="${qrDataUrl}" />
-    <p><b>Secret (store in ADMIN_TOTP_SECRET):</b> ${secret}</p>
-    <p>After saving it in env, delete/disable this route.</p>
-  `);
-});
+//   // IMPORTANT: print/store secret ONCE and then put it into env (ADMIN_TOTP_SECRET)
+//   res.send(`
+//     <h2>Scan this QR in Google Authenticator</h2>
+//     <img src="${qrDataUrl}" />
+//     <p><b>Secret (store in ADMIN_TOTP_SECRET):</b> ${secret}</p>
+//     <p>After saving it in env, delete/disable this route.</p>
+//   `);
+// });
 
 
 app.get("/admin/2fa", (req, res) => {
