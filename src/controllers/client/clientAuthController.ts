@@ -18,9 +18,11 @@ export const login = expressAsyncHandler(async (req, res) => {
 
     if (!user) {
         res.json({ result: null, error: "There is email or password is wrong" });
+        return;
     }
     if (!user.getUser().password === password) {
         res.json({ result: null, error: "There is email or password is wrong" });
+        return;
     }
 
     const token = User.signInUser(user.getUser().id);

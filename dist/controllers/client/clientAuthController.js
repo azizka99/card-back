@@ -15,9 +15,11 @@ exports.login = (0, express_async_handler_1.default)(async (req, res) => {
     const user = await User_1.User.findUserByEmail(email);
     if (!user) {
         res.json({ result: null, error: "There is email or password is wrong" });
+        return;
     }
     if (!user.getUser().password === password) {
         res.json({ result: null, error: "There is email or password is wrong" });
+        return;
     }
     const token = User_1.User.signInUser(user.getUser().id);
     res.json({

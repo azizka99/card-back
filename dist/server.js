@@ -21,6 +21,8 @@ const clientAuthController_1 = require("./controllers/client/clientAuthControlle
 const uuid_1 = require("uuid");
 const ErrorCard_1 = require("./models/ErrorCard");
 const specialClientRoutes_1 = __importDefault(require("./routes/client/specialClientRoutes"));
+const otplib_1 = require("otplib");
+const qrcode_1 = __importDefault(require("qrcode"));
 const app = (0, express_1.default)();
 dotenv_1.default.config({ path: '.env' });
 app.set("view engine", "ejs");
@@ -51,8 +53,11 @@ app.get("/admin/login", (req, res) => {
 app.post("/admin/login", async (req, res) => {
     const { email, password } = req.body;
     if (email === ADMIN_EMAIL && password === ADMIN_PASS) {
-        req.session.isAuthed = true;
-        return res.redirect("/admin");
+        // req.session.isAuthed = true;
+        req.session.pending2fa = true;
+        // Optional: store timestamp to expire quickly
+        req.session.pending2faAt = Date.now();
+        return res.redirect("/admin/2fa");
     }
     res.status(401).render("login", { error: "Invalid credentials" });
 });
@@ -164,6 +169,49 @@ app.get("/admin/print-scans/:tag_id", requireAuth, async (req, res) => {
         return res.status(404).send("Not Found");
     }
     res.render("print-cards", { items });
+});
+app.get("/admin/2fa/setup", async (req, res) => {
+    // Protect this route (IP restriction + maybe temporary password)
+    // Ideally: remove/disable after setup
+    const label = "Scan App";
+    const issuer = "Arascom"; // shown in authenticator app
+    const secret = otplib_1.authenticator.generateSecret(); // base32
+    const otpauth = otplib_1.authenticator.keyuri(label, issuer, secret);
+    const qrDataUrl = await qrcode_1.default.toDataURL(otpauth);
+    // IMPORTANT: print/store secret ONCE and then put it into env (ADMIN_TOTP_SECRET)
+    res.send(`
+    <h2>Scan this QR in Google Authenticator</h2>
+    <img src="${qrDataUrl}" />
+    <p><b>Secret (store in ADMIN_TOTP_SECRET):</b> ${secret}</p>
+    <p>After saving it in env, delete/disable this route.</p>
+  `);
+});
+app.get("/admin/2fa", (req, res) => {
+    if (!req.session.pending2fa)
+        return res.redirect("/admin/login");
+    return res.render("2fa", { error: null });
+});
+app.post("/admin/2fa", (req, res) => {
+    if (!req.session.pending2fa)
+        return res.redirect("/admin/login");
+    // Optional expiry (e.g. 2 minutes)
+    if (Date.now() - (req.session.pending2faAt || 0) > 2 * 60 * 1000) {
+        req.session.pending2fa = false;
+        return res.redirect("/admin/login");
+    }
+    const { token } = req.body; // 6 digits from app
+    const secret = process.env.ADMIN_TOTP_SECRET || "Helloo";
+    // allow slight clock drift (otplib default window is 0; we can set window = 1)
+    otplib_1.authenticator.options = { window: 1 };
+    const ok = otplib_1.authenticator.check((token || "").replace(/\s/g, ""), secret);
+    if (!ok) {
+        return res.status(401).render("2fa", { error: "Invalid code" });
+    }
+    // Success: fully authenticated
+    req.session.isAuthed = true;
+    req.session.pending2fa = false;
+    req.session.pending2faAt = null;
+    return res.redirect("/admin");
 });
 app.use("/arascom-scan", clientAuthMiddleware_1.clientAuthMiddleWare, clientRoutes_1.default);
 app.post("/test-start-end", async (req, res) => {
