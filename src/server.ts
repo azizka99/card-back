@@ -16,13 +16,10 @@ import { login } from "./controllers/client/clientAuthController";
 import { v4 as uuidv4 } from "uuid";
 import { ErrorCard } from "./models/ErrorCard";
 import special_client from "./routes/client/specialClientRoutes";
-
 import { authenticator } from "otplib";
-import QRCode from "qrcode";
 
 
 const app = express();
-
 dotenv.config({ path: '.env' });
 
 app.set("view engine", "ejs");
@@ -60,6 +57,7 @@ app.get("/admin/login", (req, res) => {
   res.render("login", { error: null });
 });
 
+
 app.post("/admin/login", async (req, res) => {
   const { email, password } = req.body;
   if (email === ADMIN_EMAIL && password === ADMIN_PASS) {
@@ -74,9 +72,11 @@ app.post("/admin/login", async (req, res) => {
   res.status(401).render("login", { error: "Invalid credentials" });
 });
 
+
 app.post("/admin/logout", (req, res) => {
   req.session.destroy(() => res.redirect("/admin/login"));
 });
+
 
 // app.get("/admin", requireAuth, async (req, res) => {
 //   const q = (req.query.q as string) || "";
@@ -93,6 +93,7 @@ app.post("/admin/logout", (req, res) => {
 
 //   res.render("dashboard", { items, q });
 // });
+
 
 app.get("/admin", requireAuth, async (req, res) => {
   // 1. Get ALL three filter values from the query
@@ -211,7 +212,6 @@ app.get("/admin/print-scans/:tag_id", requireAuth, async (req, res) => {
   res.render("print-cards", { items })
 });
 
-
 // app.get("/admin/2fa/setup", async (req, res) => {
 //   // Protect this route (IP restriction + maybe temporary password)
 //   // Ideally: remove/disable after setup
@@ -241,6 +241,7 @@ app.get("/admin/2fa", (req, res) => {
   return res.render("2fa", { error: null });
 });
 
+
 app.post("/admin/2fa", (req, res) => {
   if (!req.session.pending2fa) return res.redirect("/admin/login");
 
@@ -269,8 +270,6 @@ app.post("/admin/2fa", (req, res) => {
 
   return res.redirect("/admin");
 });
-
-
 
 app.use("/arascom-scan", clientAuthMiddleWare, clientRoutes);
 

@@ -1,229 +1,262 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>2FA Verification | CardScan</title>
-    
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+      rel="stylesheet"
+    />
 
     <style>
-        :root {
-            --primary: #6262A6;
-            --primary-dark: #4e4e85;
-            --text-dark: #1e293b;
-            --text-gray: #64748b;
-            --bg-body: #f1f5f9;
-            --white: #ffffff;
-            --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-        }
+      :root {
+        --primary: #6262a6;
+        --primary-dark: #4e4e85;
+        --text-dark: #1e293b;
+        --text-gray: #64748b;
+        --bg-body: #f1f5f9;
+        --white: #ffffff;
+        --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1),
+          0 2px 4px -2px rgb(0 0 0 / 0.1);
+      }
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Inter', sans-serif;
-        }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: "Inter", sans-serif;
+      }
 
-        body {
-            background-color: var(--bg-body);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
+      body {
+        background-color: var(--bg-body);
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
 
-        /* --- CARD COMPONENT --- */
-        .auth-card {
-            background: var(--white);
-            width: 100%;
-            max-width: 420px;
-            padding: 40px;
-            border-radius: 16px;
-            box-shadow: var(--shadow);
-            text-align: center;
-        }
+      .auth-card {
+        background: var(--white);
+        width: 100%;
+        max-width: 420px;
+        padding: 40px;
+        border-radius: 16px;
+        box-shadow: var(--shadow);
+        text-align: center;
+      }
 
-        .icon-box {
-            width: 64px;
-            height: 64px;
-            background: rgba(98, 98, 166, 0.1);
-            color: var(--primary);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 28px;
-            margin: 0 auto 24px auto;
-        }
+      .icon-box {
+        width: 64px;
+        height: 64px;
+        background: rgba(98, 98, 166, 0.1);
+        color: var(--primary);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 28px;
+        margin: 0 auto 24px auto;
+      }
 
-        h1 {
-            font-size: 24px;
-            font-weight: 700;
-            color: var(--text-dark);
-            margin-bottom: 8px;
-        }
+      h1 {
+        font-size: 24px;
+        font-weight: 700;
+        color: var(--text-dark);
+        margin-bottom: 8px;
+      }
 
-        p {
-            color: var(--text-gray);
-            font-size: 14px;
-            line-height: 1.5;
-            margin-bottom: 32px;
-        }
+      p {
+        color: var(--text-gray);
+        font-size: 14px;
+        line-height: 1.5;
+        margin-bottom: 24px;
+      }
 
-        /* --- INPUT GRID --- */
-        .otp-container {
-            display: flex;
-            gap: 12px;
-            justify-content: center;
-            margin-bottom: 32px;
-        }
+      .error-box {
+        background: #fee2e2;
+        color: #991b1b;
+        border: 1px solid #fecaca;
+        padding: 12px 14px;
+        border-radius: 8px;
+        font-size: 13px;
+        margin-bottom: 24px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
 
-        .otp-input {
-            width: 48px;
-            height: 56px;
-            border: 2px solid #e2e8f0;
-            border-radius: 10px;
-            font-size: 24px;
-            font-weight: 600;
-            text-align: center;
-            color: var(--text-dark);
-            outline: none;
-            transition: all 0.2s;
-            background: #f8fafc;
-        }
+      .otp-container {
+        display: flex;
+        gap: 12px;
+        justify-content: center;
+        margin-bottom: 32px;
+      }
 
-        /* Focus State matching your primary color */
-        .otp-input:focus {
-            border-color: var(--primary);
-            background: var(--white);
-            box-shadow: 0 0 0 4px rgba(98, 98, 166, 0.1);
-        }
+      .otp-input {
+        width: 48px;
+        height: 56px;
+        border: 2px solid #e2e8f0;
+        border-radius: 10px;
+        font-size: 24px;
+        font-weight: 600;
+        text-align: center;
+        color: var(--text-dark);
+        outline: none;
+        transition: all 0.2s;
+        background: #f8fafc;
+      }
 
-        /* --- BUTTONS --- */
-        .btn-primary {
-            width: 100%;
-            padding: 14px;
-            background-color: var(--primary);
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 15px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: background 0.2s;
-        }
+      .otp-input:focus {
+        border-color: var(--primary);
+        background: var(--white);
+        box-shadow: 0 0 0 4px rgba(98, 98, 166, 0.1);
+      }
 
-        .btn-primary:hover {
-            background-color: var(--primary-dark);
-        }
+      .btn-primary {
+        width: 100%;
+        padding: 14px;
+        background-color: var(--primary);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 15px;
+        font-weight: 600;
+        cursor: pointer;
+      }
 
-        .back-link {
-            display: block;
-            margin-top: 24px;
-            color: var(--text-gray);
-            font-size: 13px;
-            text-decoration: none;
-            font-weight: 500;
-        }
+      .btn-primary:hover {
+        background-color: var(--primary-dark);
+      }
 
-        .back-link:hover {
-            color: var(--text-dark);
-        }
+      .back-link {
+        display: block;
+        margin-top: 24px;
+        color: var(--text-gray);
+        font-size: 13px;
+        text-decoration: none;
+        font-weight: 500;
+      }
 
-        /* Hidden Input to store full value */
-        #combined-otp {
-            display: none;
-        }
+      #combined-otp {
+        display: none;
+      }
     </style>
-</head>
-<body>
-
+  </head>
+  <body>
     <div class="auth-card">
-        <div class="icon-box">
-            <i class="fas fa-shield-alt"></i>
+      <div class="icon-box">
+        <i class="fas fa-shield-alt"></i>
+      </div>
+
+      <h1>Two-Factor Auth</h1>
+      <p>Enter the 6-digit code from your Google Authenticator app.</p>
+
+      <% if (typeof error !== "undefined" && error) { %>
+      <div class="error-box">
+        <i class="fas fa-triangle-exclamation"></i>
+        <span><%= error %></span>
+      </div>
+      <% } %>
+
+      <form action="/admin/2fa" method="POST" id="otpForm">
+        <input type="hidden" id="has-error" value="<%= error ? '1' : '0' %>">
+        <div class="otp-container">
+          <input
+            type="text"
+            class="otp-input"
+            maxlength="1"
+            inputmode="numeric"
+            required
+          />
+          <input
+            type="text"
+            class="otp-input"
+            maxlength="1"
+            inputmode="numeric"
+            required
+          />
+          <input
+            type="text"
+            class="otp-input"
+            maxlength="1"
+            inputmode="numeric"
+            required
+          />
+          <input
+            type="text"
+            class="otp-input"
+            maxlength="1"
+            inputmode="numeric"
+            required
+          />
+          <input
+            type="text"
+            class="otp-input"
+            maxlength="1"
+            inputmode="numeric"
+            required
+          />
+          <input
+            type="text"
+            class="otp-input"
+            maxlength="1"
+            inputmode="numeric"
+            required
+          />
         </div>
-        
-        <h1>Two-Factor Auth</h1>
-        <p>Enter the 6-digit code from your Google Authenticator app to access the admin panel.</p>
 
-        <form action="/admin/2fa" method="POST" id="otpForm">
-            
-            <div class="otp-container">
-                <input type="text" class="otp-input" maxlength="1" pattern="[0-9]" inputmode="numeric" required>
-                <input type="text" class="otp-input" maxlength="1" pattern="[0-9]" inputmode="numeric" required>
-                <input type="text" class="otp-input" maxlength="1" pattern="[0-9]" inputmode="numeric" required>
-                <input type="text" class="otp-input" maxlength="1" pattern="[0-9]" inputmode="numeric" required>
-                <input type="text" class="otp-input" maxlength="1" pattern="[0-9]" inputmode="numeric" required>
-                <input type="text" class="otp-input" maxlength="1" pattern="[0-9]" inputmode="numeric" required>
-            </div>
+        <input type="hidden" name="token" id="combined-otp" />
 
-            <input type="hidden" name="token" id="combined-otp">
+        <button type="submit" class="btn-primary">Verify Identity</button>
+      </form>
 
-            <button type="submit" class="btn-primary">Verify Identity</button>
-        </form>
-
-        <a href="/login" class="back-link">
-            <i class="fas fa-arrow-left"></i> Back to Login
-        </a>
+      <a href="/admin/login" class="back-link">
+        <i class="fas fa-arrow-left"></i> Back to Login
+      </a>
     </div>
 
     <script>
         const inputs = document.querySelectorAll('.otp-input');
         const form = document.getElementById('otpForm');
         const combinedInput = document.getElementById('combined-otp');
-
+    
+        const hasError = document.getElementById('has-error')?.value === '1';
+    
         inputs.forEach((input, index) => {
-            // Handle Typing
-            input.addEventListener('input', (e) => {
-                const value = e.target.value;
-                
-                // Allow only numbers
-                if (!/^\d*$/.test(value)) {
-                    e.target.value = '';
-                    return;
-                }
-
-                // Move to next input if value is entered
-                if (value.length === 1 && index < inputs.length - 1) {
-                    inputs[index + 1].focus();
+            input.addEventListener('input', e => {
+                if (!/^\d$/.test(e.target.value)) e.target.value = '';
+                if (e.target.value && index < inputs.length - 1) inputs[index + 1].focus();
+            });
+    
+            input.addEventListener('keydown', e => {
+                if (e.key === 'Backspace' && !input.value && index > 0) {
+                    inputs[index - 1].focus();
                 }
             });
-
-            // Handle Backspace
-            input.addEventListener('keydown', (e) => {
-                if (e.key === 'Backspace') {
-                    if (input.value === '' && index > 0) {
-                        inputs[index - 1].focus();
-                    }
-                }
-            });
-
-            // Handle Paste
-            input.addEventListener('paste', (e) => {
+    
+            input.addEventListener('paste', e => {
                 e.preventDefault();
-                const pasteData = e.clipboardData.getData('text').slice(0, 6);
-                
-                if (!/^\d+$/.test(pasteData)) return; // Stop if not numbers
-
-                pasteData.split('').forEach((char, i) => {
-                    if (inputs[i]) inputs[i].value = char;
-                });
-                
-                // Focus the last filled input or the next empty one
-                const lastIndex = Math.min(pasteData.length, inputs.length) - 1;
-                inputs[lastIndex >= 0 ? lastIndex : 0].focus();
+                const data = e.clipboardData.getData('text').slice(0, 6);
+                if (!/^\d+$/.test(data)) return;
+                data.split('').forEach((d, i) => inputs[i].value = d);
+                inputs[Math.min(data.length, 6) - 1].focus();
             });
         });
-
-        // Combine values before submit
-        form.addEventListener('submit', (e) => {
-            let code = '';
-            inputs.forEach(input => code += input.value);
-            combinedInput.value = code;
+    
+        form.addEventListener('submit', () => {
+            combinedInput.value = Array.from(inputs).map(i => i.value).join('');
         });
+    
+        if (hasError) {
+            inputs.forEach(i => i.value = '');
+            inputs[0].focus();
+        }
     </script>
-
-</body>
+  </body>
 </html>
