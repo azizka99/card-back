@@ -89,7 +89,21 @@ adminRoutes.get("/download/:tag_id", expressAsyncHandler(async (req, res) => {
             name: true
         }
     });
-    res.render("download", { items, name })
+
+    const ean = [{
+        id: 1,
+        ean: "4260433453118",
+    },
+    {
+        id: 2,
+        ean: "4251976735076"
+    },
+    {
+        id: 3,
+        ean: "4260354150004"
+    }
+    ]
+    res.render("download", { items, name, ean })
 }));
 
 
