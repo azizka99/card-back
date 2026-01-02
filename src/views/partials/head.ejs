@@ -13,8 +13,8 @@
   <% } %>
 
   <%- include("styles-admin") %>
-
-  <% if (extraCss) { %>
+  
+  <% if (typeof extraCss !== "undefined" && extraCss) { %>
     <%- extraCss %>
   <% } %>
 </head>
