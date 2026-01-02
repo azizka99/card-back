@@ -360,54 +360,54 @@
       });
     }
 
-    async function poll() {
-      try {
-        const url = lastTs
-          ? `/admin/api/live-feed?after=${encodeURIComponent(lastTs)}`
-          : `/admin/api/live-feed`;
+    // async function poll() {
+    //   try {
+    //     const url = lastTs
+    //       ? `/admin/api/live-feed?after=${encodeURIComponent(lastTs)}`
+    //       : `/admin/api/live-feed`;
 
-        const res = await fetch(url, { headers: { "Accept": "application/json" } });
-        if (!res.ok) return;
+    //     const res = await fetch(url, { headers: { "Accept": "application/json" } });
+    //     if (!res.ok) return;
 
-        const data = await res.json();
-        const items = Array.isArray(data.items) ? data.items : [];
-        if (items.length === 0) {
-          lastUpdate.textContent = "• " + new Date().toLocaleTimeString();
-          return;
-        }
+    //     const data = await res.json();
+    //     const items = Array.isArray(data.items) ? data.items : [];
+    //     if (items.length === 0) {
+    //       lastUpdate.textContent = "• " + new Date().toLocaleTimeString();
+    //       return;
+    //     }
 
-        // items come newest-first, we want to insert newest-first at the top
-        // but also update lastTs to the newest item
-        lastTs = new Date(items[0].created_at).toISOString();
+    //     // items come newest-first, we want to insert newest-first at the top
+    //     // but also update lastTs to the newest item
+    //     lastTs = new Date(items[0].created_at).toISOString();
 
-        // avoid duplicates if page reloaded or race
-        const existingIds = new Set(Array.from(feedBody.querySelectorAll("tr")).map(r => r.getAttribute("data-id")));
+    //     // avoid duplicates if page reloaded or race
+    //     const existingIds = new Set(Array.from(feedBody.querySelectorAll("tr")).map(r => r.getAttribute("data-id")));
 
-        let inserted = 0;
-        let html = "";
-        for (const it of items) {
-          if (existingIds.has(String(it.id))) continue;
-          html += buildRow(it);
-          inserted++;
-        }
+    //     let inserted = 0;
+    //     let html = "";
+    //     for (const it of items) {
+    //       if (existingIds.has(String(it.id))) continue;
+    //       html += buildRow(it);
+    //       inserted++;
+    //     }
 
-        if (inserted > 0) {
-          feedBody.insertAdjacentHTML("afterbegin", html);
-          rowCount.textContent = String(feedBody.querySelectorAll("tr").length);
-          applySearchFilter();
-        }
+    //     if (inserted > 0) {
+    //       feedBody.insertAdjacentHTML("afterbegin", html);
+    //       rowCount.textContent = String(feedBody.querySelectorAll("tr").length);
+    //       applySearchFilter();
+    //     }
 
-        lastUpdate.textContent = "• " + new Date().toLocaleTimeString();
-      } catch (e) {
-        // silently ignore (keeps UI clean)
-      }
-    }
+    //     lastUpdate.textContent = "• " + new Date().toLocaleTimeString();
+    //   } catch (e) {
+    //     // silently ignore (keeps UI clean)
+    //   }
+    // }
 
-    searchInput.addEventListener("input", applySearchFilter);
+    // searchInput.addEventListener("input", applySearchFilter);
 
     // start polling
-    poll();
-    setInterval(poll, 3000);
+    // poll();
+    // setInterval(poll, 3000);
   </script>
 </body>
 </html>

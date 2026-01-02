@@ -8,7 +8,32 @@ const express_async_handler_1 = __importDefault(require("express-async-handler")
 const dbConnection_1 = __importDefault(require("../../constants/dbConnection"));
 const adminRoutes = express_1.default.Router();
 adminRoutes.get("/dashboard", (0, express_async_handler_1.default)(async (req, res) => {
-    res.render("adminDashboard.ejs");
+    const stats = {
+        totalScans: 128430,
+        totalScansDiff: "12%",
+        activatedCards: 45200,
+        activatedCardsDiff: "8%",
+        failedScans: 1204,
+        failedScansDiff: "2%",
+        devicesOnline: 84,
+    };
+    const topScanners = [
+        { initials: "JD", name: "John Doe", location: "Gate A - Entrance", count: 432 },
+        { initials: "AS", name: "Anna Smith", location: "Gate B - VIP", count: 390 },
+        { initials: "MK", name: "Mike K.", location: "Warehouse Rear", count: 210 },
+        { initials: "SL", name: "Sarah Lee", location: "Lobby Front", count: 185 },
+        { initials: "DT", name: "David T.", location: "Parking Level 2", count: 140 },
+    ];
+    // Optional chart data (7 days)
+    const chartLabels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+    const chartPoints = [1200, 1900, 1500, 2200, 1800, 900, 1100];
+    res.render("adminDashboard.ejs", {
+        activePage: "dashboard",
+        stats,
+        topScanners,
+        chartLabels,
+        chartPoints,
+    });
 }));
 adminRoutes.get("/live-feed", (0, express_async_handler_1.default)(async (req, res) => {
     const steam_cards = await dbConnection_1.default.steam_card.findMany({
