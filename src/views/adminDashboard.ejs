@@ -613,10 +613,29 @@
                 >
                   No notifications for today.
                 </div>
-                <% } %> <% for (i = 0; i < show.length; i++) { t = show[i]; var
-                userName = (t && t.app_user && t.app_user.name) ?
-                t.app_user.name : "Unknown"; var initial = userName ?
-                userName.charAt(0).toUpperCase() : "?"; %>
+                <% for (i = 0; i < show.length; i++) { 
+                  t = show[i];
+                  var userName = (t && t.app_user && t.app_user.name) ? t.app_user.name : "Unknown";
+                  var initial = userName ? userName.charAt(0).toUpperCase() : "?";
+             
+                  // parse date for display
+                  var tagDt = parseTagDate(t && t.name);
+                  var dtText = tagDt ? (tagDt.toLocaleDateString() + " " + tagDt.toLocaleTimeString()) : "No date";
+             %>
+               <div class="notif-item">
+                 <div class="notif-img" style="display:flex;align-items:center;justify-content:center;background:#e2e8f0;color:#475569;font-weight:800;font-size:12px;">
+                   <%= initial %>
+                 </div>
+             
+                 <div class="notif-content">
+                   <div class="notif-text">
+                     <strong><%= userName %></strong>
+                     finished scanning <strong><%= t.name %></strong> for this week
+                   </div>
+                   <div class="notif-time"><%= dtText %></div>
+                 </div>
+               </div>
+             <% } %>
                 <div class="notif-item">
                   <!-- <a
                     href="/a26ae3e19a140048efd2/download/<%= t.id %>"
