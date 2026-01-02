@@ -47,6 +47,7 @@ adminRoutes.get("/live-feed", (0, express_async_handler_1.default)(async (req, r
     res.render("live-feed", {
         items: steam_cards,
         latestTs: steam_cards[0]?.created_at?.toISOString?.() || null,
+        activePage: "live-feed",
     });
 }));
 exports.default = adminRoutes;
