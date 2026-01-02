@@ -30,10 +30,13 @@ adminRoutes.get("/dashboard", expressAsyncHandler(async (req, res) => {
     const chartPoints = [1200, 1900, 1500, 2200, 1800, 900, 1100];
 
     const tags = await prisma.tag.findMany({
+        where: {
+            is_activated: false
+        },
         include: { app_user: true }, // or user relation you have
         orderBy: { created_at: "desc" },
         take: 100,
-      });
+    });
     res.render("adminDashboard.ejs", {
         activePage: "dashboard",
         stats,
