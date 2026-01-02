@@ -56,56 +56,6 @@
         z-index: 50;
       }
 
-      .logo {
-        font-size: 22px;
-        font-weight: 700;
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        margin-bottom: 40px;
-        letter-spacing: -0.5px;
-      }
-
-      .menu-label {
-        font-size: 12px;
-        text-transform: uppercase;
-        color: rgba(255, 255, 255, 0.6);
-        margin-bottom: 10px;
-        font-weight: 600;
-        letter-spacing: 0.5px;
-      }
-
-      .menu {
-        list-style: none;
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-      }
-
-      .menu li a {
-        text-decoration: none;
-        color: rgba(255, 255, 255, 0.8);
-        padding: 12px 16px;
-        border-radius: 8px;
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        font-size: 14px;
-        font-weight: 500;
-        transition: all 0.2s;
-      }
-
-      .menu li a:hover,
-      .menu li a.active {
-        background-color: rgba(255, 255, 255, 0.15);
-        color: var(--white);
-      }
-
-      .menu li a i {
-        width: 20px;
-        text-align: center;
-      }
-
       /* --- MAIN CONTENT --- */
       .main-wrapper {
         margin-left: var(--sidebar-width);
@@ -164,34 +114,6 @@
         gap: 20px;
       }
 
-      .icon-wrapper {
-        position: relative;
-        cursor: pointer;
-        width: 40px;
-        height: 40px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 50%;
-        transition: 0.2s;
-      }
-
-      .icon-wrapper:hover {
-        background-color: var(--bg-body);
-        color: var(--primary);
-      }
-
-      .badge {
-        position: absolute;
-        top: 8px;
-        right: 8px;
-        width: 8px;
-        height: 8px;
-        background-color: #ef4444;
-        border-radius: 50%;
-        border: 2px solid var(--white);
-      }
-
       /* --- PAGE SPECIFIC STYLES --- */
       .content {
         padding: 32px;
@@ -204,13 +126,6 @@
         margin-bottom: 24px;
       }
 
-      /* Layout Grid */
-      .download-grid {
-        display: grid;
-        grid-template-columns: 3fr 1fr; /* Table takes more space */
-        gap: 24px;
-      }
-
       /* Panel Styles */
       .panel {
         background: var(--white);
@@ -219,6 +134,24 @@
         padding: 24px;
         display: flex;
         flex-direction: column;
+      }
+
+      /* Layout Grid */
+      .download-grid {
+        display: grid;
+        grid-template-columns: 3fr 1fr;
+        gap: 24px;
+      }
+
+      /* --- PICKER SECTION STYLES (NEW) --- */
+      .picker-panel {
+        margin-bottom: 24px; /* Spacing below the picker */
+      }
+      
+      .picker-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr; /* Two equal columns */
+        gap: 24px;
       }
 
       /* Table Styles */
@@ -259,7 +192,6 @@
         background-color: #f8fafc;
       }
 
-      /* Code styling for aesthetics */
       .code-pill {
         font-family: "Courier New", monospace;
         background: var(--bg-body);
@@ -305,7 +237,7 @@
         color: var(--text-gray);
       }
 
-      /* Export & Activate Controls Panel */
+      /* Shared Form Styles */
       .export-title {
         font-size: 16px;
         font-weight: 600;
@@ -313,6 +245,49 @@
         color: var(--text-dark);
         border-bottom: 1px solid var(--border-color);
         padding-bottom: 12px;
+      }
+
+      .form-group {
+        margin-bottom: 16px;
+      }
+
+      .form-label {
+        display: block;
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--text-gray);
+        margin-bottom: 8px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+      
+      .form-label i {
+        margin-right: 6px;
+        color: var(--primary);
+      }
+
+      .form-input {
+        width: 100%;
+        padding: 10px 12px;
+        border-radius: 8px;
+        border: 1px solid var(--border-color);
+        background-color: var(--white);
+        font-size: 14px;
+        color: var(--text-dark);
+        outline: none;
+        transition: all 0.2s;
+        height: 42px; /* Fixed height for alignment */
+      }
+      
+      .form-input:focus {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 2px rgba(98, 98, 166, 0.1);
+      }
+
+      .form-input:disabled {
+        background-color: #f1f5f9;
+        cursor: not-allowed;
+        color: #94a3b8;
       }
 
       .checkbox-group {
@@ -334,39 +309,8 @@
         width: 18px;
         height: 18px;
         margin-right: 10px;
-        accent-color: var(--primary); /* Makes checkbox purple */
+        accent-color: var(--primary);
         cursor: pointer;
-      }
-
-      /* Form Inputs for Activate Panel */
-      .form-group {
-        margin-bottom: 16px;
-      }
-
-      .form-label {
-        display: block;
-        font-size: 12px;
-        font-weight: 600;
-        color: var(--text-gray);
-        margin-bottom: 6px;
-        text-transform: uppercase;
-      }
-
-      .form-input {
-        width: 100%;
-        padding: 10px;
-        border-radius: 8px;
-        border: 1px solid var(--border-color);
-        background-color: var(--bg-body);
-        font-size: 14px;
-        color: var(--text-dark);
-        outline: none;
-        transition: border-color 0.2s;
-      }
-      
-      .form-input:focus {
-        border-color: var(--primary);
-        background-color: var(--white);
       }
 
       /* Buttons */
@@ -390,13 +334,8 @@
         background-color: var(--primary-dark);
       }
 
-      .download-btn:disabled {
-        background-color: var(--text-gray);
-        cursor: not-allowed;
-      }
-      
       .run-btn {
-        background-color: #10b981; /* Green for Run action */
+        background-color: #10b981; 
       }
       .run-btn:hover {
         background-color: #059669;
@@ -417,6 +356,9 @@
         }
         header {
           padding: 0 16px;
+        }
+        .picker-grid {
+          grid-template-columns: 1fr; /* Stack pickers on mobile */
         }
       }
     </style>
@@ -458,47 +400,48 @@
         <% var hasPicker = (typeof users !== "undefined" && users && users.length); %>
 
         <% if (hasPicker) { %>
-          <div style="display:flex; gap:12px; margin-bottom:16px; flex-wrap:wrap;">
-            <div style="flex:1; min-width:220px;">
-              <label class="form-label">User</label>
-              <select id="userSelect" class="form-input">
-                <option value="" <%= !selectedUserId ? "selected" : "" %> disabled>Choose user...</option>
-                <% for (var i=0; i<users.length; i++) { %>
-                  <option value="<%= users[i].id %>" <%= (selectedUserId === users[i].id) ? "selected" : "" %>>
-                    <%= users[i].name %>
-                  </option>
-                <% } %>
-              </select>
-            </div>
-        
-            <div style="flex:1; min-width:220px;">
-              <label class="form-label">Tag</label>
-              <select id="tagSelect" class="form-input" <%= (tagsForUser && tagsForUser.length) ? "" : "disabled" %>>
-                <option value="" disabled selected>Choose tag...</option>
-                <% if (tagsForUser && tagsForUser.length) { %>
-                  <% for (var j=0; j<tagsForUser.length; j++) { %>
-                    <option value="<%= tagsForUser[j].id %>" <%= (selectedTagId === tagsForUser[j].id) ? "selected" : "" %>>
-                      <%= tagsForUser[j].name %>
+          <div class="panel picker-panel">
+            <div class="picker-grid">
+              
+              <div>
+                <label class="form-label" for="userSelect">
+                  <i class="fas fa-user-circle"></i> Select User
+                </label>
+                <select id="userSelect" class="form-input">
+                  <option value="" <%= !selectedUserId ? "selected" : "" %> disabled>Choose user...</option>
+                  <% for (var i=0; i<users.length; i++) { %>
+                    <option value="<%= users[i].id %>" <%= (selectedUserId === users[i].id) ? "selected" : "" %>>
+                      <%= users[i].name %>
                     </option>
                   <% } %>
-                <% } %>
-              </select>
+                </select>
+              </div>
+          
+              <div>
+                <label class="form-label" for="tagSelect">
+                  <i class="fas fa-tag"></i> Select Tag
+                </label>
+                <select id="tagSelect" class="form-input" <%= (tagsForUser && tagsForUser.length) ? "" : "disabled" %>>
+                  <option value="" disabled selected>Choose tag...</option>
+                  <% if (tagsForUser && tagsForUser.length) { %>
+                    <% for (var j=0; j<tagsForUser.length; j++) { %>
+                      <option value="<%= tagsForUser[j].id %>" <%= (selectedTagId === tagsForUser[j].id) ? "selected" : "" %>>
+                        <%= tagsForUser[j].name %>
+                      </option>
+                    <% } %>
+                  <% } %>
+                </select>
+              </div>
+
             </div>
           </div>
         <% } %>
 
+
         <div class="download-grid">
 
-
           <div class="panel">
-            <h3
-              style="
-                margin-bottom: 20px;
-                font-size: 18px;
-                color: var(--text-dark);
-              "
-              id="tableTitle"
-            >
+            <h3 style="margin-bottom: 20px; font-size: 18px; color: var(--text-dark);" id="tableTitle">
               Available Codes
             </h3>
 
@@ -531,7 +474,7 @@
                 <div class="export-title">Export Options</div>
 
                 <p style="font-size: 13px; color: var(--text-gray); margin-bottom: 16px;">
-                Select the columns you wish to include in the file.
+                Select columns to download.
                 </p>
 
                 <div class="checkbox-group">
@@ -555,18 +498,22 @@
                 <div class="export-title">Activate</div>
                 
                 <p style="font-size: 13px; color: var(--text-gray); margin-bottom: 16px;">
-                    Schedule activation for a specific EAN code.
+                    Schedule EAN activation.
                 </p>
 
                 <div class="form-group">
-                    <label class="form-label" for="eanSelect">Select EAN</label>
+                    <label class="form-label" for="eanSelect">
+                      <i class="fas fa-qrcode"></i> Select EAN
+                    </label>
                     <select id="eanSelect" class="form-input">
                         <option value="" disabled selected>Choose EAN...</option>
-                        </select>
+                    </select>
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label" for="activateTime">Finish Date & Time</label>
+                    <label class="form-label" for="activateTime">
+                      <i class="far fa-calendar-alt"></i> Finish Date & Time
+                    </label>
                     <input type="datetime-local" id="activateTime" class="form-input" />
                 </div>
 
@@ -585,19 +532,16 @@
       // In your real EJS file, replace the mock data below with:
       const items = <%- JSON.stringify(items) %>;
       const name = <%- JSON.stringify(name) %>;
-      // We assume `ean` is passed as an array of objects: [{id: 1, code: "123"}, ...]
       const eanList = <%- JSON.stringify(ean) %>; 
 
       // --- 2. SETUP & PAGINATION ---
       const rowsPerPage = 50;
       let currentPage = 1;
 
-      // Set Title
-      // document.getElementById("tableTitle").innerText = `Available Codes: ${name.name}, Count: ${items.length}`;
-
+      // Set Title with safety check
       var tagName = (name && name.name) ? name.name : "—";
-document.getElementById("tableTitle").innerText =
-  "Available Codes: " + tagName + ", Count: " + (items ? items.length : 0);
+      document.getElementById("tableTitle").innerText =
+        "Available Codes: " + tagName + " (" + (items ? items.length : 0) + ")";
 
       // Populate EAN Select Dropdown
       const eanSelect = document.getElementById("eanSelect");
@@ -609,7 +553,6 @@ document.getElementById("tableTitle").innerText =
               eanSelect.appendChild(option);
           });
       } else if (eanList && typeof eanList === 'object') {
-          // Fallback if passed as single object
           const option = document.createElement("option");
           option.value = eanList.id;
           option.text = eanList.code;
@@ -625,7 +568,7 @@ document.getElementById("tableTitle").innerText =
         const pageData = items.slice(start, end);
 
         if(pageData.length === 0) {
-            tbody.innerHTML = "<tr><td colspan='2' style='text-align:center; padding: 20px;'>No items found</td></tr>";
+            tbody.innerHTML = "<tr><td colspan='2' style='text-align:center; padding: 20px; color: #64748b;'>No items found</td></tr>";
             return;
         }
 
@@ -644,7 +587,7 @@ document.getElementById("tableTitle").innerText =
 
       function updatePaginationControls() {
         const totalPages = Math.ceil(items.length / rowsPerPage);
-        document.getElementById("pageInfo").innerText = `Page ${currentPage} of ${totalPages}`;
+        document.getElementById("pageInfo").innerText = `Page ${currentPage} of ${totalPages || 1}`;
 
         document.getElementById("prevBtn").disabled = currentPage === 1;
         document.getElementById("nextBtn").disabled = currentPage === totalPages || totalPages === 0;
@@ -674,46 +617,36 @@ document.getElementById("tableTitle").innerText =
         }
 
         let content = "";
-
-        // Loop through ALL items (not just current page)
         items.forEach(item => {
           let line = [];
-
           if (includeBarcode) line.push(item.barcode);
           if (includeActivation) line.push(item.activation_code);
-
-          // Join with comma, add new line
           content += line.join(",") + "\n";
         });
 
-        // Create the blob
         const blob = new Blob([content], { type: "text/plain" });
         const url = window.URL.createObjectURL(blob);
-
-        // Create temp link to trigger download
         const a = document.createElement("a");
         a.href = url;
         
-        // Determine Filename
+        let fileName = name.name || "export";
         if(includeBarcode && includeActivation){
-          a.download = `${name.name}.txt`; 
+          a.download = `${fileName}.txt`; 
         } else if(includeActivation && !includeBarcode){
-          a.download = `${name.name}NurPin.txt`; 
+          a.download = `${fileName}NurPin.txt`; 
         } else if(!includeActivation && includeBarcode){
-          a.download = `${name.name}NurBarcode.txt`;
+          a.download = `${fileName}NurBarcode.txt`;
         } else {
-          a.download = `${name.name}.txt`;
+          a.download = `${fileName}.txt`;
         }
         
         document.body.appendChild(a);
         a.click();
-
-        // Cleanup
         document.body.removeChild(a);
         window.URL.revokeObjectURL(url);
       }
 
-      // --- 4. ACTIVATION LOGIC (Placeholder) ---
+      // --- 4. ACTIVATION LOGIC ---
       function runActivation() {
           const selectedEanId = document.getElementById("eanSelect").value;
           const selectedTime = document.getElementById("activateTime").value;
@@ -726,59 +659,55 @@ document.getElementById("tableTitle").innerText =
               alert("Please select a date and time.");
               return;
           }
-
-          // Placeholder for future logic
           console.log(`Running activation for EAN ID: ${selectedEanId} at ${selectedTime}`);
-          // You would typically make a fetch/axios POST request here.
-          alert("Activation scheduled! (Logic to be implemented)");
+          alert("Activation scheduled!");
       }
 
+      // --- 5. PICKER LOGIC ---
       (function () {
-  var userSelect = document.getElementById("userSelect");
-  var tagSelect = document.getElementById("tagSelect");
+        var userSelect = document.getElementById("userSelect");
+        var tagSelect = document.getElementById("tagSelect");
 
-  if (!userSelect || !tagSelect) return;
+        if (!userSelect || !tagSelect) return;
 
-  function clearTags() {
-    tagSelect.innerHTML = '<option value="" disabled selected>Choose tag...</option>';
-    tagSelect.disabled = true;
-  }
+        function clearTags() {
+          tagSelect.innerHTML = '<option value="" disabled selected>Choose tag...</option>';
+          tagSelect.disabled = true;
+        }
 
-  function addTagOption(tag) {
-    var opt = document.createElement("option");
-    opt.value = tag.id;
-    opt.text = tag.name;
-    tagSelect.appendChild(opt);
-  }
+        function addTagOption(tag) {
+          var opt = document.createElement("option");
+          opt.value = tag.id;
+          opt.text = tag.name;
+          tagSelect.appendChild(opt);
+        }
 
-  // when user changes → load tags
-  userSelect.addEventListener("change", function () {
-    var userId = userSelect.value;
-    clearTags();
-    if (!userId) return;
+        // when user changes → load tags
+        userSelect.addEventListener("change", function () {
+          var userId = userSelect.value;
+          clearTags();
+          if (!userId) return;
 
-    fetch("/a26ae3e19a140048efd2/api/user/" + encodeURIComponent(userId) + "/tags", {
-      headers: { "Accept": "application/json" }
-    })
-      .then(function (r) { return r.json(); })
-      .then(function (data) {
-        if (!data || !data.success || !Array.isArray(data.tags)) return;
+          fetch("/a26ae3e19a140048efd2/api/user/" + encodeURIComponent(userId) + "/tags", {
+            headers: { "Accept": "application/json" }
+          })
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+              if (!data || !data.success || !Array.isArray(data.tags)) return;
 
-        data.tags.forEach(addTagOption);
-        tagSelect.disabled = data.tags.length === 0;
-      })
-      .catch(function () {});
-  });
+              data.tags.forEach(addTagOption);
+              tagSelect.disabled = data.tags.length === 0;
+            })
+            .catch(function () {});
+        });
 
-  // when tag chosen → redirect to existing route
-  tagSelect.addEventListener("change", function () {
-    var tagId = tagSelect.value;
-    if (!tagId) return;
-    window.location.href = "/a26ae3e19a140048efd2/download/" + encodeURIComponent(tagId);
-  });
-})();
-
-
+        // when tag chosen → redirect
+        tagSelect.addEventListener("change", function () {
+          var tagId = tagSelect.value;
+          if (!tagId) return;
+          window.location.href = "/a26ae3e19a140048efd2/download/" + encodeURIComponent(tagId);
+        });
+      })();
     </script>
   </body>
 </html>
