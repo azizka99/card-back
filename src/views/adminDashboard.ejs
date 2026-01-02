@@ -566,7 +566,10 @@
           <div class="icon-wrapper" id="notificationBtn">
             <i class="far fa-bell" style="font-size: 18px; color: #64748b"></i>
 
-            <span class="badge">3</span>
+            <% var badgeCount = (typeof show !== "undefined" && show) ? show.length : 0; %>
+            <% if (badgeCount > 0) { %>
+              <span class="badge"><%= badgeCount %></span>
+            <% } %>
 
             <!-- <div class="notification-dropdown" id="notificationDropdown">
               <div class="notif-header">
@@ -621,7 +624,7 @@
             <div class="notification-dropdown" id="notificationDropdown">
               <div class="notif-header">
                 <span>Notifications</span>
-                <span class="mark-read">Mark all read</span>
+                <!-- <span class="mark-read">Mark all read</span> -->
               </div>
             
               <div class="notif-list">
