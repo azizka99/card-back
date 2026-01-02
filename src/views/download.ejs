@@ -522,7 +522,7 @@
           const row = `
             <tr>
               <td><span class="code-pill">${item.barcode}</span></td>
-              <td><span class="code-pill" style="color:#16a34a; background:#dcfce7;">${item.activationCode}</span></td>
+              <td><span class="code-pill" style="color:#16a34a; background:#dcfce7;">${item.activation_code}</span></td>
             </tr>
           `;
           tbody.innerHTML += row;
@@ -569,7 +569,7 @@
           let line = [];
           
           if (includeBarcode) line.push(item.barcode);
-          if (includeActivation) line.push(item.activationCode);
+          if (includeActivation) line.push(item.activation_code);
           
           // Join with comma, add new line
           content += line.join(",") + "\n";
