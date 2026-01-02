@@ -17,6 +17,8 @@ import { v4 as uuidv4 } from "uuid";
 import { ErrorCard } from "./models/ErrorCard";
 import special_client from "./routes/client/specialClientRoutes";
 import { authenticator } from "otplib";
+import adminRoutes from "./routes/admin/adminRoutes";
+
 
 
 const app = express();
@@ -368,7 +370,11 @@ app.post("/test-start-end", async (req, res) => {
 // });
 
 app.use('/special-client', special_client);
+
+
 app.post("/client-login", login);
+
+app.use("/a26ae3e19a140048efd2", requireAuth, adminRoutes);
 
 app.post("/login", expressAsyncHandler(async (req, res) => {
   const { email } = req.body;

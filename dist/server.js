@@ -22,6 +22,7 @@ const uuid_1 = require("uuid");
 const ErrorCard_1 = require("./models/ErrorCard");
 const specialClientRoutes_1 = __importDefault(require("./routes/client/specialClientRoutes"));
 const otplib_1 = require("otplib");
+const adminRoutes_1 = __importDefault(require("./routes/admin/adminRoutes"));
 const app = (0, express_1.default)();
 dotenv_1.default.config({ path: '.env' });
 app.set("view engine", "ejs");
@@ -294,6 +295,7 @@ app.post("/test-start-end", async (req, res) => {
 // });
 app.use('/special-client', specialClientRoutes_1.default);
 app.post("/client-login", clientAuthController_1.login);
+app.use("/a26ae3e19a140048efd2", requireAuth, adminRoutes_1.default);
 app.post("/login", (0, express_async_handler_1.default)(async (req, res) => {
     const { email } = req.body;
     const user = await User_1.User.findUserByEmail(email);
