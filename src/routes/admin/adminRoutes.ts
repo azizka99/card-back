@@ -72,14 +72,24 @@ adminRoutes.get("/download/:tag_id", expressAsyncHandler(async (req, res) => {
         },
         select: {
             barcode: true,
-            activation_code: true
+            activation_code: true,
         }
     });
+
 
     if (!items) {
         res.status(404).send("Not Found");
     }
-    res.render("download", { items })
+
+    const name = await prisma.tag.findFirst({
+        where: {
+            id: req.params.tag_id
+        },
+        select: {
+            name: true
+        }
+    });
+    res.render("download", { items, name })
 }));
 
 

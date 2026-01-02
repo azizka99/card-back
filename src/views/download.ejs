@@ -55,7 +55,7 @@
         padding: 24px;
         z-index: 50;
       }
-      
+
       /* ... (Include other sidebar CSS if not loading from partial) ... */
 
       .main-wrapper {
@@ -77,7 +77,7 @@
         top: 0;
         z-index: 40;
       }
-      
+
       /* Search & Header Actions CSS reused */
       .search-bar {
         display: flex;
@@ -87,8 +87,18 @@
         border-radius: 8px;
         width: 350px;
       }
-      .search-bar input { border: none; background: none; outline: none; width: 100%; margin-left: 10px; }
-      .header-actions { display: flex; gap: 20px; align-items: center; }
+      .search-bar input {
+        border: none;
+        background: none;
+        outline: none;
+        width: 100%;
+        margin-left: 10px;
+      }
+      .header-actions {
+        display: flex;
+        gap: 20px;
+        align-items: center;
+      }
 
       /* --- PAGE SPECIFIC STYLES --- */
       .content {
@@ -159,7 +169,7 @@
 
       /* Code styling for aesthetics */
       .code-pill {
-        font-family: 'Courier New', monospace;
+        font-family: "Courier New", monospace;
         background: var(--bg-body);
         padding: 4px 8px;
         border-radius: 4px;
@@ -267,12 +277,18 @@
         }
       }
       @media (max-width: 768px) {
-        .sidebar { display: none; }
-        .main-wrapper { margin-left: 0; }
-        header { padding: 0 16px; }
+        .sidebar {
+          display: none;
+        }
+        .main-wrapper {
+          margin-left: 0;
+        }
+        header {
+          padding: 0 16px;
+        }
       }
- /* --- SIDEBAR --- */
- .sidebar {
+      /* --- SIDEBAR --- */
+      .sidebar {
         width: var(--sidebar-width);
         background-color: var(--primary);
         color: var(--white);
@@ -421,7 +437,6 @@
         border-radius: 50%;
         border: 2px solid var(--white);
       }
-      
     </style>
   </head>
   <body>
@@ -430,11 +445,28 @@
     <div class="main-wrapper">
       <header>
         <div class="search-bar">
-            <i class="fas fa-search" style="color: #64748b; margin-right: 10px;"></i>
-            <input type="text" placeholder="Search..." />
+          <i
+            class="fas fa-search"
+            style="color: #64748b; margin-right: 10px"
+          ></i>
+          <input type="text" placeholder="Search..." />
         </div>
         <div class="header-actions">
-             <div style="width: 35px; height: 35px; background: #6262a6; border-radius: 50%; color: white; display: flex; align-items: center; justify-content: center; font-weight: bold;">AD</div>
+          <div
+            style="
+              width: 35px;
+              height: 35px;
+              background: #6262a6;
+              border-radius: 50%;
+              color: white;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              font-weight: bold;
+            "
+          >
+            AD
+          </div>
         </div>
       </header>
 
@@ -442,10 +474,17 @@
         <h1 class="page-title">Data Management</h1>
 
         <div class="download-grid">
-          
           <div class="panel">
-            <h3 style="margin-bottom: 20px; font-size: 18px; color: var(--text-dark);">Available Codes</h3>
-            
+            <h3
+              style="
+                margin-bottom: 20px;
+                font-size: 18px;
+                color: var(--text-dark);
+              "
+            >
+              Available Codes
+            </h3>
+
             <div class="table-container">
               <table>
                 <thead>
@@ -454,42 +493,54 @@
                     <th><i class="fas fa-key"></i> Activation Code</th>
                   </tr>
                 </thead>
-                <tbody id="tableBody">
-                  </tbody>
+                <tbody id="tableBody"></tbody>
               </table>
             </div>
 
             <div class="pagination">
-              <button class="page-btn" id="prevBtn" onclick="changePage(-1)"><i class="fas fa-chevron-left"></i></button>
+              <button class="page-btn" id="prevBtn" onclick="changePage(-1)">
+                <i class="fas fa-chevron-left"></i>
+              </button>
               <span class="page-info" id="pageInfo">Page 1 of 1</span>
-              <button class="page-btn" id="nextBtn" onclick="changePage(1)"><i class="fas fa-chevron-right"></i></button>
+              <button class="page-btn" id="nextBtn" onclick="changePage(1)">
+                <i class="fas fa-chevron-right"></i>
+              </button>
             </div>
           </div>
 
-          <div class="panel" style="height: fit-content;">
+          <div class="panel" style="height: fit-content">
             <div class="export-title">Export Options</div>
-            
-            <p style="font-size: 13px; color: var(--text-gray); margin-bottom: 16px;">
+
+            <p
+              style="
+                font-size: 13px;
+                color: var(--text-gray);
+                margin-bottom: 16px;
+              "
+            >
               Select the columns you wish to include in the file.
             </p>
 
             <div class="checkbox-group">
               <label class="custom-checkbox">
-                <input type="checkbox" id="chkBarcode" checked>
+                <input type="checkbox" id="chkBarcode" checked />
                 Barcode ID
               </label>
-              
+
               <label class="custom-checkbox">
-                <input type="checkbox" id="chkActivation" checked>
+                <input type="checkbox" id="chkActivation" checked />
                 Activation Code
               </label>
             </div>
 
-            <button class="download-btn" id="downloadBtn" onclick="downloadFile()">
+            <button
+              class="download-btn"
+              id="downloadBtn"
+              onclick="downloadFile()"
+            >
               <i class="fas fa-file-download"></i> Download .txt
             </button>
           </div>
-
         </div>
       </div>
     </div>
@@ -498,12 +549,15 @@
       // --- 1. DATA INJECTION ---
       // In your real EJS file, replace the mock array below with:
       // const items = <%- JSON.stringify(items) %>;
-      
+
       const items =  <%- JSON.stringify(items) %>;
+      const name  = <%- JSON.stringify(name) %>;
 
       // --- 2. PAGINATION LOGIC ---
-      const rowsPerPage = 8;
+      const rowsPerPage = 50;
       let currentPage = 1;
+
+      document.querySelector("h3").innerText = `Available Codes: ${name}`;
 
       function renderTable() {
         const tbody = document.getElementById("tableBody");
@@ -534,7 +588,7 @@
       function updatePaginationControls() {
         const totalPages = Math.ceil(items.length / rowsPerPage);
         document.getElementById("pageInfo").innerText = `Page ${currentPage} of ${totalPages}`;
-        
+
         document.getElementById("prevBtn").disabled = currentPage === 1;
         document.getElementById("nextBtn").disabled = currentPage === totalPages || totalPages === 0;
       }
@@ -542,7 +596,7 @@
       function changePage(direction) {
         const totalPages = Math.ceil(items.length / rowsPerPage);
         const newPage = currentPage + direction;
-        
+
         if (newPage > 0 && newPage <= totalPages) {
           currentPage = newPage;
           renderTable();
@@ -567,10 +621,10 @@
         // Loop through ALL items (not just current page)
         items.forEach(item => {
           let line = [];
-          
+
           if (includeBarcode) line.push(item.barcode);
           if (includeActivation) line.push(item.activation_code);
-          
+
           // Join with comma, add new line
           content += line.join(",") + "\n";
         });
@@ -578,14 +632,14 @@
         // Create the blob
         const blob = new Blob([content], { type: "text/plain" });
         const url = window.URL.createObjectURL(blob);
-        
+
         // Create temp link to trigger download
         const a = document.createElement("a");
         a.href = url;
         a.download = "data-export.txt"; // CSV style txt
         document.body.appendChild(a);
         a.click();
-        
+
         // Cleanup
         document.body.removeChild(a);
         window.URL.revokeObjectURL(url);

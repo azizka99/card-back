@@ -66,12 +66,20 @@ adminRoutes.get("/download/:tag_id", (0, express_async_handler_1.default)(async 
         },
         select: {
             barcode: true,
-            activation_code: true
+            activation_code: true,
         }
     });
     if (!items) {
         res.status(404).send("Not Found");
     }
-    res.render("download", { items });
+    const name = await dbConnection_1.default.tag.findFirst({
+        where: {
+            id: req.params.tag_id
+        },
+        select: {
+            name: true
+        }
+    });
+    res.render("download", { items, name });
 }));
 exports.default = adminRoutes;
