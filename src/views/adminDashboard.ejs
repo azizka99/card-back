@@ -556,7 +556,7 @@
     </aside> -->
 
     <%- include("partials/sidebar", { activePage: "dashboard" }) %>
-
+  
     <div class="main-wrapper">
       <header>
         <div class="search-bar">
@@ -567,87 +567,106 @@
         <div class="header-actions">
           <div class="icon-wrapper" id="notificationBtn">
             <i class="far fa-bell" style="font-size: 18px; color: #64748b"></i>
-
-            <% function startOfDay(d) { return new Date(d.getFullYear(),
-            d.getMonth(), d.getDate()); } function sameDay(a, b) { return
-            startOfDay(a).getTime() === startOfDay(b).getTime(); } function
-            parseTagDate(tagName) { if (!tagName) return null; var s =
-            String(tagName); var m, parts, y, mo, da, dt, raw, yy; m =
-            s.match(/(\d{4}[.\-/]\d{2}[.\-/]\d{2})/); if (m) { parts =
-            m[1].replace(/[.\/]/g, "-").split("-"); y = parseInt(parts[0], 10);
-            mo = parseInt(parts[1], 10); da = parseInt(parts[2], 10); dt = new
-            Date(y, mo - 1, da); if (dt.getFullYear() === y && dt.getMonth() ===
-            mo - 1 && dt.getDate() === da) return dt; } m =
-            s.match(/(\d{2}[.\-/]\d{2}[.\-/]\d{4})/); if (m) { parts =
-            m[1].replace(/[.\/]/g, "-").split("-"); da = parseInt(parts[0], 10);
-            mo = parseInt(parts[1], 10); y = parseInt(parts[2], 10); dt = new
-            Date(y, mo - 1, da); if (dt.getFullYear() === y && dt.getMonth() ===
-            mo - 1 && dt.getDate() === da) return dt; } m =
-            s.match(/(\d{2}[.\-/]\d{2}[.\-/]\d{2})/); if (m) { parts =
-            m[1].replace(/[.\/]/g, "-").split("-"); da = parseInt(parts[0], 10);
-            mo = parseInt(parts[1], 10); yy = parseInt(parts[2], 10); y = 2000 +
-            yy; dt = new Date(y, mo - 1, da); if (dt.getFullYear() === y &&
-            dt.getMonth() === mo - 1 && dt.getDate() === da) return dt; } m =
-            s.match(/(\d{8})/); if (m) { raw = m[1]; y = parseInt(raw.substr(0,
-            4), 10); mo = parseInt(raw.substr(4, 2), 10); da =
-            parseInt(raw.substr(6, 2), 10); dt = new Date(y, mo - 1, da); if
-            (dt.getFullYear() === y && dt.getMonth() === mo - 1 && dt.getDate()
-            === da) return dt; } return null; } var today = new Date(); var
-            allTags = (typeof tags !== "undefined" && tags) ? tags : []; var
-            todays = []; var i, t, dtt; for (i = 0; i < allTags.length; i++) { t
-            = allTags[i]; dtt = parseTagDate(t && t.name); if (dtt &&
-            sameDay(dtt, today)) todays.push(t); } var show = todays.slice(0,
-            10); var showCount = show.length; %> <% if (showCount > 0) { %>
-            <span class="badge" id="notifBadge"><%= showCount %></span>
+          
+            <%
+              function startOfDay(d) { return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
+              function sameDay(a, b) { return startOfDay(a).getTime() === startOfDay(b).getTime(); }
+          
+              function parseTagDate(tagName) {
+                if (!tagName) return null;
+                var s = String(tagName);
+                var m, parts, y, mo, da, dt, raw, yy;
+          
+                m = s.match(/(\d{4}[.\-/]\d{2}[.\-/]\d{2})/);
+                if (m) {
+                  parts = m[1].replace(/[.\/]/g, "-").split("-");
+                  y = parseInt(parts[0], 10); mo = parseInt(parts[1], 10); da = parseInt(parts[2], 10);
+                  dt = new Date(y, mo - 1, da);
+                  if (dt.getFullYear() === y && dt.getMonth() === mo - 1 && dt.getDate() === da) return dt;
+                }
+          
+                m = s.match(/(\d{2}[.\-/]\d{2}[.\-/]\d{4})/);
+                if (m) {
+                  parts = m[1].replace(/[.\/]/g, "-").split("-");
+                  da = parseInt(parts[0], 10); mo = parseInt(parts[1], 10); y = parseInt(parts[2], 10);
+                  dt = new Date(y, mo - 1, da);
+                  if (dt.getFullYear() === y && dt.getMonth() === mo - 1 && dt.getDate() === da) return dt;
+                }
+          
+                m = s.match(/(\d{2}[.\-/]\d{2}[.\-/]\d{2})/);
+                if (m) {
+                  parts = m[1].replace(/[.\/]/g, "-").split("-");
+                  da = parseInt(parts[0], 10); mo = parseInt(parts[1], 10); yy = parseInt(parts[2], 10);
+                  y = 2000 + yy;
+                  dt = new Date(y, mo - 1, da);
+                  if (dt.getFullYear() === y && dt.getMonth() === mo - 1 && dt.getDate() === da) return dt;
+                }
+          
+                m = s.match(/(\d{8})/);
+                if (m) {
+                  raw = m[1];
+                  y = parseInt(raw.substr(0, 4), 10);
+                  mo = parseInt(raw.substr(4, 2), 10);
+                  da = parseInt(raw.substr(6, 2), 10);
+                  dt = new Date(y, mo - 1, da);
+                  if (dt.getFullYear() === y && dt.getMonth() === mo - 1 && dt.getDate() === da) return dt;
+                }
+          
+                return null;
+              }
+          
+              var today = new Date();
+              var allTags = (typeof tags !== "undefined" && tags) ? tags : [];
+              var todays = [];
+              var i, t, dtt;
+          
+              for (i = 0; i < allTags.length; i++) {
+                t = allTags[i];
+                dtt = parseTagDate(t && t.name);
+                if (dtt && sameDay(dtt, today)) todays.push(t);
+              }
+          
+              var show = todays.slice(0, 10);
+              var showCount = show.length;
+            %>
+          
+            <% if (showCount > 0) { %>
+              <span class="badge" id="notifBadge"><%= showCount %></span>
             <% } %>
-
+          
             <div class="notification-dropdown" id="notificationDropdown">
               <div class="notif-header">
                 <span>Notifications</span>
               </div>
-
+          
               <div class="notif-list">
                 <% if (showCount === 0) { %>
-                <div
-                  style="padding: 14px 16px; color: #94a3b8; font-size: 13px"
-                >
-                  No notifications for today.
-                </div>
-                <% } %> <% for (i = 0; i < show.length; i++) { t = show[i]; var
-                userName = (t && t.app_user && t.app_user.name) ?
-                t.app_user.name : "Unknown"; var initial = userName ?
-                userName.charAt(0).toUpperCase() : "?"; %>
-                <div class="notif-item">
-                  <a
-                    href="/a26ae3e19a140048efd2/download/<%= t.id %>"
-                    class="notif-item"
-                    style="text-decoration: none; color: inherit"
-                  >
-                    <div
-                      class="notif-img"
-                      style="
-                        display: flex;
-                        align-items: center;
-                        justify-content: center;
-                        background: #e2e8f0;
-                        color: #475569;
-                        font-weight: 800;
-                        font-size: 12px;
-                      "
-                    >
+                  <div style="padding:14px 16px; color:#94a3b8; font-size:13px;">
+                    No notifications for today.
+                  </div>
+                <% } %>
+          
+                <% for (i = 0; i < show.length; i++) {
+                     t = show[i];
+                     var userName = (t && t.app_user && t.app_user.name) ? t.app_user.name : "Unknown";
+                     var initial = userName ? userName.charAt(0).toUpperCase() : "?";
+                %>
+                  <div class="notif-item">
+                    
+                    <div class="notif-img" style="display:flex;align-items:center;justify-content:center;background:#e2e8f0;color:#475569;font-weight:800;font-size:12px;">
                       <%= initial %>
                     </div>
-
+          
                     <div class="notif-content">
                       <div class="notif-text">
                         <strong><%= userName %></strong>
-                        finished scanning <strong><%= t.name %></strong> for
-                        this week
+                        finished scanning <strong><%= t.name %></strong> for this week
                       </div>
+
                       <div class="notif-time">Today</div>
                     </div>
-                  </a>
-                </div>
+                    
+                  </div>
                 <% } %>
               </div>
             </div>
@@ -854,25 +873,27 @@
 
       // --- NOTIFICATION DROPDOWN LOGIC ---
       var notifBtn = document.getElementById("notificationBtn");
-      var notifDropdown = document.getElementById("notificationDropdown");
+  var notifDropdown = document.getElementById("notificationDropdown");
 
-      if (notifBtn && notifDropdown) {
-        notifBtn.addEventListener("click", function (e) {
-          if (e && e.stopPropagation) e.stopPropagation();
-          if (notifDropdown.classList.contains("active")) {
-            notifDropdown.classList.remove("active");
-          } else {
-            notifDropdown.classList.add("active");
-          }
-        });
-
-        document.addEventListener("click", function (e) {
-          var target = e.target;
-          if (!notifDropdown.contains(target) && !notifBtn.contains(target)) {
-            notifDropdown.classList.remove("active");
-          }
-        });
+  if (notifBtn && notifDropdown) {
+    notifBtn.addEventListener("click", function (e) {
+      if (e && e.stopPropagation) e.stopPropagation();
+      if (notifDropdown.classList.contains("active")) {
+        notifDropdown.classList.remove("active");
+      } else {
+        notifDropdown.classList.add("active");
       }
+    });
+
+    document.addEventListener("click", function (e) {
+      var target = e.target;
+      if (!notifDropdown.contains(target) && !notifBtn.contains(target)) {
+        notifDropdown.classList.remove("active");
+      }
+    });
+  }
+
+
     </script>
   </body>
 </html>
