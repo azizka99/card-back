@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Monthly Payout</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
+
+  <style>
+    * { box-sizing: border-box; font-family: Inter, sans-serif; }
+    body { margin:0; background:#f1f5f9; color:#1e293b; }
+
+    header {
+      background:#fff;
+      height:70px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      padding:0 32px;
+      box-shadow:0 1px 3px rgba(0,0,0,.1);
+      position:sticky;
+      top:0;
+      z-index:10;
+    }
+
+    .content { padding:32px; max-width:1400px; margin:auto; }
+
+    .page-title {
+      font-size:26px;
+      font-weight:700;
+      margin-bottom:6px;
+    }
+
+    .subtitle {
+      font-size:13px;
+      color:#64748b;
+      margin-bottom:24px;
+    }
+
+    .controls {
+      display:flex;
+      gap:12px;
+      flex-wrap:wrap;
+      align-items:flex-end;
+      margin-bottom:24px;
+    }
+
+    .label {
+      font-size:11px;
+      font-weight:700;
+      color:#64748b;
+      margin-bottom:6px;
+      text-transform:uppercase;
+    }
+
+    .input {
+      padding:10px;
+      border-radius:8px;
+      border:1px solid #e2e8f0;
+      min-width:220px;
+      background:#fff;
+    }
+
+    .btn {
+      background:#6262a6;
+      color:#fff;
+      border:none;
+      padding:10px 16px;
+      border-radius:8px;
+      font-weight:600;
+      cursor:pointer;
+    }
+
+    .btn:hover { background:#4e4e85; }
+
+    .grid {
+      display:grid;
+      grid-template-columns:2fr 1fr;
+      gap:24px;
+    }
+
+    .panel {
+      background:#fff;
+      border-radius:12px;
+      box-shadow:0 1px 3px rgba(0,0,0,.1);
+      padding:20px;
+    }
+
+    table {
+      width:100%;
+      border-collapse:collapse;
+      font-size:14px;
+    }
+
+    thead th {
+      text-align:left;
+      padding:12px;
+      background:#f8fafc;
+      color:#64748b;
+      border-bottom:1px solid #e2e8f0;
+      font-size:12px;
+      text-transform:uppercase;
+    }
+
+    tbody td {
+      padding:12px;
+      border-bottom:1px solid #e2e8f0;
+    }
+
+    tbody tr:hover { background:#f8fafc; }
+
+    .pill {
+      background:#f1f5f9;
+      padding:4px 8px;
+      border-radius:6px;
+      font-weight:600;
+      font-size:13px;
+    }
+
+    .summary-row {
+      display:flex;
+      justify-content:space-between;
+      font-size:14px;
+      margin-bottom:10px;
+    }
+
+    .link {
+      color:#6262a6;
+      text-decoration:none;
+      font-weight:600;
+    }
+
+    .link:hover { text-decoration:underline; }
+
+    @media (max-width: 1000px) {
+      .grid { grid-template-columns:1fr; }
+    }
+  </style>
+</head>
+
+<body>
+
+<header>
+  <strong>Monthly Payout</strong>
+  <div style="width:36px;height:36px;border-radius:50%;background:#6262a6;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;">
+    AD
+  </div>
+</header>
+
+<div class="content">
+  <div class="page-title">Monthly Payout</div>
+  <div class="subtitle">
+    Select user and month. Tags are detected by date inside tag name.
+  </div>
+
+  <!-- CONTROLS -->
+  <div class="controls">
+    <div>
+      <div class="label">User</div>
+      <select id="userSelect" class="input">
+        <option value="" disabled selected>Select user…</option>
+        <% users.forEach(u => { %>
+          <option value="<%= u.id %>"><%= u.name %></option>
+        <% }) %>
+      </select>
+    </div>
+
+    <div>
+      <div class="label">Month</div>
+      <input type="month" id="monthSelect" class="input" />
+    </div>
+
+    <button class="btn" id="loadBtn">
+      <i class="fas fa-rotate"></i> Load
+    </button>
+  </div>
+
+  <div class="grid">
+    <!-- TAGS -->
+    <div class="panel">
+      <h3 style="margin-top:0;">Tags</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Use</th>
+            <th>Tag</th>
+            <th>Date</th>
+            <th>Cards</th>
+            <th>Open</th>
+          </tr>
+        </thead>
+        <tbody id="tbody">
+          <tr>
+            <td colspan="5" style="text-align:center;color:#94a3b8;padding:20px;">
+              Select user + month
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- SUMMARY -->
+    <div class="panel">
+      <h3 style="margin-top:0;">Summary</h3>
+
+      <div class="summary-row">
+        <span>Total tags</span>
+        <strong id="tagCount">0</strong>
+      </div>
+
+      <div class="summary-row">
+        <span>All cards</span>
+        <strong id="allTotal">0</strong>
+      </div>
+
+      <div class="summary-row">
+        <span>Included cards</span>
+        <strong id="includedTotal">0</strong>
+      </div>
+
+      <div style="margin-top:16px;display:flex;gap:8px;">
+        <button class="btn" id="checkAll">Check all</button>
+        <button class="btn" id="uncheckAll">Uncheck all</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // default current month
+  const monthInput = document.getElementById("monthSelect");
+  const now = new Date();
+  monthInput.value = now.getFullYear() + "-" + String(now.getMonth()+1).padStart(2,"0");
+
+  const tbody = document.getElementById("tbody");
+  const tagCount = document.getElementById("tagCount");
+  const allTotal = document.getElementById("allTotal");
+  const includedTotal = document.getElementById("includedTotal");
+
+  let state = { items: [], included: {} };
+
+  function render() {
+    if (!state.items.length) {
+      tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:#94a3b8;padding:20px;">No tags</td></tr>`;
+      tagCount.textContent = allTotal.textContent = includedTotal.textContent = 0;
+      return;
+    }
+
+    let html = "";
+    let sumAll = 0;
+    let sumIncluded = 0;
+
+    state.items.forEach(t => {
+      sumAll += t.count;
+      if (state.included[t.id]) sumIncluded += t.count;
+
+      html += `
+        <tr>
+          <td><input type="checkbox" data-id="${t.id}" ${state.included[t.id] ? "checked" : ""}></td>
+          <td>${t.name}</td>
+          <td>${new Date(t.date).toLocaleDateString()}</td>
+          <td><span class="pill">${t.count}</span></td>
+          <td><a class="link" href="/a26ae3e19a140048efd2/download/${t.id}">Open</a></td>
+        </tr>`;
+    });
+
+    tbody.innerHTML = html;
+    tagCount.textContent = state.items.length;
+    allTotal.textContent = sumAll;
+    includedTotal.textContent = sumIncluded;
+  }
+
+  document.getElementById("loadBtn").onclick = async () => {
+    const userId = document.getElementById("userSelect").value;
+    const month = monthInput.value;
+    if (!userId || !month) return alert("Select user and month");
+
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:20px;">Loading…</td></tr>`;
+
+    const res = await fetch(`/a26ae3e19a140048efd2/api/monthly-payout?userId=${userId}&month=${month}`);
+    const data = await res.json();
+
+    state.items = data.items || [];
+    state.included = {};
+    state.items.forEach(t => state.included[t.id] = true);
+    render();
+  };
+
+  tbody.addEventListener("change", e => {
+    if (e.target.type === "checkbox") {
+      state.included[e.target.dataset.id] = e.target.checked;
+      render();
+    }
+  });
+
+  document.getElementById("checkAll").onclick = () => {
+    state.items.forEach(t => state.included[t.id] = true);
+    render();
+  };
+
+  document.getElementById("uncheckAll").onclick = () => {
+    state.items.forEach(t => state.included[t.id] = false);
+    render();
+  };
+</script>
+
+</body>
+</html>

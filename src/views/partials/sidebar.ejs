@@ -88,6 +88,16 @@
         Download
       </a>
     </li>
+
+    <li></li>
+      <a href="/a26ae3e19a140048efd2/monthly-payout"
+         style="<% linkStyle(activePage === 'monthlyPayload'); %>"
+         onmouseover="this.style.background='rgba(255,255,255,0.15)'; this.style.color='#fff';"
+         onmouseout="this.style.background='<%= (activePage === 'monthlyPayload') ? 'rgba(255,255,255,0.15)' : 'transparent' %>'; this.style.color='<%= (activePage === 'monthlyPayload') ? '#fff' : 'rgba(255,255,255,0.8)' %>';">
+        <i class="fas fa-calendar-alt" style="<% iconStyle(); %>"></i>
+        Monthly Payload
+      </a>
+    </li>
   </ul>
 
   <!-- Section Label -->

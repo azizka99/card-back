@@ -170,5 +170,154 @@ adminRoutes.get("/api/user/:user_id/tags", expressAsyncHandler(async (req, res) 
     res.json({ success: true, tags });
 }));
 
+adminRoutes.get("/monthly-payout", expressAsyncHandler(async (req, res) => {
+    const users = await prisma.app_user.findMany({
+        select: { id: true, name: true },
+        orderBy: { name: "asc" }
+    });
+
+    res.render("monthlyPayout", { users });
+}));
+
+adminRoutes.get(
+    "/api/monthly-payout",
+    expressAsyncHandler(async (req, res) => {
+        const userId = String(req.query.userId || "");
+        const month = String(req.query.month || ""); // "YYYY-MM"
+
+        if (!userId || !month) {
+            res.json({ success: false, message: "Missing userId or month" });
+            return
+        }
+
+        // 1) group by tag_id, count cards for this user
+        const grouped = await prisma.steam_card.groupBy({
+            by: ["tag_id"],
+            where: { user_id: userId },
+            _count: { _all: true },
+        });
+
+        // tag_id can be null, so keep only strings
+        const tagIds: string[] = grouped
+            .map((g) => g.tag_id)
+            .filter((x): x is string => typeof x === "string");
+
+        if (tagIds.length === 0) {
+            res.json({ success: true, items: [], total: 0 });
+            return
+        }
+
+        // 2) load tags
+        const tags = await prisma.tag.findMany({
+            where: { id: { in: tagIds } },
+            select: { id: true, name: true },
+        });
+
+        // 3) helpers
+        function parseTagDate(tagName: any): Date | null {
+            if (!tagName) return null;
+            const s = String(tagName);
+            let m: RegExpMatchArray | null, parts: string[], y: number, mo: number, da: number, dt: Date, raw: string, yy: number;
+
+            // YYYY-MM-DD / YYYY.MM.DD / YYYY/MM/DD
+            m = s.match(/(\d{4}[.\-/]\d{2}[.\-/]\d{2})/);
+            if (m) {
+                parts = m[1].replace(/[.\/]/g, "-").split("-");
+                y = Number(parts[0]); mo = Number(parts[1]); da = Number(parts[2]);
+                dt = new Date(y, mo - 1, da);
+                if (dt.getFullYear() === y && dt.getMonth() === mo - 1 && dt.getDate() === da) return dt;
+            }
+
+            // DD-MM-YYYY / DD.MM.YYYY / DD/MM/YYYY
+            m = s.match(/(\d{2}[.\-/]\d{2}[.\-/]\d{4})/);
+            if (m) {
+                parts = m[1].replace(/[.\/]/g, "-").split("-");
+                da = Number(parts[0]); mo = Number(parts[1]); y = Number(parts[2]);
+                dt = new Date(y, mo - 1, da);
+                if (dt.getFullYear() === y && dt.getMonth() === mo - 1 && dt.getDate() === da) return dt;
+            }
+
+            // DD-MM-YY / DD.MM.YY / DD/MM/YY => assume 20xx
+            m = s.match(/(\d{2}[.\-/]\d{2}[.\-/]\d{2})/);
+            if (m) {
+                parts = m[1].replace(/[.\/]/g, "-").split("-");
+                da = Number(parts[0]); mo = Number(parts[1]); yy = Number(parts[2]);
+                y = 2000 + yy;
+                dt = new Date(y, mo - 1, da);
+                if (dt.getFullYear() === y && dt.getMonth() === mo - 1 && dt.getDate() === da) return dt;
+            }
+
+            // YYYYMMDD
+            m = s.match(/(\d{8})/);
+            if (m) {
+                raw = m[1];
+                y = Number(raw.slice(0, 4));
+                mo = Number(raw.slice(4, 6));
+                da = Number(raw.slice(6, 8));
+                dt = new Date(y, mo - 1, da);
+                if (dt.getFullYear() === y && dt.getMonth() === mo - 1 && dt.getDate() === da) return dt;
+            }
+
+            return null;
+        }
+
+        function monthKey(d: Date): string {
+            const y = d.getFullYear();
+            const m = String(d.getMonth() + 1).padStart(2, "0");
+            return `${y}-${m}`;
+        }
+
+        // Map tagId -> count (typed!)
+        const countMap: Record<string, number> = {};
+
+        grouped.forEach((g) => {
+            if (typeof g.tag_id === "string") {
+                countMap[g.tag_id] = g._count._all;
+            }
+        });
+
+        // Build items
+        type Item = { id: string; name: string; date: string; count: number };
+        const items: Item[] = [];
+
+        for (const t of tags) {
+            const dt = parseTagDate(t.name);
+            if (!dt) continue;
+            if (monthKey(dt) !== month) continue;
+
+            items.push({
+                id: t.id,
+                name: t.name,
+                date: dt.toISOString(),
+                count: countMap[t.id] ?? 0,
+            });
+        }
+
+        // Sort by date desc (use getTime)
+        items.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+        const total = items.reduce((sum, x) => sum + x.count, 0);
+
+        res.json({ success: true, items, total });
+        return
+    })
+);
+
+adminRoutes.post("/api/monthly-payout/count", expressAsyncHandler(async (req, res) => {
+    const userId = String(req.body.userId || "");
+    const tagIds = Array.isArray(req.body.tagIds) ? req.body.tagIds : [];
+
+    if (!userId) { res.json({ success: false, message: "Missing userId" }); return }
+
+    const total = await prisma.steam_card.count({
+        where: {
+            user_id: userId,
+            tag_id: { in: tagIds }
+        }
+    });
+
+    res.json({ success: true, total });
+}));
+
 
 export default adminRoutes;
