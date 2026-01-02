@@ -557,7 +557,7 @@
       const rowsPerPage = 50;
       let currentPage = 1;
 
-      document.querySelector("h3").innerText = `Available Codes: ${name}`;
+      document.querySelector("h3").innerText = `Available Codes: ${name.name}, Count: ${items.length}`;
 
       function renderTable() {
         const tbody = document.getElementById("tableBody");
