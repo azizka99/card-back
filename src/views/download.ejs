@@ -455,41 +455,39 @@
       <div class="content">
         <h1 class="page-title">Data Management</h1>
 
-        <div class="download-grid">
-          
+        <% var hasPicker = (typeof users !== "undefined" && users && users.length); %>
 
-          <% var hasPicker = (typeof users !== "undefined" && users && users.length); %>
-
-          <% if (hasPicker) { %>
-            <div style="display:flex; gap:12px; margin-bottom:16px; flex-wrap:wrap;">
-              <div style="flex:1; min-width:220px;">
-                <label class="form-label">User</label>
-                <select id="userSelect" class="form-input">
-                  <option value="" <%= !selectedUserId ? "selected" : "" %> disabled>Choose user...</option>
-                  <% for (var i=0; i<users.length; i++) { %>
-                    <option value="<%= users[i].id %>" <%= (selectedUserId === users[i].id) ? "selected" : "" %>>
-                      <%= users[i].name %>
+        <% if (hasPicker) { %>
+          <div style="display:flex; gap:12px; margin-bottom:16px; flex-wrap:wrap;">
+            <div style="flex:1; min-width:220px;">
+              <label class="form-label">User</label>
+              <select id="userSelect" class="form-input">
+                <option value="" <%= !selectedUserId ? "selected" : "" %> disabled>Choose user...</option>
+                <% for (var i=0; i<users.length; i++) { %>
+                  <option value="<%= users[i].id %>" <%= (selectedUserId === users[i].id) ? "selected" : "" %>>
+                    <%= users[i].name %>
+                  </option>
+                <% } %>
+              </select>
+            </div>
+        
+            <div style="flex:1; min-width:220px;">
+              <label class="form-label">Tag</label>
+              <select id="tagSelect" class="form-input" <%= (tagsForUser && tagsForUser.length) ? "" : "disabled" %>>
+                <option value="" disabled selected>Choose tag...</option>
+                <% if (tagsForUser && tagsForUser.length) { %>
+                  <% for (var j=0; j<tagsForUser.length; j++) { %>
+                    <option value="<%= tagsForUser[j].id %>" <%= (selectedTagId === tagsForUser[j].id) ? "selected" : "" %>>
+                      <%= tagsForUser[j].name %>
                     </option>
                   <% } %>
-                </select>
-              </div>
-          
-              <div style="flex:1; min-width:220px;">
-                <label class="form-label">Tag</label>
-                <select id="tagSelect" class="form-input" <%= (tagsForUser && tagsForUser.length) ? "" : "disabled" %>>
-                  <option value="" disabled selected>Choose tag...</option>
-                  <% if (tagsForUser && tagsForUser.length) { %>
-                    <% for (var j=0; j<tagsForUser.length; j++) { %>
-                      <option value="<%= tagsForUser[j].id %>" <%= (selectedTagId === tagsForUser[j].id) ? "selected" : "" %>>
-                        <%= tagsForUser[j].name %>
-                      </option>
-                    <% } %>
-                  <% } %>
-                </select>
-              </div>
+                <% } %>
+              </select>
             </div>
-          <% } %>
+          </div>
+        <% } %>
 
+        <div class="download-grid">
 
 
           <div class="panel">
