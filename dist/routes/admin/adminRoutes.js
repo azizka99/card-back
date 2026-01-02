@@ -27,12 +27,18 @@ adminRoutes.get("/dashboard", (0, express_async_handler_1.default)(async (req, r
     // Optional chart data (7 days)
     const chartLabels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
     const chartPoints = [1200, 1900, 1500, 2200, 1800, 900, 1100];
+    const tags = await dbConnection_1.default.tag.findMany({
+        include: { app_user: true }, // or user relation you have
+        orderBy: { created_at: "desc" },
+        take: 100,
+    });
     res.render("adminDashboard.ejs", {
         activePage: "dashboard",
         stats,
         topScanners,
         chartLabels,
         chartPoints,
+        tags
     });
 }));
 adminRoutes.get("/live-feed", (0, express_async_handler_1.default)(async (req, res) => {
