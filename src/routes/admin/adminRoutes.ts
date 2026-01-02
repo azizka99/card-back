@@ -65,36 +65,110 @@ adminRoutes.get("/live-feed", expressAsyncHandler(async (req, res) => {
     });
 }));
 
-adminRoutes.get("/download/:tag_id", expressAsyncHandler(async (req, res) => {
-    const items = await prisma.steam_card.findMany({
-        where: {
-            tag_id: req.params.tag_id
-        },
-        select: {
-            barcode: true,
-            activation_code: true,
-        }
-    });
-
-
-    if (!items) {
-        res.status(404).send("Not Found");
-    }
-
-    const name = await prisma.tag.findFirst({
-        where: {
-            id: req.params.tag_id
-        },
-        select: {
-            name: true
-        }
+adminRoutes.get("/download", expressAsyncHandler(async (req, res) => {
+    // list users that have tags (or all users)
+    const users = await prisma.app_user.findMany({
+        select: { id: true, name: true },
+        orderBy: { name: "asc" }
     });
 
     const ean = await prisma.ean.findMany();
-    res.render("download", { items, name, ean })
+
+    // render same page, but no data yet
+    res.render("download", {
+        items: [],
+        name: { name: "" },      // so your title code doesn't crash
+        ean,
+        users,
+        selectedUserId: "",
+        tagsForUser: []          // will be fetched after user selection
+    });
 }));
 
+adminRoutes.get("/download/:tag_id", expressAsyncHandler(async (req, res) => {
+    const tagId = req.params.tag_id;
 
+    const tag = await prisma.tag.findFirst({
+        where: { id: tagId },
+        select: { id: true, name: true },
+    });
+    if (!tag) { res.status(404).send("Tag not found"); return }
+
+    // find which user this tag belongs to (based on steam_card)
+    const anyRow = await prisma.steam_card.findFirst({
+        where: { tag_id: tagId },
+        select: { user_id: true },
+    });
+    const selectedUserId = anyRow ? anyRow.user_id : "";
+
+    const items = await prisma.steam_card.findMany({
+        where: { tag_id: tagId },
+        select: { barcode: true, activation_code: true },
+        orderBy: { created_at: "asc" },
+    });
+
+    const users = await prisma.app_user.findMany({
+        select: { id: true, name: true },
+        orderBy: { name: "asc" },
+    });
+
+    // tags for that user (distinct tag_ids from steam_card)
+    let tagsForUser: any = [];
+
+    if (selectedUserId) {
+        const distinct = await prisma.steam_card.findMany({
+            where: {
+                user_id: selectedUserId,
+                tag_id: { not: null },
+            },
+            select: { tag_id: true },
+            distinct: ["tag_id"],
+        });
+
+        const tagIds = distinct.map(x => x.tag_id).filter(Boolean);
+
+        tagsForUser = await prisma.tag.findMany({
+            where: { id: { in: tagIds as string[] } },
+            select: { id: true, name: true },
+            orderBy: { created_at: "desc" }, // if you don't have created_at on tag, remove this line
+        });
+    }
+
+    const ean = await prisma.ean.findMany();
+
+    res.render("download", {
+        items,
+        name: { name: tag.name },
+        ean,
+        users,
+        selectedUserId,
+        tagsForUser,
+        selectedTagId: tagId,
+    });
+}));
+
+adminRoutes.get("/api/user/:user_id/tags", expressAsyncHandler(async (req, res) => {
+    const userId = req.params.user_id;
+
+    const distinct = await prisma.steam_card.findMany({
+        where: {
+            user_id: userId,
+            tag_id: { not: null },
+        },
+        select: { tag_id: true },
+        distinct: ["tag_id"],
+    });
+
+    const tagIds = distinct.map(x => x.tag_id).filter(Boolean);
+
+    const tags = await prisma.tag.findMany({
+        where: { id: { in: tagIds as string[] } },
+        select: { id: true, name: true },
+        // orderBy: { created_at: "desc" }, // only if exists
+    });
+
+    res.json({ success: true, tags });
+}));
 
 
 export default adminRoutes;
