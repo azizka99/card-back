@@ -1,457 +1,292 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
   <head>
-    <meta charset="UTF-8" />
+    <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>CardScan - Download Data</title>
-
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
-      rel="stylesheet"
-    />
-    <link
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
-      rel="stylesheet"
-    />
-
+    <title>Admin · Items</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
-      :root {
-        --primary: #6262a6;
-        --primary-dark: #4e4e85;
-        --primary-light: #eef0f7;
-        --text-dark: #1e293b;
-        --text-gray: #64748b;
-        --bg-body: #f1f5f9;
-        --white: #ffffff;
-        --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
-        --sidebar-width: 260px;
-        --border-color: #e2e8f0;
-      }
-
-      * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-        font-family: "Inter", sans-serif;
-      }
-
       body {
-        background-color: var(--bg-body);
-        display: flex;
-        min-height: 100vh;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+          Roboto, Arial, sans-serif;
       }
-
-      /* Reuse Sidebar & Header Styles from previous dashboard */
-      .sidebar {
-        width: var(--sidebar-width);
-        background-color: var(--primary);
-        color: var(--white);
-        display: flex;
-        flex-direction: column;
-        position: fixed;
-        height: 100vh;
-        left: 0;
-        top: 0;
-        padding: 24px;
-        z-index: 50;
-      }
-      
-      /* ... (Include other sidebar CSS if not loading from partial) ... */
-
-      .main-wrapper {
-        margin-left: var(--sidebar-width);
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-      }
-
-      header {
-        background-color: var(--white);
-        height: 70px;
-        padding: 0 32px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        box-shadow: var(--shadow);
-        position: sticky;
-        top: 0;
-        z-index: 40;
-      }
-      
-      /* Search & Header Actions CSS reused */
-      .search-bar {
-        display: flex;
-        align-items: center;
-        background-color: var(--bg-body);
-        padding: 10px 16px;
-        border-radius: 8px;
-        width: 350px;
-      }
-      .search-bar input { border: none; background: none; outline: none; width: 100%; margin-left: 10px; }
-      .header-actions { display: flex; gap: 20px; align-items: center; }
-
-      /* --- PAGE SPECIFIC STYLES --- */
-      .content {
-        padding: 32px;
-      }
-
-      .page-title {
-        font-size: 24px;
+      /* Custom style to make the optgroup label stand out */
+      optgroup {
         font-weight: 700;
-        color: var(--text-dark);
-        margin-bottom: 24px;
-      }
-
-      /* Layout Grid */
-      .download-grid {
-        display: grid;
-        grid-template-columns: 3fr 1fr; /* Table takes more space */
-        gap: 24px;
-      }
-
-      /* Panel Styles */
-      .panel {
-        background: var(--white);
-        border-radius: 12px;
-        box-shadow: var(--shadow);
-        padding: 24px;
-        display: flex;
-        flex-direction: column;
-      }
-
-      /* Table Styles */
-      .table-container {
-        width: 100%;
-        overflow-x: auto;
-      }
-
-      table {
-        width: 100%;
-        border-collapse: collapse;
-        font-size: 14px;
-      }
-
-      thead th {
-        text-align: left;
-        padding: 12px 16px;
-        background-color: #f8fafc;
-        color: var(--text-gray);
-        font-weight: 600;
-        border-bottom: 1px solid var(--border-color);
-        text-transform: uppercase;
-        font-size: 12px;
-        letter-spacing: 0.5px;
-      }
-
-      tbody td {
-        padding: 14px 16px;
-        border-bottom: 1px solid var(--border-color);
-        color: var(--text-dark);
-      }
-
-      tbody tr:last-child td {
-        border-bottom: none;
-      }
-
-      tbody tr:hover {
-        background-color: #f8fafc;
-      }
-
-      /* Code styling for aesthetics */
-      .code-pill {
-        font-family: 'Courier New', monospace;
-        background: var(--bg-body);
-        padding: 4px 8px;
-        border-radius: 4px;
-        color: var(--primary-dark);
-        font-weight: 600;
-        font-size: 13px;
-      }
-
-      /* Pagination */
-      .pagination {
-        display: flex;
-        justify-content: flex-end;
-        align-items: center;
-        margin-top: 20px;
-        gap: 12px;
-      }
-
-      .page-btn {
-        background: var(--white);
-        border: 1px solid var(--border-color);
-        padding: 6px 12px;
-        border-radius: 6px;
-        cursor: pointer;
-        color: var(--text-gray);
-        font-size: 13px;
-        transition: 0.2s;
-      }
-
-      .page-btn:hover:not(:disabled) {
-        border-color: var(--primary);
-        color: var(--primary);
-      }
-
-      .page-btn:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-      }
-
-      .page-info {
-        font-size: 13px;
-        color: var(--text-gray);
-      }
-
-      /* Export Controls Panel */
-      .export-title {
-        font-size: 16px;
-        font-weight: 600;
-        margin-bottom: 16px;
-        color: var(--text-dark);
-        border-bottom: 1px solid var(--border-color);
-        padding-bottom: 12px;
-      }
-
-      .checkbox-group {
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-        margin-bottom: 24px;
-      }
-
-      .custom-checkbox {
-        display: flex;
-        align-items: center;
-        cursor: pointer;
-        font-size: 14px;
-        color: var(--text-dark);
-      }
-
-      .custom-checkbox input {
-        width: 18px;
-        height: 18px;
-        margin-right: 10px;
-        accent-color: var(--primary); /* Makes checkbox purple */
-        cursor: pointer;
-      }
-
-      .download-btn {
-        background-color: var(--primary);
-        color: var(--white);
-        border: none;
-        padding: 12px;
-        border-radius: 8px;
-        font-weight: 600;
-        cursor: pointer;
-        transition: background 0.2s;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-      }
-
-      .download-btn:hover {
-        background-color: var(--primary-dark);
-      }
-
-      .download-btn:disabled {
-        background-color: var(--text-gray);
-        cursor: not-allowed;
-      }
-
-      /* Responsive */
-      @media (max-width: 1024px) {
-        .download-grid {
-          grid-template-columns: 1fr;
-        }
-      }
-      @media (max-width: 768px) {
-        .sidebar { display: none; }
-        .main-wrapper { margin-left: 0; }
-        header { padding: 0 16px; }
+        font-style: normal;
+        color: #6262a6;
       }
     </style>
   </head>
-  <body>
-    <%- include("partials/sidebar", { activePage: "download" }) %>
-
-    <div class="main-wrapper">
-      <header>
-        <div class="search-bar">
-            <i class="fas fa-search" style="color: #64748b; margin-right: 10px;"></i>
-            <input type="text" placeholder="Search..." />
-        </div>
-        <div class="header-actions">
-             <div style="width: 35px; height: 35px; background: #6262a6; border-radius: 50%; color: white; display: flex; align-items: center; justify-content: center; font-weight: bold;">AD</div>
-        </div>
-      </header>
-
-      <div class="content">
-        <h1 class="page-title">Data Management</h1>
-
-        <div class="download-grid">
+  <body class="bg-gray-100 flex flex-col min-h-screen">
+    
+    <header class="bg-white shadow-md z-10 relative">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex flex-col md:flex-row justify-between items-center h-auto md:h-16 py-4 md:py-0 gap-4">
           
-          <div class="panel">
-            <h3 style="margin-bottom: 20px; font-size: 18px; color: var(--text-dark);">Available Codes</h3>
-            
-            <div class="table-container">
-              <table>
-                <thead>
-                  <tr>
-                    <th><i class="fas fa-barcode"></i> Barcode</th>
-                    <th><i class="fas fa-key"></i> Activation Code</th>
-                  </tr>
-                </thead>
-                <tbody id="tableBody">
-                  </tbody>
-              </table>
-            </div>
-
-            <div class="pagination">
-              <button class="page-btn" id="prevBtn" onclick="changePage(-1)"><i class="fas fa-chevron-left"></i></button>
-              <span class="page-info" id="pageInfo">Page 1 of 1</span>
-              <button class="page-btn" id="nextBtn" onclick="changePage(1)"><i class="fas fa-chevron-right"></i></button>
-            </div>
+          <div class="flex-shrink-0 flex items-center">
+            <h1 class="text-2xl font-bold tracking-tight" style="color: #6262a6">
+              Admin Panel
+            </h1>
           </div>
 
-          <div class="panel" style="height: fit-content;">
-            <div class="export-title">Export Options</div>
+          <div class="flex items-center bg-gray-50 border border-gray-200 p-1.5 rounded-xl shadow-sm gap-2">
             
-            <p style="font-size: 13px; color: var(--text-gray); margin-bottom: 16px;">
-              Select the columns you wish to include in the file.
-            </p>
+            <% if (typeof allUsers !== 'undefined' && allUsers.length > 0) { %>
+            
+            <div class="relative group">
+              <select
+                id="printTagSelect"
+                class="appearance-none bg-white pl-3 pr-8 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#6262A6] focus:border-transparent cursor-pointer min-w-[200px]"
+              >
+                <option value="">Select User ➜ Tag</option>
+                
+                <% allUsers.forEach(user => { %>
+                  <% if (user.tag && user.tag.length > 0) { %>
+                    <optgroup label="<%= user.name %>">
+                      <% user.tag.forEach(tag => { %>
+                        <option value="<%= tag.id %>">↳ <%= tag.name %></option>
+                      <% }) %>
+                    </optgroup>
+                  <% } %>
+                <% }) %>
 
-            <div class="checkbox-group">
-              <label class="custom-checkbox">
-                <input type="checkbox" id="chkBarcode" checked>
-                Barcode ID
-              </label>
-              
-              <label class="custom-checkbox">
-                <input type="checkbox" id="chkActivation" checked>
-                Activation Code
-              </label>
+              </select>
+              <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500">
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+              </div>
             </div>
 
-            <button class="download-btn" id="downloadBtn" onclick="downloadFile()">
-              <i class="fas fa-file-download"></i> Download .txt
+            <div class="h-6 w-px bg-gray-300 mx-1"></div>
+
+            <button
+              id="printButton"
+              type="button"
+              disabled
+              class="flex items-center gap-2 text-white font-semibold py-2 px-4 rounded-lg text-sm transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-md"
+              style="background-color: #6262a6"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+              </svg>
+              Print
             </button>
+
+            <button
+              id="downloadButton"
+              type="button"
+              disabled
+              class="flex items-center gap-2 bg-gray-700 hover:bg-gray-800 text-white font-semibold py-2 px-4 rounded-lg text-sm transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-md"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
+              Download
+            </button>
+            <% } else { %>
+              <span class="text-sm text-gray-500 italic px-2">No users/tags available</span>
+            <% } %>
           </div>
 
+          <div>
+            <form method="post" action="/admin/logout">
+              <button
+                type="submit"
+                class="text-red-500 hover:text-red-700 font-semibold text-sm py-2 px-4 transition duration-200 flex items-center gap-1"
+              >
+                Logout
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
+              </button>
+            </form>
+          </div>
         </div>
       </div>
-    </div>
+    </header>
+
+    <main class="flex-grow max-w-7xl mx-auto w-full p-4 sm:p-6 lg:p-8">
+      <div class="flex items-center justify-between mb-6">
+        <h2 class="text-3xl font-bold text-gray-800">Items Database</h2>
+        <span class="bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-0.5 rounded border border-blue-400">
+           Total: <%= items.length %>
+        </span>
+      </div>
+
+      <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 mb-8">
+        <form class="search" method="get" action="/admin">
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-5">
+            <div>
+              <label for="q" class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1">Barcode</label>
+              <input
+                type="text"
+                id="q"
+                name="q"
+                value="<%= q || '' %>"
+                placeholder="Search..."
+                class="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#6262A6] focus:bg-white focus:border-transparent transition text-sm"
+              />
+            </div>
+
+            <div>
+              <label for="tag" class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1">Tag Name</label>
+              <input
+                type="text"
+                id="tag"
+                name="tag"
+                value="<%= tag || '' %>"
+                placeholder="Filter tag..."
+                class="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#6262A6] focus:bg-white focus:border-transparent transition text-sm"
+              />
+            </div>
+
+            <div>
+              <label for="user" class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1">User Name</label>
+              <input
+                type="text"
+                id="user"
+                name="user"
+                value="<%= user || '' %>"
+                placeholder="Filter user..."
+                class="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#6262A6] focus:bg-white focus:border-transparent transition text-sm"
+              />
+            </div>
+
+            <div class="md:self-end">
+              <button
+                type="submit"
+                class="w-full text-white font-bold py-2.5 px-4 rounded-lg transition duration-200 hover:bg-[#505089] hover:shadow-lg text-sm"
+                style="background-color: #6262a6"
+              >
+                Apply Filters
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+
+      <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+              <tr>
+                <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Barcode</th>
+                <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">User</th>
+                <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Tag</th>
+                <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Activation</th>
+                <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Created</th>
+                <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Image</th>
+              </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+              <% items.forEach(it => { %>
+              <tr class="hover:bg-blue-50 transition duration-150 group">
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-mono font-medium text-gray-900 select-all"><%= it.barcode %></td>
+                
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                    <div class="flex items-center">
+                        <div class="h-6 w-6 rounded-full bg-gray-200 flex items-center justify-center text-xs font-bold text-gray-600 mr-2">
+                            <%= it.app_user ? it.app_user.name.charAt(0).toUpperCase() : '?' %>
+                        </div>
+                        <%= it.app_user ? it.app_user.name : 'N/A' %>
+                    </div>
+                </td>
+
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                  <% if(it.tag) { %>
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                      <%= it.tag.name %>
+                    </span>
+                  <% } else { %>
+                    <span class="text-gray-400">N/A</span>
+                  <% } %>
+                </td>
+
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-mono">
+                  <%= it.activation_code || "-" %>
+                </td>
+
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <%= new Date(it.created_at).toLocaleDateString() %> <span class="text-xs text-gray-400"><%= new Date(it.created_at).toLocaleTimeString() %></span>
+                </td>
+
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                  <% if (it.img_src) { %>
+                  <a href="/admin/item/<%= it.id %>" class="text-blue-600 hover:text-blue-900 hover:underline">
+                    View
+                  </a>
+                  <% } else { %>
+                  <span class="text-gray-300">-</span>
+                  <% } %>
+                </td>
+              </tr>
+              <% }) %>
+
+              <% if (items.length === 0) { %>
+              <tr>
+                <td colspan="6" class="px-6 py-12 text-center">
+                    <div class="flex flex-col items-center justify-center text-gray-400">
+                        <svg class="w-12 h-12 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        <p>No items found matching your criteria.</p>
+                    </div>
+                </td>
+              </tr>
+              <% } %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
 
     <script>
-      // --- 1. DATA INJECTION ---
-      // In your real EJS file, replace the mock array below with:
-      // const items = <%- JSON.stringify(items) %>;
-      
-      const items = [
-         // Mock data for demonstration
-         { barcode: "BC-10001", activationCode: "AC-993821" },
-         { barcode: "BC-10002", activationCode: "AC-883712" },
-         { barcode: "BC-10003", activationCode: "AC-773623" },
-         { barcode: "BC-10004", activationCode: "AC-663534" },
-         { barcode: "BC-10005", activationCode: "AC-553445" },
-         { barcode: "BC-10006", activationCode: "AC-443356" },
-         { barcode: "BC-10007", activationCode: "AC-333267" },
-         { barcode: "BC-10008", activationCode: "AC-223178" },
-         { barcode: "BC-10009", activationCode: "AC-113089" },
-         { barcode: "BC-10010", activationCode: "AC-002990" },
-         { barcode: "BC-10011", activationCode: "AC-992801" },
-         { barcode: "BC-10012", activationCode: "AC-882712" }
-      ];
+      const printButton = document.getElementById("printButton");
+      const downloadButton = document.getElementById("downloadButton");
+      const tagSelect = document.getElementById("printTagSelect");
 
-      // --- 2. PAGINATION LOGIC ---
-      const rowsPerPage = 8;
-      let currentPage = 1;
+      // Helper function to check if tag is selected and toggle buttons
+      function toggleActionButtons() {
+        const tagId = tagSelect ? tagSelect.value : null;
+        const isDisabled = !tagId; // Disabled if no ID
 
-      function renderTable() {
-        const tbody = document.getElementById("tableBody");
-        tbody.innerHTML = "";
-
-        const start = (currentPage - 1) * rowsPerPage;
-        const end = start + rowsPerPage;
-        const pageData = items.slice(start, end);
-
-        if(pageData.length === 0) {
-            tbody.innerHTML = "<tr><td colspan='2' style='text-align:center; padding: 20px;'>No items found</td></tr>";
-            return;
+        if (printButton) {
+            printButton.disabled = isDisabled;
+            // Update styling based on disabled state (Tailwind classes handle opacity, but we can do more if needed)
+            if(isDisabled) {
+                printButton.style.backgroundColor = '#6262a6'; // Keep base color but let opacity handle the visual "disabled" look
+            }
         }
+        
+        if (downloadButton) {
+            downloadButton.disabled = isDisabled;
+        }
+      }
 
-        pageData.forEach(item => {
-          const row = `
-            <tr>
-              <td><span class="code-pill">${item.barcode}</span></td>
-              <td><span class="code-pill" style="color:#16a34a; background:#dcfce7;">${item.activationCode}</span></td>
-            </tr>
-          `;
-          tbody.innerHTML += row;
+      // Initial check on load
+      toggleActionButtons();
+
+      // Listen for changes
+      if (tagSelect) {
+        tagSelect.addEventListener("change", toggleActionButtons);
+      }
+
+      if (printButton) {
+        printButton.addEventListener("click", function () {
+          const tagId = tagSelect.value;
+          if (tagId) {
+            const printUrl = `/admin/print-scans/${tagId}`;
+            window.open(printUrl, "_blank");
+          }
         });
-
-        updatePaginationControls();
       }
 
-      function updatePaginationControls() {
-        const totalPages = Math.ceil(items.length / rowsPerPage);
-        document.getElementById("pageInfo").innerText = `Page ${currentPage} of ${totalPages}`;
-        
-        document.getElementById("prevBtn").disabled = currentPage === 1;
-        document.getElementById("nextBtn").disabled = currentPage === totalPages || totalPages === 0;
-      }
-
-      function changePage(direction) {
-        const totalPages = Math.ceil(items.length / rowsPerPage);
-        const newPage = currentPage + direction;
-        
-        if (newPage > 0 && newPage <= totalPages) {
-          currentPage = newPage;
-          renderTable();
-        }
-      }
-
-      // Initial Render
-      renderTable();
-
-      // --- 3. DOWNLOAD LOGIC ---
-      function downloadFile() {
-        const includeBarcode = document.getElementById("chkBarcode").checked;
-        const includeActivation = document.getElementById("chkActivation").checked;
-
-        if (!includeBarcode && !includeActivation) {
-          alert("Please select at least one column to download.");
-          return;
-        }
-
-        let content = "";
-
-        // Loop through ALL items (not just current page)
-        items.forEach(item => {
-          let line = [];
-          
-          if (includeBarcode) line.push(item.barcode);
-          if (includeActivation) line.push(item.activationCode);
-          
-          // Join with comma, add new line
-          content += line.join(",") + "\n";
+      if (downloadButton) {
+        downloadButton.addEventListener("click", function () {
+          const tagId = tagSelect.value;
+          if (tagId) {
+            const downloadUrl = `/admin/download-scans/${tagId}`;
+            window.open(downloadUrl, "_blank");
+          }
         });
-
-        // Create the blob
-        const blob = new Blob([content], { type: "text/plain" });
-        const url = window.URL.createObjectURL(blob);
-        
-        // Create temp link to trigger download
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = "data-export.txt"; // CSV style txt
-        document.body.appendChild(a);
-        a.click();
-        
-        // Cleanup
-        document.body.removeChild(a);
-        window.URL.revokeObjectURL(url);
       }
     </script>
   </body>
