@@ -41,252 +41,6 @@
         min-height: 100vh;
       }
 
-      /* Reuse Sidebar & Header Styles from previous dashboard */
-      .sidebar {
-        width: var(--sidebar-width);
-        background-color: var(--primary);
-        color: var(--white);
-        display: flex;
-        flex-direction: column;
-        position: fixed;
-        height: 100vh;
-        left: 0;
-        top: 0;
-        padding: 24px;
-        z-index: 50;
-      }
-
-      /* ... (Include other sidebar CSS if not loading from partial) ... */
-
-      .main-wrapper {
-        margin-left: var(--sidebar-width);
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-      }
-
-      header {
-        background-color: var(--white);
-        height: 70px;
-        padding: 0 32px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        box-shadow: var(--shadow);
-        position: sticky;
-        top: 0;
-        z-index: 40;
-      }
-
-      /* Search & Header Actions CSS reused */
-      .search-bar {
-        display: flex;
-        align-items: center;
-        background-color: var(--bg-body);
-        padding: 10px 16px;
-        border-radius: 8px;
-        width: 350px;
-      }
-      .search-bar input {
-        border: none;
-        background: none;
-        outline: none;
-        width: 100%;
-        margin-left: 10px;
-      }
-      .header-actions {
-        display: flex;
-        gap: 20px;
-        align-items: center;
-      }
-
-      /* --- PAGE SPECIFIC STYLES --- */
-      .content {
-        padding: 32px;
-      }
-
-      .page-title {
-        font-size: 24px;
-        font-weight: 700;
-        color: var(--text-dark);
-        margin-bottom: 24px;
-      }
-
-      /* Layout Grid */
-      .download-grid {
-        display: grid;
-        grid-template-columns: 3fr 1fr; /* Table takes more space */
-        gap: 24px;
-      }
-
-      /* Panel Styles */
-      .panel {
-        background: var(--white);
-        border-radius: 12px;
-        box-shadow: var(--shadow);
-        padding: 24px;
-        display: flex;
-        flex-direction: column;
-      }
-
-      /* Table Styles */
-      .table-container {
-        width: 100%;
-        overflow-x: auto;
-      }
-
-      table {
-        width: 100%;
-        border-collapse: collapse;
-        font-size: 14px;
-      }
-
-      thead th {
-        text-align: left;
-        padding: 12px 16px;
-        background-color: #f8fafc;
-        color: var(--text-gray);
-        font-weight: 600;
-        border-bottom: 1px solid var(--border-color);
-        text-transform: uppercase;
-        font-size: 12px;
-        letter-spacing: 0.5px;
-      }
-
-      tbody td {
-        padding: 14px 16px;
-        border-bottom: 1px solid var(--border-color);
-        color: var(--text-dark);
-      }
-
-      tbody tr:last-child td {
-        border-bottom: none;
-      }
-
-      tbody tr:hover {
-        background-color: #f8fafc;
-      }
-
-      /* Code styling for aesthetics */
-      .code-pill {
-        font-family: "Courier New", monospace;
-        background: var(--bg-body);
-        padding: 4px 8px;
-        border-radius: 4px;
-        color: var(--primary-dark);
-        font-weight: 600;
-        font-size: 13px;
-      }
-
-      /* Pagination */
-      .pagination {
-        display: flex;
-        justify-content: flex-end;
-        align-items: center;
-        margin-top: 20px;
-        gap: 12px;
-      }
-
-      .page-btn {
-        background: var(--white);
-        border: 1px solid var(--border-color);
-        padding: 6px 12px;
-        border-radius: 6px;
-        cursor: pointer;
-        color: var(--text-gray);
-        font-size: 13px;
-        transition: 0.2s;
-      }
-
-      .page-btn:hover:not(:disabled) {
-        border-color: var(--primary);
-        color: var(--primary);
-      }
-
-      .page-btn:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-      }
-
-      .page-info {
-        font-size: 13px;
-        color: var(--text-gray);
-      }
-
-      /* Export Controls Panel */
-      .export-title {
-        font-size: 16px;
-        font-weight: 600;
-        margin-bottom: 16px;
-        color: var(--text-dark);
-        border-bottom: 1px solid var(--border-color);
-        padding-bottom: 12px;
-      }
-
-      .checkbox-group {
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-        margin-bottom: 24px;
-      }
-
-      .custom-checkbox {
-        display: flex;
-        align-items: center;
-        cursor: pointer;
-        font-size: 14px;
-        color: var(--text-dark);
-      }
-
-      .custom-checkbox input {
-        width: 18px;
-        height: 18px;
-        margin-right: 10px;
-        accent-color: var(--primary); /* Makes checkbox purple */
-        cursor: pointer;
-      }
-
-      .download-btn {
-        background-color: var(--primary);
-        color: var(--white);
-        border: none;
-        padding: 12px;
-        border-radius: 8px;
-        font-weight: 600;
-        cursor: pointer;
-        transition: background 0.2s;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-      }
-
-      .download-btn:hover {
-        background-color: var(--primary-dark);
-      }
-
-      .download-btn:disabled {
-        background-color: var(--text-gray);
-        cursor: not-allowed;
-      }
-
-      /* Responsive */
-      @media (max-width: 1024px) {
-        .download-grid {
-          grid-template-columns: 1fr;
-        }
-      }
-      @media (max-width: 768px) {
-        .sidebar {
-          display: none;
-        }
-        .main-wrapper {
-          margin-left: 0;
-        }
-        header {
-          padding: 0 16px;
-        }
-      }
       /* --- SIDEBAR --- */
       .sidebar {
         width: var(--sidebar-width);
@@ -437,6 +191,234 @@
         border-radius: 50%;
         border: 2px solid var(--white);
       }
+
+      /* --- PAGE SPECIFIC STYLES --- */
+      .content {
+        padding: 32px;
+      }
+
+      .page-title {
+        font-size: 24px;
+        font-weight: 700;
+        color: var(--text-dark);
+        margin-bottom: 24px;
+      }
+
+      /* Layout Grid */
+      .download-grid {
+        display: grid;
+        grid-template-columns: 3fr 1fr; /* Table takes more space */
+        gap: 24px;
+      }
+
+      /* Panel Styles */
+      .panel {
+        background: var(--white);
+        border-radius: 12px;
+        box-shadow: var(--shadow);
+        padding: 24px;
+        display: flex;
+        flex-direction: column;
+      }
+
+      /* Table Styles */
+      .table-container {
+        width: 100%;
+        overflow-x: auto;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 14px;
+      }
+
+      thead th {
+        text-align: left;
+        padding: 12px 16px;
+        background-color: #f8fafc;
+        color: var(--text-gray);
+        font-weight: 600;
+        border-bottom: 1px solid var(--border-color);
+        text-transform: uppercase;
+        font-size: 12px;
+        letter-spacing: 0.5px;
+      }
+
+      tbody td {
+        padding: 14px 16px;
+        border-bottom: 1px solid var(--border-color);
+        color: var(--text-dark);
+      }
+
+      tbody tr:last-child td {
+        border-bottom: none;
+      }
+
+      tbody tr:hover {
+        background-color: #f8fafc;
+      }
+
+      /* Code styling for aesthetics */
+      .code-pill {
+        font-family: "Courier New", monospace;
+        background: var(--bg-body);
+        padding: 4px 8px;
+        border-radius: 4px;
+        color: var(--primary-dark);
+        font-weight: 600;
+        font-size: 13px;
+      }
+
+      /* Pagination */
+      .pagination {
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        margin-top: 20px;
+        gap: 12px;
+      }
+
+      .page-btn {
+        background: var(--white);
+        border: 1px solid var(--border-color);
+        padding: 6px 12px;
+        border-radius: 6px;
+        cursor: pointer;
+        color: var(--text-gray);
+        font-size: 13px;
+        transition: 0.2s;
+      }
+
+      .page-btn:hover:not(:disabled) {
+        border-color: var(--primary);
+        color: var(--primary);
+      }
+
+      .page-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      .page-info {
+        font-size: 13px;
+        color: var(--text-gray);
+      }
+
+      /* Export & Activate Controls Panel */
+      .export-title {
+        font-size: 16px;
+        font-weight: 600;
+        margin-bottom: 16px;
+        color: var(--text-dark);
+        border-bottom: 1px solid var(--border-color);
+        padding-bottom: 12px;
+      }
+
+      .checkbox-group {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        margin-bottom: 24px;
+      }
+
+      .custom-checkbox {
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+        font-size: 14px;
+        color: var(--text-dark);
+      }
+
+      .custom-checkbox input {
+        width: 18px;
+        height: 18px;
+        margin-right: 10px;
+        accent-color: var(--primary); /* Makes checkbox purple */
+        cursor: pointer;
+      }
+
+      /* Form Inputs for Activate Panel */
+      .form-group {
+        margin-bottom: 16px;
+      }
+
+      .form-label {
+        display: block;
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--text-gray);
+        margin-bottom: 6px;
+        text-transform: uppercase;
+      }
+
+      .form-input {
+        width: 100%;
+        padding: 10px;
+        border-radius: 8px;
+        border: 1px solid var(--border-color);
+        background-color: var(--bg-body);
+        font-size: 14px;
+        color: var(--text-dark);
+        outline: none;
+        transition: border-color 0.2s;
+      }
+      
+      .form-input:focus {
+        border-color: var(--primary);
+        background-color: var(--white);
+      }
+
+      /* Buttons */
+      .download-btn {
+        width: 100%;
+        background-color: var(--primary);
+        color: var(--white);
+        border: none;
+        padding: 12px;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+      }
+
+      .download-btn:hover {
+        background-color: var(--primary-dark);
+      }
+
+      .download-btn:disabled {
+        background-color: var(--text-gray);
+        cursor: not-allowed;
+      }
+      
+      .run-btn {
+        background-color: #10b981; /* Green for Run action */
+      }
+      .run-btn:hover {
+        background-color: #059669;
+      }
+
+      /* Responsive */
+      @media (max-width: 1024px) {
+        .download-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+      @media (max-width: 768px) {
+        .sidebar {
+          display: none;
+        }
+        .main-wrapper {
+          margin-left: 0;
+        }
+        header {
+          padding: 0 16px;
+        }
+      }
     </style>
   </head>
   <body>
@@ -474,6 +456,7 @@
         <h1 class="page-title">Data Management</h1>
 
         <div class="download-grid">
+          
           <div class="panel">
             <h3
               style="
@@ -481,6 +464,7 @@
                 font-size: 18px;
                 color: var(--text-dark);
               "
+              id="tableTitle"
             >
               Available Codes
             </h3>
@@ -508,38 +492,56 @@
             </div>
           </div>
 
-          <div class="panel" style="height: fit-content">
-            <div class="export-title">Export Options</div>
+          <div style="display: flex; flex-direction: column; gap: 24px;">
+            
+            <div class="panel" style="height: fit-content">
+                <div class="export-title">Export Options</div>
 
-            <p
-              style="
-                font-size: 13px;
-                color: var(--text-gray);
-                margin-bottom: 16px;
-              "
-            >
-              Select the columns you wish to include in the file.
-            </p>
+                <p style="font-size: 13px; color: var(--text-gray); margin-bottom: 16px;">
+                Select the columns you wish to include in the file.
+                </p>
 
-            <div class="checkbox-group">
-              <label class="custom-checkbox">
-                <input type="checkbox" id="chkBarcode" checked />
-                Barcode ID
-              </label>
+                <div class="checkbox-group">
+                <label class="custom-checkbox">
+                    <input type="checkbox" id="chkBarcode" checked />
+                    Barcode ID
+                </label>
 
-              <label class="custom-checkbox">
-                <input type="checkbox" id="chkActivation" checked />
-                Activation Code
-              </label>
+                <label class="custom-checkbox">
+                    <input type="checkbox" id="chkActivation" checked />
+                    Activation Code
+                </label>
+                </div>
+
+                <button class="download-btn" id="downloadBtn" onclick="downloadFile()">
+                <i class="fas fa-file-download"></i> Download .txt
+                </button>
             </div>
 
-            <button
-              class="download-btn"
-              id="downloadBtn"
-              onclick="downloadFile()"
-            >
-              <i class="fas fa-file-download"></i> Download .txt
-            </button>
+            <div class="panel" style="height: fit-content">
+                <div class="export-title">Activate</div>
+                
+                <p style="font-size: 13px; color: var(--text-gray); margin-bottom: 16px;">
+                    Schedule activation for a specific EAN code.
+                </p>
+
+                <div class="form-group">
+                    <label class="form-label" for="eanSelect">Select EAN</label>
+                    <select id="eanSelect" class="form-input">
+                        <option value="" disabled selected>Choose EAN...</option>
+                        </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="activateTime">Finish Date & Time</label>
+                    <input type="datetime-local" id="activateTime" class="form-input" />
+                </div>
+
+                <button class="download-btn run-btn" onclick="runActivation()">
+                    <i class="fas fa-play"></i> Run
+                </button>
+            </div>
+
           </div>
         </div>
       </div>
@@ -547,17 +549,35 @@
 
     <script>
       // --- 1. DATA INJECTION ---
-      // In your real EJS file, replace the mock array below with:
-      // const items = <%- JSON.stringify(items) %>;
+      // In your real EJS file, replace the mock data below with:
+      const items = <%- JSON.stringify(items) %>;
+      const name = <%- JSON.stringify(name) %>;
+      // We assume `ean` is passed as an array of objects: [{id: 1, code: "123"}, ...]
+      const eanList = <%- JSON.stringify(ean) %>; 
 
-      const items =  <%- JSON.stringify(items) %>;
-      const name  = <%- JSON.stringify(name) %>;
-
-      // --- 2. PAGINATION LOGIC ---
+      // --- 2. SETUP & PAGINATION ---
       const rowsPerPage = 50;
       let currentPage = 1;
 
-      document.querySelector("h3").innerText = `Available Codes: ${name.name}, Count: ${items.length}`;
+      // Set Title
+      document.getElementById("tableTitle").innerText = `Available Codes: ${name.name}, Count: ${items.length}`;
+
+      // Populate EAN Select Dropdown
+      const eanSelect = document.getElementById("eanSelect");
+      if(eanList && Array.isArray(eanList)) {
+          eanList.forEach(e => {
+              const option = document.createElement("option");
+              option.value = e.id; 
+              option.text = e.code;
+              eanSelect.appendChild(option);
+          });
+      } else if (eanList && typeof eanList === 'object') {
+          // Fallback if passed as single object
+          const option = document.createElement("option");
+          option.value = eanList.id;
+          option.text = eanList.code;
+          eanSelect.appendChild(option);
+      }
 
       function renderTable() {
         const tbody = document.getElementById("tableBody");
@@ -636,13 +656,44 @@
         // Create temp link to trigger download
         const a = document.createElement("a");
         a.href = url;
-        a.download = "data-export.txt"; // CSV style txt
+        
+        // Determine Filename
+        if(includeBarcode && includeActivation){
+          a.download = `${name.name}.txt`; 
+        } else if(includeActivation && !includeBarcode){
+          a.download = `${name.name}NurPin.txt`; 
+        } else if(!includeActivation && includeBarcode){
+          a.download = `${name.name}NurBarcode.txt`;
+        } else {
+          a.download = `${name.name}.txt`;
+        }
+        
         document.body.appendChild(a);
         a.click();
 
         // Cleanup
         document.body.removeChild(a);
         window.URL.revokeObjectURL(url);
+      }
+
+      // --- 4. ACTIVATION LOGIC (Placeholder) ---
+      function runActivation() {
+          const selectedEanId = document.getElementById("eanSelect").value;
+          const selectedTime = document.getElementById("activateTime").value;
+
+          if(!selectedEanId) {
+              alert("Please select an EAN code.");
+              return;
+          }
+          if(!selectedTime) {
+              alert("Please select a date and time.");
+              return;
+          }
+
+          // Placeholder for future logic
+          console.log(`Running activation for EAN ID: ${selectedEanId} at ${selectedTime}`);
+          // You would typically make a fetch/axios POST request here.
+          alert("Activation scheduled! (Logic to be implemented)");
       }
     </script>
   </body>
