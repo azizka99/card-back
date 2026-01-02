@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CardScan - Download Data</title>
+
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+      rel="stylesheet"
+    />
+
+    <style>
+      :root {
+        --primary: #6262a6;
+        --primary-dark: #4e4e85;
+        --primary-light: #eef0f7;
+        --text-dark: #1e293b;
+        --text-gray: #64748b;
+        --bg-body: #f1f5f9;
+        --white: #ffffff;
+        --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+        --sidebar-width: 260px;
+        --border-color: #e2e8f0;
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: "Inter", sans-serif;
+      }
+
+      body {
+        background-color: var(--bg-body);
+        display: flex;
+        min-height: 100vh;
+      }
+
+      /* Reuse Sidebar & Header Styles from previous dashboard */
+      .sidebar {
+        width: var(--sidebar-width);
+        background-color: var(--primary);
+        color: var(--white);
+        display: flex;
+        flex-direction: column;
+        position: fixed;
+        height: 100vh;
+        left: 0;
+        top: 0;
+        padding: 24px;
+        z-index: 50;
+      }
+      
+      /* ... (Include other sidebar CSS if not loading from partial) ... */
+
+      .main-wrapper {
+        margin-left: var(--sidebar-width);
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+      }
+
+      header {
+        background-color: var(--white);
+        height: 70px;
+        padding: 0 32px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        box-shadow: var(--shadow);
+        position: sticky;
+        top: 0;
+        z-index: 40;
+      }
+      
+      /* Search & Header Actions CSS reused */
+      .search-bar {
+        display: flex;
+        align-items: center;
+        background-color: var(--bg-body);
+        padding: 10px 16px;
+        border-radius: 8px;
+        width: 350px;
+      }
+      .search-bar input { border: none; background: none; outline: none; width: 100%; margin-left: 10px; }
+      .header-actions { display: flex; gap: 20px; align-items: center; }
+
+      /* --- PAGE SPECIFIC STYLES --- */
+      .content {
+        padding: 32px;
+      }
+
+      .page-title {
+        font-size: 24px;
+        font-weight: 700;
+        color: var(--text-dark);
+        margin-bottom: 24px;
+      }
+
+      /* Layout Grid */
+      .download-grid {
+        display: grid;
+        grid-template-columns: 3fr 1fr; /* Table takes more space */
+        gap: 24px;
+      }
+
+      /* Panel Styles */
+      .panel {
+        background: var(--white);
+        border-radius: 12px;
+        box-shadow: var(--shadow);
+        padding: 24px;
+        display: flex;
+        flex-direction: column;
+      }
+
+      /* Table Styles */
+      .table-container {
+        width: 100%;
+        overflow-x: auto;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 14px;
+      }
+
+      thead th {
+        text-align: left;
+        padding: 12px 16px;
+        background-color: #f8fafc;
+        color: var(--text-gray);
+        font-weight: 600;
+        border-bottom: 1px solid var(--border-color);
+        text-transform: uppercase;
+        font-size: 12px;
+        letter-spacing: 0.5px;
+      }
+
+      tbody td {
+        padding: 14px 16px;
+        border-bottom: 1px solid var(--border-color);
+        color: var(--text-dark);
+      }
+
+      tbody tr:last-child td {
+        border-bottom: none;
+      }
+
+      tbody tr:hover {
+        background-color: #f8fafc;
+      }
+
+      /* Code styling for aesthetics */
+      .code-pill {
+        font-family: 'Courier New', monospace;
+        background: var(--bg-body);
+        padding: 4px 8px;
+        border-radius: 4px;
+        color: var(--primary-dark);
+        font-weight: 600;
+        font-size: 13px;
+      }
+
+      /* Pagination */
+      .pagination {
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        margin-top: 20px;
+        gap: 12px;
+      }
+
+      .page-btn {
+        background: var(--white);
+        border: 1px solid var(--border-color);
+        padding: 6px 12px;
+        border-radius: 6px;
+        cursor: pointer;
+        color: var(--text-gray);
+        font-size: 13px;
+        transition: 0.2s;
+      }
+
+      .page-btn:hover:not(:disabled) {
+        border-color: var(--primary);
+        color: var(--primary);
+      }
+
+      .page-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      .page-info {
+        font-size: 13px;
+        color: var(--text-gray);
+      }
+
+      /* Export Controls Panel */
+      .export-title {
+        font-size: 16px;
+        font-weight: 600;
+        margin-bottom: 16px;
+        color: var(--text-dark);
+        border-bottom: 1px solid var(--border-color);
+        padding-bottom: 12px;
+      }
+
+      .checkbox-group {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        margin-bottom: 24px;
+      }
+
+      .custom-checkbox {
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+        font-size: 14px;
+        color: var(--text-dark);
+      }
+
+      .custom-checkbox input {
+        width: 18px;
+        height: 18px;
+        margin-right: 10px;
+        accent-color: var(--primary); /* Makes checkbox purple */
+        cursor: pointer;
+      }
+
+      .download-btn {
+        background-color: var(--primary);
+        color: var(--white);
+        border: none;
+        padding: 12px;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+      }
+
+      .download-btn:hover {
+        background-color: var(--primary-dark);
+      }
+
+      .download-btn:disabled {
+        background-color: var(--text-gray);
+        cursor: not-allowed;
+      }
+
+      /* Responsive */
+      @media (max-width: 1024px) {
+        .download-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+      @media (max-width: 768px) {
+        .sidebar { display: none; }
+        .main-wrapper { margin-left: 0; }
+        header { padding: 0 16px; }
+      }
+    </style>
+  </head>
+  <body>
+    <%- include("partials/sidebar", { activePage: "download" }) %>
+
+    <div class="main-wrapper">
+      <header>
+        <div class="search-bar">
+            <i class="fas fa-search" style="color: #64748b; margin-right: 10px;"></i>
+            <input type="text" placeholder="Search..." />
+        </div>
+        <div class="header-actions">
+             <div style="width: 35px; height: 35px; background: #6262a6; border-radius: 50%; color: white; display: flex; align-items: center; justify-content: center; font-weight: bold;">AD</div>
+        </div>
+      </header>
+
+      <div class="content">
+        <h1 class="page-title">Data Management</h1>
+
+        <div class="download-grid">
+          
+          <div class="panel">
+            <h3 style="margin-bottom: 20px; font-size: 18px; color: var(--text-dark);">Available Codes</h3>
+            
+            <div class="table-container">
+              <table>
+                <thead>
+                  <tr>
+                    <th><i class="fas fa-barcode"></i> Barcode</th>
+                    <th><i class="fas fa-key"></i> Activation Code</th>
+                  </tr>
+                </thead>
+                <tbody id="tableBody">
+                  </tbody>
+              </table>
+            </div>
+
+            <div class="pagination">
+              <button class="page-btn" id="prevBtn" onclick="changePage(-1)"><i class="fas fa-chevron-left"></i></button>
+              <span class="page-info" id="pageInfo">Page 1 of 1</span>
+              <button class="page-btn" id="nextBtn" onclick="changePage(1)"><i class="fas fa-chevron-right"></i></button>
+            </div>
+          </div>
+
+          <div class="panel" style="height: fit-content;">
+            <div class="export-title">Export Options</div>
+            
+            <p style="font-size: 13px; color: var(--text-gray); margin-bottom: 16px;">
+              Select the columns you wish to include in the file.
+            </p>
+
+            <div class="checkbox-group">
+              <label class="custom-checkbox">
+                <input type="checkbox" id="chkBarcode" checked>
+                Barcode ID
+              </label>
+              
+              <label class="custom-checkbox">
+                <input type="checkbox" id="chkActivation" checked>
+                Activation Code
+              </label>
+            </div>
+
+            <button class="download-btn" id="downloadBtn" onclick="downloadFile()">
+              <i class="fas fa-file-download"></i> Download .txt
+            </button>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // --- 1. DATA INJECTION ---
+      // In your real EJS file, replace the mock array below with:
+      // const items = <%- JSON.stringify(items) %>;
+      
+      const items = [
+         // Mock data for demonstration
+         { barcode: "BC-10001", activationCode: "AC-993821" },
+         { barcode: "BC-10002", activationCode: "AC-883712" },
+         { barcode: "BC-10003", activationCode: "AC-773623" },
+         { barcode: "BC-10004", activationCode: "AC-663534" },
+         { barcode: "BC-10005", activationCode: "AC-553445" },
+         { barcode: "BC-10006", activationCode: "AC-443356" },
+         { barcode: "BC-10007", activationCode: "AC-333267" },
+         { barcode: "BC-10008", activationCode: "AC-223178" },
+         { barcode: "BC-10009", activationCode: "AC-113089" },
+         { barcode: "BC-10010", activationCode: "AC-002990" },
+         { barcode: "BC-10011", activationCode: "AC-992801" },
+         { barcode: "BC-10012", activationCode: "AC-882712" }
+      ];
+
+      // --- 2. PAGINATION LOGIC ---
+      const rowsPerPage = 8;
+      let currentPage = 1;
+
+      function renderTable() {
+        const tbody = document.getElementById("tableBody");
+        tbody.innerHTML = "";
+
+        const start = (currentPage - 1) * rowsPerPage;
+        const end = start + rowsPerPage;
+        const pageData = items.slice(start, end);
+
+        if(pageData.length === 0) {
+            tbody.innerHTML = "<tr><td colspan='2' style='text-align:center; padding: 20px;'>No items found</td></tr>";
+            return;
+        }
+
+        pageData.forEach(item => {
+          const row = `
+            <tr>
+              <td><span class="code-pill">${item.barcode}</span></td>
+              <td><span class="code-pill" style="color:#16a34a; background:#dcfce7;">${item.activationCode}</span></td>
+            </tr>
+          `;
+          tbody.innerHTML += row;
+        });
+
+        updatePaginationControls();
+      }
+
+      function updatePaginationControls() {
+        const totalPages = Math.ceil(items.length / rowsPerPage);
+        document.getElementById("pageInfo").innerText = `Page ${currentPage} of ${totalPages}`;
+        
+        document.getElementById("prevBtn").disabled = currentPage === 1;
+        document.getElementById("nextBtn").disabled = currentPage === totalPages || totalPages === 0;
+      }
+
+      function changePage(direction) {
+        const totalPages = Math.ceil(items.length / rowsPerPage);
+        const newPage = currentPage + direction;
+        
+        if (newPage > 0 && newPage <= totalPages) {
+          currentPage = newPage;
+          renderTable();
+        }
+      }
+
+      // Initial Render
+      renderTable();
+
+      // --- 3. DOWNLOAD LOGIC ---
+      function downloadFile() {
+        const includeBarcode = document.getElementById("chkBarcode").checked;
+        const includeActivation = document.getElementById("chkActivation").checked;
+
+        if (!includeBarcode && !includeActivation) {
+          alert("Please select at least one column to download.");
+          return;
+        }
+
+        let content = "";
+
+        // Loop through ALL items (not just current page)
+        items.forEach(item => {
+          let line = [];
+          
+          if (includeBarcode) line.push(item.barcode);
+          if (includeActivation) line.push(item.activationCode);
+          
+          // Join with comma, add new line
+          content += line.join(",") + "\n";
+        });
+
+        // Create the blob
+        const blob = new Blob([content], { type: "text/plain" });
+        const url = window.URL.createObjectURL(blob);
+        
+        // Create temp link to trigger download
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "data-export.txt"; // CSV style txt
+        document.body.appendChild(a);
+        a.click();
+        
+        // Cleanup
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+      }
+    </script>
+  </body>
+</html>
