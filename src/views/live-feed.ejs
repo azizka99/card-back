@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Live Feed | CardScan Admin</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
+
+  <style>
+    :root {
+      --primary: #6262a6;
+      --primary-dark: #4e4e85;
+      --primary-light: #eef0f7;
+      --text-dark: #1e293b;
+      --text-gray: #64748b;
+      --bg-body: #f1f5f9;
+      --white: #ffffff;
+      --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+      --sidebar-width: 260px;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: "Inter", sans-serif; }
+    body { background-color: var(--bg-body); display: flex; min-height: 100vh; }
+
+    .sidebar {
+      width: var(--sidebar-width);
+      background-color: var(--primary);
+      color: var(--white);
+      display: flex;
+      flex-direction: column;
+      position: fixed;
+      height: 100vh;
+      left: 0; top: 0;
+      padding: 24px;
+      z-index: 50;
+    }
+
+    .logo { font-size: 22px; font-weight: 700; display: flex; align-items: center; gap: 12px; margin-bottom: 40px; letter-spacing: -0.5px; }
+    .menu-label { font-size: 12px; text-transform: uppercase; color: rgba(255, 255, 255, 0.6); margin-bottom: 10px; font-weight: 600; letter-spacing: 0.5px; }
+    .menu { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+
+    .menu li a {
+      text-decoration: none;
+      color: rgba(255, 255, 255, 0.8);
+      padding: 12px 16px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 14px;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+    .menu li a:hover, .menu li a.active { background-color: rgba(255, 255, 255, 0.15); color: var(--white); }
+    .menu li a i { width: 20px; text-align: center; }
+
+    .main-wrapper { margin-left: var(--sidebar-width); flex: 1; display: flex; flex-direction: column; }
+
+    header {
+      background-color: var(--white);
+      height: 70px;
+      padding: 0 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: var(--shadow);
+      position: sticky;
+      top: 0;
+      z-index: 40;
+    }
+
+    .search-bar {
+      display: flex;
+      align-items: center;
+      background-color: var(--bg-body);
+      padding: 10px 16px;
+      border-radius: 8px;
+      width: 420px;
+      border: 1px solid transparent;
+      transition: 0.2s;
+    }
+    .search-bar:focus-within { border-color: var(--primary); background-color: var(--white); }
+    .search-bar i { color: var(--text-gray); margin-right: 10px; }
+    .search-bar input { border: none; background: none; outline: none; width: 100%; font-size: 14px; color: var(--text-dark); }
+
+    .content { padding: 32px; }
+    .page-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 18px; }
+    .page-title { font-size: 24px; font-weight: 700; color: var(--text-dark); }
+    .subtle { font-size: 13px; color: var(--text-gray); }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--white);
+      border: 1px solid #e2e8f0;
+      padding: 10px 12px;
+      border-radius: 999px;
+      box-shadow: var(--shadow);
+      font-size: 13px;
+      color: var(--text-gray);
+      user-select: none;
+    }
+    .dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: #22c55e;
+      box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.15);
+    }
+
+    /* Table wrapper */
+    .table-card {
+      background: var(--white);
+      border-radius: 12px;
+      box-shadow: var(--shadow);
+      border: 1px solid #e2e8f0;
+      overflow: hidden;
+    }
+
+    table { width: 100%; border-collapse: collapse; }
+    thead { background: #f8fafc; }
+    th {
+      text-align: left;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #64748b;
+      padding: 14px 18px;
+      font-weight: 700;
+      border-bottom: 1px solid #e2e8f0;
+      white-space: nowrap;
+    }
+    td {
+      padding: 14px 18px;
+      border-bottom: 1px solid #f1f5f9;
+      font-size: 14px;
+      color: #334155;
+      vertical-align: middle;
+      white-space: nowrap;
+    }
+    tr:hover td { background: #eff6ff; }
+
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+    .tag-pill {
+      display: inline-flex; align-items: center;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+      background: rgba(98, 98, 166, 0.12);
+      color: var(--primary);
+    }
+
+    .user-chip { display: inline-flex; align-items: center; gap: 10px; }
+    .avatar {
+      width: 26px; height: 26px; border-radius: 50%;
+      background: #e5e7eb; color: #4b5563;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 800;
+    }
+
+    .view-link { color: #2563eb; font-weight: 600; text-decoration: none; }
+    .view-link:hover { text-decoration: underline; }
+
+    .flash {
+      animation: flashIn 900ms ease-out;
+    }
+    @keyframes flashIn {
+      0% { background: rgba(34,197,94,0.15); }
+      100% { background: transparent; }
+    }
+
+    @media (max-width: 1024px) {
+      .search-bar { width: 280px; }
+    }
+    @media (max-width: 768px) {
+      .sidebar { display: none; }
+      .main-wrapper { margin-left: 0; }
+      header { padding: 0 16px; }
+      .content { padding: 18px; }
+    }
+  </style>
+</head>
+
+<body>
+  <aside class="sidebar">
+    <div class="logo">
+      <i class="fas fa-layer-group"></i>
+      <span>CardScan.io</span>
+    </div>
+
+    <div class="menu-label">Analytics</div>
+    <ul class="menu">
+      <li><a href="/admin"><i class="fas fa-chart-pie"></i> Dashboard</a></li>
+      <li><a href="/admin/live-feed" class="active"><i class="fas fa-qrcode"></i> Live Feed</a></li>
+      <li><a href="/admin/history"><i class="fas fa-database"></i> Scan History</a></li>
+    </ul>
+
+    <div class="menu-label" style="margin-top: 24px">Admin</div>
+    <ul class="menu">
+      <li><a href="/admin/users"><i class="fas fa-users"></i> Users</a></li>
+      <li><a href="/admin/permissions"><i class="fas fa-shield-alt"></i> Permissions</a></li>
+      <li><a href="/admin/settings"><i class="fas fa-cog"></i> Settings</a></li>
+    </ul>
+  </aside>
+
+  <div class="main-wrapper">
+    <header>
+      <div class="search-bar">
+        <i class="fas fa-search"></i>
+        <input id="searchInput" type="text" placeholder="Search barcode / activation / user / tag..." />
+      </div>
+
+      <div class="pill" title="Updates every 3 seconds">
+        <span class="dot"></span>
+        Live
+        <span id="lastUpdate" style="margin-left:6px; color:#94a3b8;"></span>
+      </div>
+    </header>
+
+    <div class="content">
+      <div class="page-head">
+        <div>
+          <div class="page-title">Live Feed</div>
+          <div class="subtle">Newest scans appear on top automatically.</div>
+        </div>
+        <div class="pill">
+          <i class="fas fa-list"></i>
+          Showing <span id="rowCount"><%= items.length %></span>
+        </div>
+      </div>
+
+      <div class="table-card">
+        <div style="overflow-x:auto;">
+          <table class="min-w-full">
+            <thead>
+              <tr>
+                <th>Barcode</th>
+                <th>User</th>
+                <th>Tag</th>
+                <th>Activation</th>
+                <th>Created</th>
+                <th>Image</th>
+              </tr>
+            </thead>
+            <tbody id="feedBody">
+              <% items.forEach(it => { %>
+                <tr data-id="<%= it.id %>" data-search="<%= [
+                  it.barcode,
+                  it.activation_code || '',
+                  it.app_user?.name || '',
+                  it.tag?.name || ''
+                ].join(' ').toLowerCase() %>">
+                  <td class="mono" style="font-weight:700; color:#0f172a;"><%= it.barcode %></td>
+
+                  <td>
+                    <div class="user-chip">
+                      <div class="avatar"><%= it.app_user ? it.app_user.name.charAt(0).toUpperCase() : '?' %></div>
+                      <span><%= it.app_user ? it.app_user.name : 'N/A' %></span>
+                    </div>
+                  </td>
+
+                  <td>
+                    <% if (it.tag) { %>
+                      <span class="tag-pill"><%= it.tag.name %></span>
+                    <% } else { %>
+                      <span style="color:#94a3b8;">N/A</span>
+                    <% } %>
+                  </td>
+
+                  <td class="mono" style="color:#475569;"><%= it.activation_code || "-" %></td>
+
+                  <td style="color:#64748b;">
+                    <%= new Date(it.created_at).toLocaleDateString() %>
+                    <span style="font-size:12px; color:#94a3b8;"><%= new Date(it.created_at).toLocaleTimeString() %></span>
+                  </td>
+
+                  <td>
+                    <% if (it.img_src) { %>
+                      <a class="view-link" href="/admin/item/<%= it.id %>">View</a>
+                    <% } else { %>
+                      <span style="color:#cbd5e1;">-</span>
+                    <% } %>
+                  </td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // keep last seen timestamp so we only fetch new ones
+    let lastTs = "<%= latestTs || '' %>";
+
+    const feedBody = document.getElementById("feedBody");
+    const rowCount = document.getElementById("rowCount");
+    const lastUpdate = document.getElementById("lastUpdate");
+    const searchInput = document.getElementById("searchInput");
+
+    function escHtml(s) {
+      return String(s)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function formatDate(iso) {
+      const d = new Date(iso);
+      const date = d.toLocaleDateString();
+      const time = d.toLocaleTimeString();
+      return { date, time };
+    }
+
+    function buildRow(it) {
+      const userInitial = it.app_user?.name ? it.app_user.name.charAt(0).toUpperCase() : "?";
+      const userName = it.app_user?.name || "N/A";
+      const tagHtml = it.tag?.name
+        ? `<span class="tag-pill">${escHtml(it.tag.name)}</span>`
+        : `<span style="color:#94a3b8;">N/A</span>`;
+      const activation = it.activation_code || "-";
+      const dt = formatDate(it.created_at);
+      const imgHtml = it.img_src
+        ? `<a class="view-link" href="/admin/item/${escHtml(it.id)}">View</a>`
+        : `<span style="color:#cbd5e1;">-</span>`;
+
+      const search = [it.barcode, activation, userName, it.tag?.name || ""].join(" ").toLowerCase();
+
+      return `
+        <tr class="flash" data-id="${escHtml(it.id)}" data-search="${escHtml(search)}">
+          <td class="mono" style="font-weight:700; color:#0f172a;">${escHtml(it.barcode)}</td>
+          <td>
+            <div class="user-chip">
+              <div class="avatar">${escHtml(userInitial)}</div>
+              <span>${escHtml(userName)}</span>
+            </div>
+          </td>
+          <td>${tagHtml}</td>
+          <td class="mono" style="color:#475569;">${escHtml(activation)}</td>
+          <td style="color:#64748b;">
+            ${escHtml(dt.date)}
+            <span style="font-size:12px; color:#94a3b8;">${escHtml(dt.time)}</span>
+          </td>
+          <td>${imgHtml}</td>
+        </tr>
+      `;
+    }
+
+    function applySearchFilter() {
+      const q = (searchInput.value || "").trim().toLowerCase();
+      const rows = feedBody.querySelectorAll("tr");
+      rows.forEach(r => {
+        const hay = r.getAttribute("data-search") || "";
+        r.style.display = !q || hay.includes(q) ? "" : "none";
+      });
+    }
+
+    async function poll() {
+      try {
+        const url = lastTs
+          ? `/admin/api/live-feed?after=${encodeURIComponent(lastTs)}`
+          : `/admin/api/live-feed`;
+
+        const res = await fetch(url, { headers: { "Accept": "application/json" } });
+        if (!res.ok) return;
+
+        const data = await res.json();
+        const items = Array.isArray(data.items) ? data.items : [];
+        if (items.length === 0) {
+          lastUpdate.textContent = "• " + new Date().toLocaleTimeString();
+          return;
+        }
+
+        // items come newest-first, we want to insert newest-first at the top
+        // but also update lastTs to the newest item
+        lastTs = new Date(items[0].created_at).toISOString();
+
+        // avoid duplicates if page reloaded or race
+        const existingIds = new Set(Array.from(feedBody.querySelectorAll("tr")).map(r => r.getAttribute("data-id")));
+
+        let inserted = 0;
+        let html = "";
+        for (const it of items) {
+          if (existingIds.has(String(it.id))) continue;
+          html += buildRow(it);
+          inserted++;
+        }
+
+        if (inserted > 0) {
+          feedBody.insertAdjacentHTML("afterbegin", html);
+          rowCount.textContent = String(feedBody.querySelectorAll("tr").length);
+          applySearchFilter();
+        }
+
+        lastUpdate.textContent = "• " + new Date().toLocaleTimeString();
+      } catch (e) {
+        // silently ignore (keeps UI clean)
+      }
+    }
+
+    searchInput.addEventListener("input", applySearchFilter);
+
+    // start polling
+    poll();
+    setInterval(poll, 3000);
+  </script>
+</body>
+</html>
