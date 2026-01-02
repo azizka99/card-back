@@ -30,6 +30,9 @@ model steam_card {
   pack            pack?       @relation(fields: [pack_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_pack")
   tag             tag?        @relation(fields: [tag_id], references: [id], onUpdate: NoAction, map: "fk_steam_card_tag")
   app_user        app_user    @relation(fields: [user_id], references: [id], onUpdate: NoAction, map: "fk_steam_card_user")
+
+  @@index([tag_id])
+  @@index([user_id, created_at], map: "steam_card_user_created_idx")
 }
 
 model tag {
@@ -42,6 +45,8 @@ model tag {
   approved_by_user   Boolean      @default(false)
   steam_card         steam_card[]
   app_user           app_user?    @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([userId], map: "tag_userid_idx")
 }
 
 model errorCard {
@@ -55,4 +60,17 @@ model pack {
   id           String       @id @db.Uuid
   start_number String       @unique(map: "pack_start_number_unique")
   steam_card   steam_card[]
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model aras_scan_public_pack {
+  id           String? @db.Uuid
+  start_number String?
+
+  @@ignore
+}
+
+model ean {
+  id   String @id @db.Uuid
+  code String @unique
 }

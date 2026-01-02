@@ -80,19 +80,7 @@ adminRoutes.get("/download/:tag_id", (0, express_async_handler_1.default)(async 
             name: true
         }
     });
-    const ean = [{
-            id: 1,
-            ean: "4260433453118",
-        },
-        {
-            id: 2,
-            ean: "4251976735076"
-        },
-        {
-            id: 3,
-            ean: "4260354150004"
-        }
-    ];
+    const ean = await dbConnection_1.default.ean.findMany();
     res.render("download", { items, name, ean });
 }));
 exports.default = adminRoutes;
