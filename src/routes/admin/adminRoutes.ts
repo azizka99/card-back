@@ -22,7 +22,7 @@ adminRoutes.get("/live-feed", expressAsyncHandler(async (req, res) => {
     });
 
     res.render("live-feed", {
-        steam_cards,
+        items:steam_cards,
         latestTs: steam_cards[0]?.created_at?.toISOString?.() || null,
     });
 }));
