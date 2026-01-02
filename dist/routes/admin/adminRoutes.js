@@ -59,7 +59,7 @@ adminRoutes.get("/live-feed", (0, express_async_handler_1.default)(async (req, r
         activePage: "live-feed",
     });
 }));
-adminRoutes.get("/download:tag_id", (0, express_async_handler_1.default)(async (req, res) => {
+adminRoutes.get("/download/:tag_id", (0, express_async_handler_1.default)(async (req, res) => {
     const items = await dbConnection_1.default.steam_card.findMany({
         where: {
             tag_id: req.params.tag_id

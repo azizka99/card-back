@@ -65,7 +65,7 @@ adminRoutes.get("/live-feed", expressAsyncHandler(async (req, res) => {
     });
 }));
 
-adminRoutes.get("/download:tag_id", expressAsyncHandler(async (req, res) => {
+adminRoutes.get("/download/:tag_id", expressAsyncHandler(async (req, res) => {
     const items = await prisma.steam_card.findMany({
         where: {
             tag_id: req.params.tag_id
