@@ -520,6 +520,7 @@
                 <button class="download-btn run-btn" onclick="runActivation()">
                     <i class="fas fa-play"></i> Run
                 </button>
+                <div id="activateStatus" style="margin-top:10px;font-size:13px;color:#64748b;"></div>
             </div>
 
           </div>
@@ -647,22 +648,58 @@
       }
 
       // --- 4. ACTIVATION LOGIC ---
-      function runActivation() {
-          const selectedEanId = document.getElementById("eanSelect").value;
-          const selectedTime = document.getElementById("activateTime").value;
+      async function runActivation() {
+  const selectedEanId = document.getElementById("eanSelect").value;
+  const selectedTime = document.getElementById("activateTime").value;
+  const statusEl = document.getElementById("activateStatus");
 
-          if(!selectedEanId) {
-              alert("Please select an EAN code.");
-              return;
-          }
-          if(!selectedTime) {
-              alert("Please select a date and time.");
-              return;
-          }
-          console.log(`Running activation for EAN ID: ${selectedEanId} at ${selectedTime}`);
-          alert("Activation scheduled!");
-      }
+  // You need tag id for the campaign. If you are on /download/:tag_id route:
+  const tagId = "<%= (selectedTagId || (name && name.id) || '') %>";
 
+  if (!tagId) {
+    alert("No tag selected. Please select a tag first.");
+    return;
+  }
+  if (!selectedEanId) {
+    alert("Please select an EAN code.");
+    return;
+  }
+  if (!selectedTime) {
+    alert("Please select a finish date and time.");
+    return;
+  }
+
+  try {
+    statusEl.textContent = "Scheduling activation…";
+
+    const res = await fetch("/a26ae3e19a140048efd2/api/activation-campaign", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        tagId,
+        eanId: selectedEanId,
+        finishAt: selectedTime
+      }),
+    });
+
+    const data = await res.json();
+
+    if (!data.success) {
+      statusEl.textContent = "";
+      alert(data.message || "Failed to schedule activation");
+      return;
+    }
+
+    statusEl.style.color = "#16a34a";
+    statusEl.textContent = "✅ Activation is scheduled and running…";
+
+    // If you want refresh after success:
+    setTimeout(() => window.location.reload(), 700);
+  } catch (err) {
+    statusEl.textContent = "";
+    alert("Network error while scheduling activation.");
+  }
+}
       // --- 5. PICKER LOGIC ---
       (function () {
         var userSelect = document.getElementById("userSelect");

@@ -131,6 +131,36 @@ adminRoutes.get("/download/:tag_id", (0, express_async_handler_1.default)(async 
         selectedTagId: tagId,
     });
 }));
+adminRoutes.post("/api/activation-campaign", (0, express_async_handler_1.default)(async (req, res) => {
+    const { tagId, eanId, finishAt } = req.body;
+    if (!tagId || !finishAt) {
+        res.status(400).json({ success: false, message: "Missing tagId or finishAt" });
+        return;
+    }
+    // finishAt comes from <input type="datetime-local"> => "YYYY-MM-DDTHH:mm"
+    // Treat it as Berlin time and store as UTC in TIMESTAMPTZ:
+    const finishDate = new Date(finishAt); // OK if your server TZ is Europe/Berlin OR finishAt includes offset
+    if (Number.isNaN(finishDate.getTime())) {
+        res.status(400).json({ success: false, message: "Invalid finishAt" });
+        return;
+    }
+    // OPTIONAL: decide what "start" means. Often: NOW()
+    const startAt = new Date();
+    // save campaign
+    const created = await dbConnection_1.default.start_campaign.create({
+        data: {
+            id: crypto.randomUUID(), // Node 18+
+            tag_id: tagId,
+            start_at: startAt,
+            end_at: finishDate,
+            // if you also want to store eanId, add a column and save it
+            // ean_id: eanId,
+        },
+        select: { id: true, tag_id: true, start_at: true, end_at: true },
+    });
+    res.json({ success: true, campaign: created });
+    return;
+}));
 adminRoutes.get("/api/user/:user_id/tags", (0, express_async_handler_1.default)(async (req, res) => {
     const userId = req.params.user_id;
     const distinct = await dbConnection_1.default.steam_card.findMany({
