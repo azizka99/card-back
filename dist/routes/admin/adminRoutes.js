@@ -6,6 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const express_async_handler_1 = __importDefault(require("express-async-handler"));
 const dbConnection_1 = __importDefault(require("../../constants/dbConnection"));
+const uuid_1 = __importDefault(require("uuid"));
 const adminRoutes = express_1.default.Router();
 adminRoutes.get("/dashboard", (0, express_async_handler_1.default)(async (req, res) => {
     const stats = {
@@ -280,5 +281,30 @@ adminRoutes.post("/api/monthly-payout/count", (0, express_async_handler_1.defaul
         }
     });
     res.json({ success: true, total });
+}));
+adminRoutes.get("/magic-links", (0, express_async_handler_1.default)(async (req, res) => {
+    const magicLinks = await dbConnection_1.default.magic_link.findMany({
+        orderBy: { created_at: "desc" }
+    });
+    res.render("magicLinks", { magicLinks });
+}));
+adminRoutes.post("/api/magic-links", (0, express_async_handler_1.default)(async (req, res) => {
+    const start_at = new Date(req.body.start_at);
+    const end_at = new Date(req.body.end_at);
+    if (!start_at || !end_at || isNaN(start_at.getTime()) || isNaN(end_at.getTime())) {
+        res.status(400).json({ success: false, message: "Invalid start/end" });
+        return;
+    }
+    if (end_at <= start_at) {
+        res.status(400).json({ success: false, message: "End must be after start" });
+        return;
+    }
+    const created = await dbConnection_1.default.magic_link.create({
+        data: {
+            id: uuid_1.default.v4(),
+            start_at, end_at
+        }
+    });
+    res.json({ success: true, id: created.id });
 }));
 exports.default = adminRoutes;

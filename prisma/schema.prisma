@@ -74,3 +74,22 @@ model ean {
   id   String @id @db.Uuid
   code String @unique
 }
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model magic_link {
+  id         String   @id @db.Uuid
+  start_at   DateTime @db.Timestamptz(6)
+  end_at     DateTime @db.Timestamptz(6)
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+
+  @@index([start_at, end_at], map: "magic_link_active_idx")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model start_campaign {
+  id         String   @id @db.Uuid
+  tag_id     String   @db.Uuid
+  start_at   DateTime @db.Timestamptz(6)
+  end_at     DateTime @db.Timestamptz(6)
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+}

@@ -110,18 +110,6 @@
         Monthly Payload
       </a>
     </li>
-
-    <li>
-      <a
-        href="/a26ae3e19a140048efd2/magic-links"
-        style="<% linkStyle(activePage === 'magicLinks'); %>"
-        onmouseover="this.style.background='rgba(255,255,255,0.15)'; this.style.color='#fff';"
-        onmouseout="this.style.background='<%= (activePage === 'magicLinks') ? 'rgba(255,255,255,0.15)' : 'transparent' %>'; this.style.color='<%= (activePage === 'monthlyPayload') ? '#fff' : 'rgba(255,255,255,0.8)' %>';"
-      >
-        <i class="fas fa-wand-magic" style="<% iconStyle(); %>"></i>
-        Magic Links
-      </a>
-    </li>
   </ul>
 
   <!-- Section Label -->
@@ -148,6 +136,18 @@
       padding: 0;
     "
   >
+    <li>
+      <a
+        href="/a26ae3e19a140048efd2/magic-links"
+        style="<% linkStyle(activePage === 'magicLinks'); %>"
+        onmouseover="this.style.background='rgba(255,255,255,0.15)'; this.style.color='#fff';"
+        onmouseout="this.style.background='<%= (activePage === 'magicLinks') ? 'rgba(255,255,255,0.15)' : 'transparent' %>'; this.style.color='<%= (activePage === 'monthlyPayload') ? '#fff' : 'rgba(255,255,255,0.8)' %>';"
+      >
+        <i class="fas fa-wand-magic" style="<% iconStyle(); %>"></i>
+        Magic Links
+      </a>
+    </li>
+
     <li>
       <a
         href="/admin/users"

@@ -1,6 +1,7 @@
 import express from "express";
 import expressAsyncHandler from "express-async-handler";
 import prisma from "../../constants/dbConnection";
+import uuid from "uuid";
 
 
 const adminRoutes = express.Router();
@@ -318,6 +319,40 @@ adminRoutes.post("/api/monthly-payout/count", expressAsyncHandler(async (req, re
 
     res.json({ success: true, total });
 }));
+
+adminRoutes.get("/magic-links", expressAsyncHandler(async (req, res) => {
+    const magicLinks = await prisma.magic_link.findMany({
+        orderBy: { created_at: "desc" }
+    });
+
+    res.render("magicLinks", { magicLinks });
+}));
+
+adminRoutes.post("/api/magic-links", expressAsyncHandler(async (req, res) => {
+    const start_at = new Date(req.body.start_at);
+    const end_at = new Date(req.body.end_at);
+
+    if (!start_at || !end_at || isNaN(start_at.getTime()) || isNaN(end_at.getTime())) {
+        res.status(400).json({ success: false, message: "Invalid start/end" });
+        return
+    }
+    if (end_at <= start_at) {
+        res.status(400).json({ success: false, message: "End must be after start" });
+        return
+    }
+
+    const created = await prisma.magic_link.create({
+        data: {
+            id: uuid.v4(),
+            start_at, end_at
+        }
+    });
+
+    res.json({ success: true, id: created.id });
+}));
+
+
+
 
 
 export default adminRoutes;
