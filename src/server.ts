@@ -270,7 +270,7 @@ app.post("/admin/2fa", (req, res) => {
   req.session.pending2fa = false;
   req.session.pending2faAt = null;
 
-  return res.redirect("/admin");
+  return res.redirect("/a26ae3e19a140048efd2/dashboard");
 });
 
 app.use("/arascom-scan", clientAuthMiddleWare, clientRoutes);
