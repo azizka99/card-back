@@ -275,7 +275,7 @@
     tagCount.textContent = state.items.length;
     allTotal.textContent = sumAll;
     includedTotal.textContent = sumIncluded;
-    priceTotal.textContent = `${Number(sumAll) * 0.07} €`
+    priceTotal.textContent = `${(Number(sumAll) * 0.07).toFixed(2)} €`
   }
 
   document.getElementById("loadBtn").onclick = async () => {
