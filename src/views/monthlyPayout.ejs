@@ -219,6 +219,10 @@
         <span>Included cards</span>
         <strong id="includedTotal">0</strong>
       </div>
+      <div class="summary-row"></div>
+        <span>Price to pay</span>
+        <strong id="priceTotal">0€</strong> 
+      </div>
 
       <div style="margin-top:16px;display:flex;gap:8px;">
         <button class="btn" id="checkAll">Check all</button>
@@ -238,6 +242,7 @@
   const tagCount = document.getElementById("tagCount");
   const allTotal = document.getElementById("allTotal");
   const includedTotal = document.getElementById("includedTotal");
+  const priceTotal  = document.getElementById("priceTotal");
 
   let state = { items: [], included: {} };
 
@@ -270,6 +275,7 @@
     tagCount.textContent = state.items.length;
     allTotal.textContent = sumAll;
     includedTotal.textContent = sumIncluded;
+    priceTotal.textContent = `${Number(allTotal) * 0.7} €`
   }
 
   document.getElementById("loadBtn").onclick = async () => {
