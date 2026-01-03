@@ -316,7 +316,7 @@ header {
     tagCount.textContent = state.items.length;
     allTotal.textContent = sumAll;
     includedTotal.textContent = sumIncluded;
-    priceTotal.textContent = `${(Number(sumAll) * 0.07).toFixed(2)} €`
+    priceTotal.textContent = `${(Number(sumIncluded) * 0.07).toFixed(2)} €`
   }
 
   document.getElementById("loadBtn").onclick = async () => {
