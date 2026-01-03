@@ -654,7 +654,7 @@
   const statusEl = document.getElementById("activateStatus");
 
   // You need tag id for the campaign. If you are on /download/:tag_id route:
-  const tagId = "<%= (selectedTagId || (name && name.id) || '') %>";
+  const tagId = "<%= (typeof selectedTagId !== 'undefined' ? selectedTagId : '') %>";
 
   if (!tagId) {
     alert("No tag selected. Please select a tag first.");
