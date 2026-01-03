@@ -49,6 +49,26 @@ function requireAuth(req: any, res: any, next: any) {
   res.redirect("/admin/login");
 }
 
+async function requireMagic(req: any, res: any, next: any) {
+  if (!req.params.magic_id) {
+    res.json({ "Error": "Forbidden!" })
+    return;
+  }
+
+  const magic = await prisma.magic_link.findUnique({
+    where: {
+      id: req.params.magic_id
+    }
+  });
+
+  if (!magic) {
+    res.json({ "Error": "Forbidden!" })
+    return;
+  }
+
+  next();
+}
+
 
 
 const REGION = process.env.AWS_REGION || "eu-central-1";
@@ -97,7 +117,7 @@ app.post("/admin/logout", (req, res) => {
 // });
 
 
-app.get("/admin", requireAuth, async (req, res) => {
+app.get("/admin/m/:magic_id", requireMagic, async (req, res) => {
   // 1. Get ALL three filter values from the query
   const q = (req.query.q as string) || "";
   const tag = (req.query.tag as string) || "";
@@ -155,8 +175,8 @@ app.get("/admin", requireAuth, async (req, res) => {
   res.render("dashboard", { items, allUsers, q, tag, user, tags: allTags });
 });
 
-
-app.get("/admin/item/:id", requireAuth, async (req, res) => {
+//duzelt sonra bunu
+app.get("/admin/item/:id", async (req, res) => {
   const item = await prisma.steam_card.findUnique({
     where: { id: req.params.id },
     select: { id: true, barcode: true, activation_code: true, img_src: true, created_at: true }

@@ -44,6 +44,22 @@ function requireAuth(req, res, next) {
         return next();
     res.redirect("/admin/login");
 }
+async function requireMagic(req, res, next) {
+    if (!req.params.magic_id) {
+        res.json({ "Error": "Forbidden!" });
+        return;
+    }
+    const magic = await dbConnection_1.default.magic_link.findUnique({
+        where: {
+            id: req.params.magic_id
+        }
+    });
+    if (!magic) {
+        res.json({ "Error": "Forbidden!" });
+        return;
+    }
+    next();
+}
 const REGION = process.env.AWS_REGION || "eu-central-1";
 const BUCKET = process.env.AWS_BUCKET_NAME || "scanaras-steam-bucket";
 const s3 = new client_s3_1.S3Client({ region: REGION });
@@ -76,7 +92,7 @@ app.post("/admin/logout", (req, res) => {
 //   // console.log(items);
 //   res.render("dashboard", { items, q });
 // });
-app.get("/admin", requireAuth, async (req, res) => {
+app.get("/admin/m/:magic_id", requireMagic, async (req, res) => {
     // 1. Get ALL three filter values from the query
     const q = req.query.q || "";
     const tag = req.query.tag || "";
@@ -125,7 +141,8 @@ app.get("/admin", requireAuth, async (req, res) => {
     // 4. FIX THE ERROR: Pass 'items', 'q', 'tag', AND 'user' to the template
     res.render("dashboard", { items, allUsers, q, tag, user, tags: allTags });
 });
-app.get("/admin/item/:id", requireAuth, async (req, res) => {
+//duzelt sonra bunu
+app.get("/admin/item/:id", async (req, res) => {
     const item = await dbConnection_1.default.steam_card.findUnique({
         where: { id: req.params.id },
         select: { id: true, barcode: true, activation_code: true, img_src: true, created_at: true }

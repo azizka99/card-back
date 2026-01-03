@@ -1,435 +1,505 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <title>Magic Links</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <head>
+    <meta charset="UTF-8" />
+    <title>Magic Links</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+      rel="stylesheet"
+    />
 
-  <style>
-    :root { --sidebar-width: 260px; }
+    <style>
+      :root {
+        --sidebar-width: 260px;
+      }
 
-    * { box-sizing: border-box; font-family: Inter, sans-serif; }
-    body {
-      margin: 0;
-      background: #f1f5f9;
-      color: #1e293b;
-      display: flex;
-      min-height: 100vh;
-    }
+      * {
+        box-sizing: border-box;
+        font-family: Inter, sans-serif;
+      }
+      body {
+        margin: 0;
+        background: #f1f5f9;
+        color: #1e293b;
+        display: flex;
+        min-height: 100vh;
+      }
 
-    .main-wrapper {
-      margin-left: var(--sidebar-width);
-      flex: 1;
-      min-width: 0;
-      display: flex;
-      flex-direction: column;
-    }
+      .main-wrapper {
+        margin-left: var(--sidebar-width);
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+      }
 
-    header {
-      background: #fff;
-      height: 70px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0 32px;
-      box-shadow: 0 1px 3px rgba(0,0,0,.1);
-      position: sticky;
-      top: 0;
-      z-index: 10;
-    }
+      header {
+        background: #fff;
+        height: 70px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 32px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        position: sticky;
+        top: 0;
+        z-index: 10;
+      }
 
-    .content {
-      padding: 32px;
-      max-width: 1400px;
-      width: 100%;
-    }
+      .content {
+        padding: 32px;
+        max-width: 1400px;
+        width: 100%;
+      }
 
-    .page-title {
-      font-size: 26px;
-      font-weight: 700;
-      margin-bottom: 6px;
-    }
+      .page-title {
+        font-size: 26px;
+        font-weight: 700;
+        margin-bottom: 6px;
+      }
 
-    .subtitle {
-      font-size: 13px;
-      color: #64748b;
-      margin-bottom: 24px;
-    }
+      .subtitle {
+        font-size: 13px;
+        color: #64748b;
+        margin-bottom: 24px;
+      }
 
-    .top-actions {
-      display: flex;
-      justify-content: space-between;
-      gap: 12px;
-      align-items: center;
-      flex-wrap: wrap;
-      margin-bottom: 16px;
-    }
+      .top-actions {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        align-items: center;
+        flex-wrap: wrap;
+        margin-bottom: 16px;
+      }
 
-    .btn {
-      background: #6262a6;
-      color: #fff;
-      border: none;
-      padding: 10px 16px;
-      border-radius: 8px;
-      font-weight: 600;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .btn:hover { background: #4e4e85; }
-    .btn.secondary {
-      background: #fff;
-      color: #1e293b;
-      border: 1px solid #e2e8f0;
-    }
-    .btn.secondary:hover { border-color: #cbd5e1; }
+      .btn {
+        background: #6262a6;
+        color: #fff;
+        border: none;
+        padding: 10px 16px;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .btn:hover {
+        background: #4e4e85;
+      }
+      .btn.secondary {
+        background: #fff;
+        color: #1e293b;
+        border: 1px solid #e2e8f0;
+      }
+      .btn.secondary:hover {
+        border-color: #cbd5e1;
+      }
 
-    .panel {
-      background: #fff;
-      border-radius: 12px;
-      box-shadow: 0 1px 3px rgba(0,0,0,.1);
-      padding: 0;
-      overflow: hidden;
-    }
+      .panel {
+        background: #fff;
+        border-radius: 12px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        padding: 0;
+        overflow: hidden;
+      }
 
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 14px;
-    }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 14px;
+      }
 
-    thead th {
-      text-align: left;
-      padding: 12px 16px;
-      background: #f8fafc;
-      color: #64748b;
-      border-bottom: 1px solid #e2e8f0;
-      font-size: 12px;
-      text-transform: uppercase;
-      letter-spacing: .4px;
-      white-space: nowrap;
-    }
+      thead th {
+        text-align: left;
+        padding: 12px 16px;
+        background: #f8fafc;
+        color: #64748b;
+        border-bottom: 1px solid #e2e8f0;
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+        white-space: nowrap;
+      }
 
-    tbody td {
-      padding: 12px 16px;
-      border-bottom: 1px solid #e2e8f0;
-      vertical-align: middle;
-    }
+      tbody td {
+        padding: 12px 16px;
+        border-bottom: 1px solid #e2e8f0;
+        vertical-align: middle;
+      }
 
-    tbody tr:hover { background: #f8fafc; }
-    tbody tr:last-child td { border-bottom: none; }
+      tbody tr:hover {
+        background: #f8fafc;
+      }
+      tbody tr:last-child td {
+        border-bottom: none;
+      }
 
-    .pill {
-      background: #f1f5f9;
-      padding: 4px 8px;
-      border-radius: 6px;
-      font-weight: 700;
-      font-size: 12px;
-      display: inline-block;
-    }
+      .pill {
+        background: #f1f5f9;
+        padding: 4px 8px;
+        border-radius: 6px;
+        font-weight: 700;
+        font-size: 12px;
+        display: inline-block;
+      }
 
-    .link {
-      color: #6262a6;
-      text-decoration: none;
-      font-weight: 700;
-    }
-    .link:hover { text-decoration: underline; }
+      .link {
+        color: #6262a6;
+        text-decoration: none;
+        font-weight: 700;
+      }
+      .link:hover {
+        text-decoration: underline;
+      }
 
-    /* ---- MODAL ---- */
-    .modal-backdrop {
-      position: fixed;
-      inset: 0;
-      background: rgba(15,23,42,.55);
-      display: none;
-      align-items: center;
-      justify-content: center;
-      padding: 20px;
-      z-index: 999;
-    }
-    .modal-backdrop.active { display: flex; }
+      /* ---- MODAL ---- */
+      .modal-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(15, 23, 42, 0.55);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        z-index: 999;
+      }
+      .modal-backdrop.active {
+        display: flex;
+      }
 
-    .modal {
-      width: 100%;
-      max-width: 520px;
-      background: #fff;
-      border-radius: 14px;
-      box-shadow: 0 10px 30px rgba(0,0,0,.25);
-      overflow: hidden;
-    }
-    .modal-header {
-      padding: 16px 18px;
-      border-bottom: 1px solid #e2e8f0;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-    }
-    .modal-title {
-      font-size: 16px;
-      font-weight: 800;
-    }
-    .modal-close {
-      width: 34px;
-      height: 34px;
-      border-radius: 10px;
-      border: 1px solid #e2e8f0;
-      background: #fff;
-      cursor: pointer;
-    }
-    .modal-close:hover { background: #f8fafc; }
+      .modal {
+        width: 100%;
+        max-width: 520px;
+        background: #fff;
+        border-radius: 14px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+        overflow: hidden;
+      }
+      .modal-header {
+        padding: 16px 18px;
+        border-bottom: 1px solid #e2e8f0;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+      }
+      .modal-title {
+        font-size: 16px;
+        font-weight: 800;
+      }
+      .modal-close {
+        width: 34px;
+        height: 34px;
+        border-radius: 10px;
+        border: 1px solid #e2e8f0;
+        background: #fff;
+        cursor: pointer;
+      }
+      .modal-close:hover {
+        background: #f8fafc;
+      }
 
-    .modal-body {
-      padding: 18px;
-      display: grid;
-      gap: 14px;
-    }
+      .modal-body {
+        padding: 18px;
+        display: grid;
+        gap: 14px;
+      }
 
-    .field-label {
-      font-size: 11px;
-      font-weight: 800;
-      color: #64748b;
-      text-transform: uppercase;
-      margin-bottom: 6px;
-      display: block;
-    }
+      .field-label {
+        font-size: 11px;
+        font-weight: 800;
+        color: #64748b;
+        text-transform: uppercase;
+        margin-bottom: 6px;
+        display: block;
+      }
 
-    .input {
-      width: 100%;
-      padding: 10px 12px;
-      border-radius: 10px;
-      border: 1px solid #e2e8f0;
-      outline: none;
-      background: #fff;
-    }
-    .input:focus { border-color: #6262a6; }
+      .input {
+        width: 100%;
+        padding: 10px 12px;
+        border-radius: 10px;
+        border: 1px solid #e2e8f0;
+        outline: none;
+        background: #fff;
+      }
+      .input:focus {
+        border-color: #6262a6;
+      }
 
-    .modal-footer {
-      padding: 16px 18px;
-      border-top: 1px solid #e2e8f0;
-      display: flex;
-      justify-content: flex-end;
-      gap: 10px;
-    }
+      .modal-footer {
+        padding: 16px 18px;
+        border-top: 1px solid #e2e8f0;
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+      }
 
-    .error {
-      color: #dc2626;
-      font-size: 13px;
-      font-weight: 700;
-      display: none;
-    }
+      .error {
+        color: #dc2626;
+        font-size: 13px;
+        font-weight: 700;
+        display: none;
+      }
 
-    @media (max-width: 1000px) {
-      .main-wrapper { margin-left: 0; }
-    }
-  </style>
-</head>
+      @media (max-width: 1000px) {
+        .main-wrapper {
+          margin-left: 0;
+        }
+      }
+    </style>
+  </head>
 
-<body>
-  <%- include("partials/sidebar", { activePage: "magic-links" }) %>
+  <body>
+    <%- include("partials/sidebar", { activePage: "magic-links" }) %>
 
-  <div class="main-wrapper">
-    <header>
-      <strong>Magic Links</strong>
-      <div style="width:36px;height:36px;border-radius:50%;background:#6262a6;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;">
-        AD
-      </div>
-    </header>
+    <div class="main-wrapper">
+      <header>
+        <strong>Magic Links</strong>
+        <div
+          style="
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: #6262a6;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+          "
+        >
+          AD
+        </div>
+      </header>
 
-    <div class="content">
-      <div class="page-title">Magic Links</div>
-      <div class="subtitle">
-        Create time-limited links. Choose start/end date & time.
-      </div>
+      <div class="content">
+        <div class="page-title">Magic Links</div>
+        <div class="subtitle">
+          Create time-limited links. Choose start/end date & time.
+        </div>
 
-      <div class="top-actions">
-        <div></div>
-        <button class="btn" id="openModalBtn">
-          <i class="fas fa-plus"></i> Add new magic link
-        </button>
-      </div>
+        <div class="top-actions">
+          <div></div>
+          <button class="btn" id="openModalBtn">
+            <i class="fas fa-plus"></i> Add new magic link
+          </button>
+        </div>
 
-      <div class="panel">
-        <table>
-          <thead>
-            <tr>
-              <th style="width: 240px;">ID</th>
-              <th>Start Date</th>
-              <th>End Date</th>
-              <th style="width: 120px;">Link</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            <% if (!magicLinks || magicLinks.length === 0) { %>
+        <div class="panel">
+          <table>
+            <thead>
               <tr>
-                <td colspan="4" style="text-align:center;color:#94a3b8;padding:20px;">
+                <th style="width: 240px">ID</th>
+                <th>Start Date</th>
+                <th>End Date</th>
+                <th style="width: 120px">Link</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              <% if (!magicLinks || magicLinks.length === 0) { %>
+              <tr>
+                <td
+                  colspan="4"
+                  style="text-align: center; color: #94a3b8; padding: 20px"
+                >
                   No magic links yet.
                 </td>
               </tr>
-            <% } else { %>
-              <% magicLinks.forEach(l => { %>
-                <tr>
-                  <td><span class="pill"><%= l.id %></span></td>
-                  <td><%= l.start_at ? new Date(l.start_at).toLocaleString() : "-" %></td>
-                  <td><%= l.end_at ? new Date(l.end_at).toLocaleString() : "-" %></td>
-                  <td>
-                    <a class="link" href="/a26ae3e19a140048efd2/m/<%= l.id %>" target="_blank">Open</a>
-                  </td>
-                </tr>
-              <% }) %>
-            <% } %>
-          </tbody>
-        </table>
+              <% } else { %> <% magicLinks.forEach(l => { %>
+              <tr>
+                <td><span class="pill"><%= l.id %></span></td>
+                <td>
+                  <%= l.start_at ? new Date(l.start_at).toLocaleString() : "-"
+                  %>
+                </td>
+                <td>
+                  <%= l.end_at ? new Date(l.end_at).toLocaleString() : "-" %>
+                </td>
+                <td>
+                  <a class="link" href="/admin/<%= l.id %>" target="_blank"
+                    >Open</a
+                  >
+                </td>
+              </tr>
+              <% }) %> <% } %>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
-  </div>
 
-  <!-- MODAL -->
-  <div class="modal-backdrop" id="modalBackdrop">
-    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
-      <div class="modal-header">
-        <div class="modal-title" id="modalTitle">Create Magic Link</div>
-        <button class="modal-close" id="closeModalBtn" aria-label="Close">
-          <i class="fas fa-xmark"></i>
-        </button>
-      </div>
-
-      <div class="modal-body">
-        <div>
-          <label class="field-label" for="startAt">Start date & time</label>
-          <input class="input" type="datetime-local" id="startAt" />
+    <!-- MODAL -->
+    <div class="modal-backdrop" id="modalBackdrop">
+      <div
+        class="modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="modalTitle"
+      >
+        <div class="modal-header">
+          <div class="modal-title" id="modalTitle">Create Magic Link</div>
+          <button class="modal-close" id="closeModalBtn" aria-label="Close">
+            <i class="fas fa-xmark"></i>
+          </button>
         </div>
 
-        <div>
-          <label class="field-label" for="endAt">End date & time</label>
-          <input class="input" type="datetime-local" id="endAt" />
+        <div class="modal-body">
+          <div>
+            <label class="field-label" for="startAt">Start date & time</label>
+            <input class="input" type="datetime-local" id="startAt" />
+          </div>
+
+          <div>
+            <label class="field-label" for="endAt">End date & time</label>
+            <input class="input" type="datetime-local" id="endAt" />
+          </div>
+
+          <div class="error" id="errText"></div>
         </div>
 
-        <div class="error" id="errText"></div>
-      </div>
-
-      <div class="modal-footer">
-        <button class="btn secondary" id="cancelBtn">Cancel</button>
-        <button class="btn" id="createBtn">
-          <i class="fas fa-check"></i> Create
-        </button>
+        <div class="modal-footer">
+          <button class="btn secondary" id="cancelBtn">Cancel</button>
+          <button class="btn" id="createBtn">
+            <i class="fas fa-check"></i> Create
+          </button>
+        </div>
       </div>
     </div>
-  </div>
 
-  <script>
-    // ---- MODAL OPEN/CLOSE ----
-    var backdrop = document.getElementById("modalBackdrop");
-    var openBtn = document.getElementById("openModalBtn");
-    var closeBtn = document.getElementById("closeModalBtn");
-    var cancelBtn = document.getElementById("cancelBtn");
+    <script>
+      // ---- MODAL OPEN/CLOSE ----
+      var backdrop = document.getElementById("modalBackdrop");
+      var openBtn = document.getElementById("openModalBtn");
+      var closeBtn = document.getElementById("closeModalBtn");
+      var cancelBtn = document.getElementById("cancelBtn");
 
-    var startAt = document.getElementById("startAt");
-    var endAt = document.getElementById("endAt");
-    var errText = document.getElementById("errText");
-    var createBtn = document.getElementById("createBtn");
+      var startAt = document.getElementById("startAt");
+      var endAt = document.getElementById("endAt");
+      var errText = document.getElementById("errText");
+      var createBtn = document.getElementById("createBtn");
 
-    function openModal() {
-      errText.style.display = "none";
-      errText.textContent = "";
-      backdrop.classList.add("active");
+      function openModal() {
+        errText.style.display = "none";
+        errText.textContent = "";
+        backdrop.classList.add("active");
 
-      // default start=now, end=now+2h
-      var now = new Date();
-      var end = new Date(now.getTime() + 2 * 60 * 60 * 1000);
+        // default start=now, end=now+2h
+        var now = new Date();
+        var end = new Date(now.getTime() + 2 * 60 * 60 * 1000);
 
-      startAt.value = toLocalInputValue(now);
-      endAt.value = toLocalInputValue(end);
-    }
-
-    function closeModal() {
-      backdrop.classList.remove("active");
-    }
-
-    function toLocalInputValue(d) {
-      // YYYY-MM-DDTHH:mm (local)
-      function pad(n) { return String(n).padStart(2, "0"); }
-      return d.getFullYear() + "-" + pad(d.getMonth()+1) + "-" + pad(d.getDate())
-        + "T" + pad(d.getHours()) + ":" + pad(d.getMinutes());
-    }
-
-    if (openBtn) openBtn.addEventListener("click", openModal);
-    if (closeBtn) closeBtn.addEventListener("click", closeModal);
-    if (cancelBtn) cancelBtn.addEventListener("click", closeModal);
-
-    backdrop.addEventListener("click", function(e) {
-      if (e.target === backdrop) closeModal();
-    });
-
-    document.addEventListener("keydown", function(e) {
-      if (e.key === "Escape") closeModal();
-    });
-
-    // ---- CREATE MAGIC LINK ----
-    createBtn.addEventListener("click", async function() {
-      errText.style.display = "none";
-      errText.textContent = "";
-
-      var startVal = startAt.value;
-      var endVal = endAt.value;
-
-      if (!startVal || !endVal) {
-        errText.textContent = "Please select start and end date/time.";
-        errText.style.display = "block";
-        return;
+        startAt.value = toLocalInputValue(now);
+        endAt.value = toLocalInputValue(end);
       }
 
-      var startDate = new Date(startVal);
-      var endDate = new Date(endVal);
-
-      if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
-        errText.textContent = "Invalid date/time.";
-        errText.style.display = "block";
-        return;
+      function closeModal() {
+        backdrop.classList.remove("active");
       }
 
-      if (endDate <= startDate) {
-        errText.textContent = "End date must be after start date.";
-        errText.style.display = "block";
-        return;
+      function toLocalInputValue(d) {
+        // YYYY-MM-DDTHH:mm (local)
+        function pad(n) {
+          return String(n).padStart(2, "0");
+        }
+        return (
+          d.getFullYear() +
+          "-" +
+          pad(d.getMonth() + 1) +
+          "-" +
+          pad(d.getDate()) +
+          "T" +
+          pad(d.getHours()) +
+          ":" +
+          pad(d.getMinutes())
+        );
       }
 
-      createBtn.disabled = true;
-      createBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating...';
+      if (openBtn) openBtn.addEventListener("click", openModal);
+      if (closeBtn) closeBtn.addEventListener("click", closeModal);
+      if (cancelBtn) cancelBtn.addEventListener("click", closeModal);
 
-      try {
-        // CHANGE THIS route to your real backend route:
-        var res = await fetch("/a26ae3e19a140048efd2/api/magic-links", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            start_at: startDate.toISOString(),
-            end_at: endDate.toISOString()
-          })
-        });
+      backdrop.addEventListener("click", function (e) {
+        if (e.target === backdrop) closeModal();
+      });
 
-        var data = await res.json().catch(function(){ return null; });
+      document.addEventListener("keydown", function (e) {
+        if (e.key === "Escape") closeModal();
+      });
 
-        if (!res.ok || !data || data.success === false) {
-          var msg = (data && data.message) ? data.message : "Failed to create magic link.";
-          throw new Error(msg);
+      // ---- CREATE MAGIC LINK ----
+      createBtn.addEventListener("click", async function () {
+        errText.style.display = "none";
+        errText.textContent = "";
+
+        var startVal = startAt.value;
+        var endVal = endAt.value;
+
+        if (!startVal || !endVal) {
+          errText.textContent = "Please select start and end date/time.";
+          errText.style.display = "block";
+          return;
         }
 
-        // refresh page
-        window.location.reload();
+        var startDate = new Date(startVal);
+        var endDate = new Date(endVal);
 
-      } catch (err) {
-        errText.textContent = err && err.message ? err.message : "Error";
-        errText.style.display = "block";
-      } finally {
-        createBtn.disabled = false;
-        createBtn.innerHTML = '<i class="fas fa-check"></i> Create';
-      }
-    });
-  </script>
-</body>
+        if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+          errText.textContent = "Invalid date/time.";
+          errText.style.display = "block";
+          return;
+        }
+
+        if (endDate <= startDate) {
+          errText.textContent = "End date must be after start date.";
+          errText.style.display = "block";
+          return;
+        }
+
+        createBtn.disabled = true;
+        createBtn.innerHTML =
+          '<i class="fas fa-spinner fa-spin"></i> Creating...';
+
+        try {
+          // CHANGE THIS route to your real backend route:
+          var res = await fetch("/a26ae3e19a140048efd2/api/magic-links", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              start_at: startDate.toISOString(),
+              end_at: endDate.toISOString(),
+            }),
+          });
+
+          var data = await res.json().catch(function () {
+            return null;
+          });
+
+          if (!res.ok || !data || data.success === false) {
+            var msg =
+              data && data.message
+                ? data.message
+                : "Failed to create magic link.";
+            throw new Error(msg);
+          }
+
+          // refresh page
+          window.location.reload();
+        } catch (err) {
+          errText.textContent = err && err.message ? err.message : "Error";
+          errText.style.display = "block";
+        } finally {
+          createBtn.disabled = false;
+          createBtn.innerHTML = '<i class="fas fa-check"></i> Create';
+        }
+      });
+    </script>
+  </body>
 </html>
