@@ -23,6 +23,7 @@ const ErrorCard_1 = require("./models/ErrorCard");
 const specialClientRoutes_1 = __importDefault(require("./routes/client/specialClientRoutes"));
 const otplib_1 = require("otplib");
 const adminRoutes_1 = __importDefault(require("./routes/admin/adminRoutes"));
+const requireMagicMiddleware_1 = require("./middlewares/requireMagicMiddleware");
 const app = (0, express_1.default)();
 dotenv_1.default.config({ path: '.env' });
 app.set("view engine", "ejs");
@@ -44,22 +45,22 @@ function requireAuth(req, res, next) {
         return next();
     res.redirect("/admin/login");
 }
-async function requireMagic(req, res, next) {
-    if (!req.params.magic_id) {
-        res.json({ "Error": "Forbidden!" });
-        return;
-    }
-    const magic = await dbConnection_1.default.magic_link.findUnique({
-        where: {
-            id: req.params.magic_id
-        }
-    });
-    if (!magic) {
-        res.json({ "Error": "Forbidden!" });
-        return;
-    }
-    next();
-}
+// async function requireMagic(req: any, res: any, next: any) {
+//   if (!req.params.magic_id) {
+//     res.json({ "Error": "Forbidden!" })
+//     return;
+//   }
+//   const magic = await prisma.magic_link.findUnique({
+//     where: {
+//       id: req.params.magic_id
+//     }
+//   });
+//   if (!magic) {
+//     res.json({ "Error": "Forbidden!" })
+//     return;
+//   }
+//   next();
+// }
 const REGION = process.env.AWS_REGION || "eu-central-1";
 const BUCKET = process.env.AWS_BUCKET_NAME || "scanaras-steam-bucket";
 const s3 = new client_s3_1.S3Client({ region: REGION });
@@ -92,7 +93,7 @@ app.post("/admin/logout", (req, res) => {
 //   // console.log(items);
 //   res.render("dashboard", { items, q });
 // });
-app.get("/admin/m/:magic_id", requireMagic, async (req, res) => {
+app.get("/admin/m/:magic_id", requireMagicMiddleware_1.requireMagic, async (req, res) => {
     // 1. Get ALL three filter values from the query
     const q = req.query.q || "";
     const tag = req.query.tag || "";
@@ -130,7 +131,6 @@ app.get("/admin/m/:magic_id", requireMagic, async (req, res) => {
             }
         }
     });
-    console.log(allUsers);
     // 3. Run the query with the combined 'where' filters
     const items = await dbConnection_1.default.steam_card.findMany({
         where: where, // Use the new dynamic 'where' object
@@ -139,7 +139,7 @@ app.get("/admin/m/:magic_id", requireMagic, async (req, res) => {
         include: { tag: true, app_user: true }, // This is what gives you the data structure you showed!
     });
     // 4. FIX THE ERROR: Pass 'items', 'q', 'tag', AND 'user' to the template
-    res.render("dashboard", { items, allUsers, q, tag, user, tags: allTags });
+    res.render("dashboard", { items, allUsers, q, tag, user, tags: allTags, magic_id: req.params.magic_id });
 });
 //duzelt sonra bunu
 app.get("/admin/item/:id", async (req, res) => {

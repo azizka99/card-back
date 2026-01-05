@@ -18,6 +18,7 @@ import { ErrorCard } from "./models/ErrorCard";
 import special_client from "./routes/client/specialClientRoutes";
 import { authenticator } from "otplib";
 import adminRoutes from "./routes/admin/adminRoutes";
+import { requireMagic } from "./middlewares/requireMagicMiddleware";
 
 
 
@@ -49,25 +50,25 @@ function requireAuth(req: any, res: any, next: any) {
   res.redirect("/admin/login");
 }
 
-async function requireMagic(req: any, res: any, next: any) {
-  if (!req.params.magic_id) {
-    res.json({ "Error": "Forbidden!" })
-    return;
-  }
+// async function requireMagic(req: any, res: any, next: any) {
+//   if (!req.params.magic_id) {
+//     res.json({ "Error": "Forbidden!" })
+//     return;
+//   }
 
-  const magic = await prisma.magic_link.findUnique({
-    where: {
-      id: req.params.magic_id
-    }
-  });
+//   const magic = await prisma.magic_link.findUnique({
+//     where: {
+//       id: req.params.magic_id
+//     }
+//   });
 
-  if (!magic) {
-    res.json({ "Error": "Forbidden!" })
-    return;
-  }
+//   if (!magic) {
+//     res.json({ "Error": "Forbidden!" })
+//     return;
+//   }
 
-  next();
-}
+//   next();
+// }
 
 
 
@@ -160,7 +161,6 @@ app.get("/admin/m/:magic_id", requireMagic, async (req, res) => {
     }
   });
 
-  console.log(allUsers);
 
 
   // 3. Run the query with the combined 'where' filters
@@ -172,8 +172,10 @@ app.get("/admin/m/:magic_id", requireMagic, async (req, res) => {
   });
 
   // 4. FIX THE ERROR: Pass 'items', 'q', 'tag', AND 'user' to the template
-  res.render("dashboard", { items, allUsers, q, tag, user, tags: allTags });
+  res.render("dashboard", { items, allUsers, q, tag, user, tags: allTags, magic_id: req.params.magic_id });
 });
+
+
 
 //duzelt sonra bunu
 app.get("/admin/item/:id", async (req, res) => {
