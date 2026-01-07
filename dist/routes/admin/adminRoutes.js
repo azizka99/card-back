@@ -395,4 +395,44 @@ adminRoutes.post("/api/magic-links", (0, express_async_handler_1.default)(async 
     });
     res.json({ success: true, id: created.id });
 }));
+adminRoutes.get("/management", (0, express_async_handler_1.default)(async (req, res) => {
+    const users = await dbConnection_1.default.app_user.findMany();
+    res.render("management", { users });
+}));
+adminRoutes.post("/get-tags-by-user", (0, express_async_handler_1.default)(async (req, res) => {
+    const { userId } = req.body;
+    if (!userId) {
+        res.json({ error: "No userId", result: null });
+    }
+    const tags = await dbConnection_1.default.tag.findMany({
+        where: {
+            userId: userId
+        }
+    });
+    res.json(tags);
+}));
+adminRoutes.post("/update-tag-toggle", (0, express_async_handler_1.default)(async (req, res) => {
+    const { tagId, field, value } = req.body;
+    if (!tagId) {
+        res.status(400).json({ ok: false, error: "tagId required" });
+        return;
+    }
+    // Allow ONLY these fields to be updated (security)
+    const allowed = new Set(["is_activated", "is_visible_to_user"]);
+    if (!allowed.has(field)) {
+        res.status(400).json({ ok: false, error: "Invalid field" });
+        return;
+    }
+    const boolValue = Boolean(value);
+    const updated = await dbConnection_1.default.tag.update({
+        where: { id: tagId },
+        data: { [field]: boolValue },
+        select: {
+            id: true,
+            is_activated: true,
+            is_visible_to_user: true,
+        },
+    });
+    res.json({ ok: true, tag: updated });
+}));
 exports.default = adminRoutes;

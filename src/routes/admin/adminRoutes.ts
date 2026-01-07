@@ -221,199 +221,199 @@ adminRoutes.get("/monthly-payout", expressAsyncHandler(async (req, res) => {
 }));
 
 adminRoutes.get(
-  "/api/monthly-payout",
-  expressAsyncHandler(async (req, res) => {
-    const userId = String(req.query.userId || "");
-    const month = String(req.query.month || ""); // "YYYY-MM"
+    "/api/monthly-payout",
+    expressAsyncHandler(async (req, res) => {
+        const userId = String(req.query.userId || "");
+        const month = String(req.query.month || ""); // "YYYY-MM"
 
-    if (!userId || !month) {
-      res.json({ success: false, message: "Missing userId or month" });
-      return;
-    }
+        if (!userId || !month) {
+            res.json({ success: false, message: "Missing userId or month" });
+            return;
+        }
 
-    // =========================
-    // helpers (same as you had)
-    // =========================
-    function parseTagDate(tagName: any): Date | null {
-      if (!tagName) return null;
-      const s = String(tagName);
-      let m: RegExpMatchArray | null, parts: string[], y: number, mo: number, da: number, dt: Date, raw: string, yy: number;
+        // =========================
+        // helpers (same as you had)
+        // =========================
+        function parseTagDate(tagName: any): Date | null {
+            if (!tagName) return null;
+            const s = String(tagName);
+            let m: RegExpMatchArray | null, parts: string[], y: number, mo: number, da: number, dt: Date, raw: string, yy: number;
 
-      m = s.match(/(\d{4}[.\-/]\d{2}[.\-/]\d{2})/);
-      if (m) {
-        parts = m[1].replace(/[.\/]/g, "-").split("-");
-        y = Number(parts[0]); mo = Number(parts[1]); da = Number(parts[2]);
-        dt = new Date(y, mo - 1, da);
-        if (dt.getFullYear() === y && dt.getMonth() === mo - 1 && dt.getDate() === da) return dt;
-      }
+            m = s.match(/(\d{4}[.\-/]\d{2}[.\-/]\d{2})/);
+            if (m) {
+                parts = m[1].replace(/[.\/]/g, "-").split("-");
+                y = Number(parts[0]); mo = Number(parts[1]); da = Number(parts[2]);
+                dt = new Date(y, mo - 1, da);
+                if (dt.getFullYear() === y && dt.getMonth() === mo - 1 && dt.getDate() === da) return dt;
+            }
 
-      m = s.match(/(\d{2}[.\-/]\d{2}[.\-/]\d{4})/);
-      if (m) {
-        parts = m[1].replace(/[.\/]/g, "-").split("-");
-        da = Number(parts[0]); mo = Number(parts[1]); y = Number(parts[2]);
-        dt = new Date(y, mo - 1, da);
-        if (dt.getFullYear() === y && dt.getMonth() === mo - 1 && dt.getDate() === da) return dt;
-      }
+            m = s.match(/(\d{2}[.\-/]\d{2}[.\-/]\d{4})/);
+            if (m) {
+                parts = m[1].replace(/[.\/]/g, "-").split("-");
+                da = Number(parts[0]); mo = Number(parts[1]); y = Number(parts[2]);
+                dt = new Date(y, mo - 1, da);
+                if (dt.getFullYear() === y && dt.getMonth() === mo - 1 && dt.getDate() === da) return dt;
+            }
 
-      m = s.match(/(\d{2}[.\-/]\d{2}[.\-/]\d{2})/);
-      if (m) {
-        parts = m[1].replace(/[.\/]/g, "-").split("-");
-        da = Number(parts[0]); mo = Number(parts[1]); yy = Number(parts[2]);
-        y = 2000 + yy;
-        dt = new Date(y, mo - 1, da);
-        if (dt.getFullYear() === y && dt.getMonth() === mo - 1 && dt.getDate() === da) return dt;
-      }
+            m = s.match(/(\d{2}[.\-/]\d{2}[.\-/]\d{2})/);
+            if (m) {
+                parts = m[1].replace(/[.\/]/g, "-").split("-");
+                da = Number(parts[0]); mo = Number(parts[1]); yy = Number(parts[2]);
+                y = 2000 + yy;
+                dt = new Date(y, mo - 1, da);
+                if (dt.getFullYear() === y && dt.getMonth() === mo - 1 && dt.getDate() === da) return dt;
+            }
 
-      m = s.match(/(\d{8})/);
-      if (m) {
-        raw = m[1];
-        y = Number(raw.slice(0, 4));
-        mo = Number(raw.slice(4, 6));
-        da = Number(raw.slice(6, 8));
-        dt = new Date(y, mo - 1, da);
-        if (dt.getFullYear() === y && dt.getMonth() === mo - 1 && dt.getDate() === da) return dt;
-      }
+            m = s.match(/(\d{8})/);
+            if (m) {
+                raw = m[1];
+                y = Number(raw.slice(0, 4));
+                mo = Number(raw.slice(4, 6));
+                da = Number(raw.slice(6, 8));
+                dt = new Date(y, mo - 1, da);
+                if (dt.getFullYear() === y && dt.getMonth() === mo - 1 && dt.getDate() === da) return dt;
+            }
 
-      return null;
-    }
+            return null;
+        }
 
-    function monthKey(d: Date): string {
-      const y = d.getFullYear();
-      const m = String(d.getMonth() + 1).padStart(2, "0");
-      return `${y}-${m}`;
-    }
+        function monthKey(d: Date): string {
+            const y = d.getFullYear();
+            const m = String(d.getMonth() + 1).padStart(2, "0");
+            return `${y}-${m}`;
+        }
 
-    // =========================
-    // ALL users mode
-    // =========================
-    if (userId === "all") {
-      const grouped = await prisma.steam_card.groupBy({
-        by: ["user_id", "tag_id"],
-        where: {
-        //   user_id: { not: null },
-          tag_id: { not: null },
-        },
-        _count: { _all: true },
-      });
+        // =========================
+        // ALL users mode
+        // =========================
+        if (userId === "all") {
+            const grouped = await prisma.steam_card.groupBy({
+                by: ["user_id", "tag_id"],
+                where: {
+                    //   user_id: { not: null },
+                    tag_id: { not: null },
+                },
+                _count: { _all: true },
+            });
 
-      const tagIds = Array.from(new Set(grouped.map(g => g.tag_id).filter((x): x is string => typeof x === "string")));
-      if (tagIds.length === 0) {
-        res.json({ success: true, items: [], total: 0 });
-        return;
-      }
+            const tagIds = Array.from(new Set(grouped.map(g => g.tag_id).filter((x): x is string => typeof x === "string")));
+            if (tagIds.length === 0) {
+                res.json({ success: true, items: [], total: 0 });
+                return;
+            }
 
-      const userIds = Array.from(new Set(grouped.map(g => g.user_id).filter((x): x is string => typeof x === "string")));
+            const userIds = Array.from(new Set(grouped.map(g => g.user_id).filter((x): x is string => typeof x === "string")));
 
-      const [tags, users] = await Promise.all([
-        prisma.tag.findMany({
-          where: { id: { in: tagIds } },
-          select: { id: true, name: true },
-        }),
-        prisma.app_user.findMany({
-          where: { id: { in: userIds } },
-          select: { id: true, name: true },
-        }),
-      ]);
+            const [tags, users] = await Promise.all([
+                prisma.tag.findMany({
+                    where: { id: { in: tagIds } },
+                    select: { id: true, name: true },
+                }),
+                prisma.app_user.findMany({
+                    where: { id: { in: userIds } },
+                    select: { id: true, name: true },
+                }),
+            ]);
 
-      const tagMap = new Map(tags.map(t => [t.id, t]));
-      const userMap = new Map(users.map(u => [u.id, u]));
+            const tagMap = new Map(tags.map(t => [t.id, t]));
+            const userMap = new Map(users.map(u => [u.id, u]));
 
-      type Item = {
-        _rowId: string;      // unique row key for UI checkboxes
-        id: string;          // tag id
-        name: string;        // tag name
-        date: string;        // tag date ISO
-        count: number;       // cards count for this user+tag
-        user_id: string;
-        user_name?: string;
-      };
+            type Item = {
+                _rowId: string;      // unique row key for UI checkboxes
+                id: string;          // tag id
+                name: string;        // tag name
+                date: string;        // tag date ISO
+                count: number;       // cards count for this user+tag
+                user_id: string;
+                user_name?: string;
+            };
 
-      const items: Item[] = [];
+            const items: Item[] = [];
 
-      for (const g of grouped) {
-        if (typeof g.tag_id !== "string" || typeof g.user_id !== "string") continue;
+            for (const g of grouped) {
+                if (typeof g.tag_id !== "string" || typeof g.user_id !== "string") continue;
 
-        const tag = tagMap.get(g.tag_id);
-        if (!tag) continue;
+                const tag = tagMap.get(g.tag_id);
+                if (!tag) continue;
 
-        const dt = parseTagDate(tag.name);
-        if (!dt) continue;
-        if (monthKey(dt) !== month) continue;
+                const dt = parseTagDate(tag.name);
+                if (!dt) continue;
+                if (monthKey(dt) !== month) continue;
 
-        const u = userMap.get(g.user_id);
+                const u = userMap.get(g.user_id);
 
-        items.push({
-          _rowId: `${g.user_id}:${g.tag_id}`,
-          id: tag.id,
-          name: tag.name,
-          date: dt.toISOString(),
-          count: g._count._all,
-          user_id: g.user_id,
-          user_name: u?.name || undefined,
+                items.push({
+                    _rowId: `${g.user_id}:${g.tag_id}`,
+                    id: tag.id,
+                    name: tag.name,
+                    date: dt.toISOString(),
+                    count: g._count._all,
+                    user_id: g.user_id,
+                    user_name: u?.name || undefined,
+                });
+            }
+
+            items.sort((a, b) => {
+                const d = new Date(b.date).getTime() - new Date(a.date).getTime();
+                if (d !== 0) return d;
+                return String(a.user_name || a.user_id).localeCompare(String(b.user_name || b.user_id));
+            });
+
+            const total = items.reduce((sum, x) => sum + x.count, 0);
+            res.json({ success: true, items, total });
+            return;
+        }
+
+        // =========================
+        // Single user mode (your old logic)
+        // =========================
+        const grouped = await prisma.steam_card.groupBy({
+            by: ["tag_id"],
+            where: { user_id: userId },
+            _count: { _all: true },
         });
-      }
 
-      items.sort((a, b) => {
-        const d = new Date(b.date).getTime() - new Date(a.date).getTime();
-        if (d !== 0) return d;
-        return String(a.user_name || a.user_id).localeCompare(String(b.user_name || b.user_id));
-      });
+        const tagIds: string[] = grouped
+            .map((g) => g.tag_id)
+            .filter((x): x is string => typeof x === "string");
 
-      const total = items.reduce((sum, x) => sum + x.count, 0);
-      res.json({ success: true, items, total });
-      return;
-    }
+        if (tagIds.length === 0) {
+            res.json({ success: true, items: [], total: 0 });
+            return;
+        }
 
-    // =========================
-    // Single user mode (your old logic)
-    // =========================
-    const grouped = await prisma.steam_card.groupBy({
-      by: ["tag_id"],
-      where: { user_id: userId },
-      _count: { _all: true },
-    });
+        const tags = await prisma.tag.findMany({
+            where: { id: { in: tagIds } },
+            select: { id: true, name: true },
+        });
 
-    const tagIds: string[] = grouped
-      .map((g) => g.tag_id)
-      .filter((x): x is string => typeof x === "string");
+        const countMap: Record<string, number> = {};
+        grouped.forEach((g) => {
+            if (typeof g.tag_id === "string") countMap[g.tag_id] = g._count._all;
+        });
 
-    if (tagIds.length === 0) {
-      res.json({ success: true, items: [], total: 0 });
-      return;
-    }
+        type Item = { _rowId: string; id: string; name: string; date: string; count: number };
 
-    const tags = await prisma.tag.findMany({
-      where: { id: { in: tagIds } },
-      select: { id: true, name: true },
-    });
+        const items: Item[] = [];
+        for (const t of tags) {
+            const dt = parseTagDate(t.name);
+            if (!dt) continue;
+            if (monthKey(dt) !== month) continue;
 
-    const countMap: Record<string, number> = {};
-    grouped.forEach((g) => {
-      if (typeof g.tag_id === "string") countMap[g.tag_id] = g._count._all;
-    });
+            items.push({
+                _rowId: t.id, // unique enough in single-user mode
+                id: t.id,
+                name: t.name,
+                date: dt.toISOString(),
+                count: countMap[t.id] ?? 0,
+            });
+        }
 
-    type Item = { _rowId: string; id: string; name: string; date: string; count: number };
+        items.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        const total = items.reduce((sum, x) => sum + x.count, 0);
 
-    const items: Item[] = [];
-    for (const t of tags) {
-      const dt = parseTagDate(t.name);
-      if (!dt) continue;
-      if (monthKey(dt) !== month) continue;
-
-      items.push({
-        _rowId: t.id, // unique enough in single-user mode
-        id: t.id,
-        name: t.name,
-        date: dt.toISOString(),
-        count: countMap[t.id] ?? 0,
-      });
-    }
-
-    items.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-    const total = items.reduce((sum, x) => sum + x.count, 0);
-
-    res.json({ success: true, items, total });
-  })
+        res.json({ success: true, items, total });
+    })
 );
 
 adminRoutes.post("/api/monthly-payout/count", expressAsyncHandler(async (req, res) => {
@@ -464,6 +464,61 @@ adminRoutes.post("/api/magic-links", expressAsyncHandler(async (req, res) => {
 }));
 
 
+adminRoutes.get("/management", expressAsyncHandler(async (req, res) => {
+    const users = await prisma.app_user.findMany();
+
+    res.render("management", { users })
+}));
+
+adminRoutes.post("/get-tags-by-user", expressAsyncHandler(async (req, res) => {
+    const { userId } = req.body;
+
+    if (!userId) {
+        res.json({ error: "No userId", result: null })
+    }
+
+    const tags = await prisma.tag.findMany({
+        where: {
+            userId: userId
+        }
+    });
+
+    res.json(tags)
+}));
+
+adminRoutes.post(
+    "/update-tag-toggle",
+    expressAsyncHandler(async (req, res) => {
+        const { tagId, field, value } = req.body;
+
+        if (!tagId) {
+            res.status(400).json({ ok: false, error: "tagId required" });
+
+            return
+        }
+
+        // Allow ONLY these fields to be updated (security)
+        const allowed = new Set(["is_activated", "is_visible_to_user"]);
+        if (!allowed.has(field)) {
+            res.status(400).json({ ok: false, error: "Invalid field" });
+            return
+        }
+
+        const boolValue = Boolean(value);
+
+        const updated = await prisma.tag.update({
+            where: { id: tagId },
+            data: { [field]: boolValue },
+            select: {
+                id: true,
+                is_activated: true,
+                is_visible_to_user: true,
+            },
+        });
+
+        res.json({ ok: true, tag: updated });
+    })
+);
 
 
 

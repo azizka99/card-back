@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Management</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+      rel="stylesheet"
+    />
+
+    <style>
+      * { box-sizing: border-box; font-family: Inter, sans-serif; }
+      body { margin: 0; background: #f1f5f9; color: #1e293b; display: flex; min-height: 100vh; }
+
+      :root { --sidebar-width: 260px; }
+
+      .main-wrapper { margin-left: var(--sidebar-width); flex: 1; min-width: 0; display: flex; flex-direction: column; }
+
+      header {
+        background: #fff;
+        height: 70px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 32px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        position: sticky;
+        top: 0;
+        z-index: 100;
+      }
+
+      .content { padding: 32px; max-width: 1600px; width: 100%; margin: 0 auto; }
+
+      .page-title { font-size: 26px; font-weight: 700; margin-bottom: 6px; }
+      .subtitle { font-size: 13px; color: #64748b; margin-bottom: 24px; }
+
+      .controls {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        align-items: flex-end;
+        margin-bottom: 24px;
+        background: #fff;
+        padding: 20px;
+        border-radius: 12px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+      }
+      .label { font-size: 11px; font-weight: 700; color: #64748b; margin-bottom: 6px; text-transform: uppercase; }
+      .input { padding: 10px; border-radius: 8px; border: 1px solid #e2e8f0; min-width: 220px; background: #fff; }
+
+      .btn {
+        background: #6262a6;
+        color: #fff;
+        border: none;
+        padding: 10px 16px;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        white-space: nowrap;
+      }
+      .btn:hover { background: #4e4e85; }
+
+      .panel { background: #fff; border-radius: 12px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); padding: 0; overflow: hidden; }
+
+      table { width: 100%; border-collapse: collapse; font-size: 14px; }
+      thead th {
+        text-align: left;
+        padding: 16px 24px;
+        background: #f8fafc;
+        color: #64748b;
+        border-bottom: 1px solid #e2e8f0;
+        font-size: 12px;
+        text-transform: uppercase;
+        white-space: nowrap;
+      }
+      tbody td { padding: 16px 24px; border-bottom: 1px solid #e2e8f0; vertical-align: middle; }
+      tbody tr:last-child td { border-bottom: none; }
+      tbody tr:hover { background: #f8fafc; }
+
+      .switch { position: relative; display: inline-block; width: 36px; height: 20px; }
+      .switch input { opacity: 0; width: 0; height: 0; }
+      .slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background-color: #cbd5e1;
+        transition: 0.3s;
+        border-radius: 34px;
+      }
+      .slider:before {
+        position: absolute;
+        content: "";
+        height: 16px; width: 16px;
+        left: 2px; bottom: 2px;
+        background-color: white;
+        transition: 0.3s;
+        border-radius: 50%;
+      }
+      input:checked + .slider { background-color: #6262a6; }
+      input:checked + .slider:before { transform: translateX(16px); }
+
+      .empty-state { padding: 40px; text-align: center; color: #94a3b8; }
+
+      /* small inline toast */
+      .toast {
+        position: fixed;
+        right: 18px;
+        bottom: 18px;
+        background: #0f172a;
+        color: #fff;
+        padding: 10px 12px;
+        border-radius: 10px;
+        font-size: 13px;
+        box-shadow: 0 8px 20px rgba(0,0,0,.18);
+        opacity: 0;
+        transform: translateY(8px);
+        transition: .2s;
+        pointer-events: none;
+        max-width: 360px;
+      }
+      .toast.show { opacity: 1; transform: translateY(0); }
+      .toast.error { background: #991b1b; }
+      .muted { color:#64748b; font-size:12px; }
+    </style>
+  </head>
+
+  <body>
+    <%- include("partials/sidebar", { activePage: "management" }) %>
+
+    <div class="main-wrapper">
+      <header>
+        <strong>Management</strong>
+        <div
+          style="
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: #6262a6;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+          "
+        >
+          AD
+        </div>
+      </header>
+
+      <div class="content">
+        <div class="page-title">Tag Management</div>
+        <div class="subtitle">
+          Select a user to manage their tag visibility and activation status.
+        </div>
+
+        <div class="controls">
+          <div>
+            <div class="label">Select User</div>
+            <select id="userSelect" class="input">
+              <option value="" disabled selected>Choose a user...</option>
+              <% users.forEach(u => { %>
+                <option value="<%= u.id %>"><%= u.name %></option>
+              <% }) %>
+            </select>
+            <div class="muted" style="margin-top:6px;">Changes save instantly.</div>
+          </div>
+
+          <button class="btn" id="loadBtn">
+            <i class="fas fa-search"></i> Load Tags
+          </button>
+        </div>
+
+        <div class="panel">
+          <table>
+            <thead>
+              <tr>
+                <th>Tag Name</th>
+                <th>Created At (YYYYMMDD)</th>
+                <th>Is Activated</th>
+                <th>Is Visible</th>
+              </tr>
+            </thead>
+            <tbody id="tagsTableBody">
+              <tr>
+                <td colspan="4" class="empty-state">
+                  Please select a user and click Load.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div id="toast" class="toast"></div>
+
+<script>
+  // --- UTILS ---
+  function escapeHtml(s) {
+    return String(s ?? "")
+      .replaceAll("&","&amp;")
+      .replaceAll("<","&lt;")
+      .replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;");
+  }
+
+  function formatDateYYYYMMDD(dateStr) {
+    if (!dateStr) return "-";
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return dateStr;
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${y}${m}${day}`;
+  }
+
+  function toast(msg, type = "ok") {
+    const el = document.getElementById("toast");
+    el.textContent = msg;
+    el.classList.remove("error");
+    if (type === "error") el.classList.add("error");
+    el.classList.add("show");
+    clearTimeout(window.__toastT);
+    window.__toastT = setTimeout(() => el.classList.remove("show"), 2200);
+  }
+
+  // --- STATE ---
+  const userSelect = document.getElementById("userSelect");
+  const tbody = document.getElementById("tagsTableBody");
+  const loadBtn = document.getElementById("loadBtn");
+
+  // Keep tags in memory so we can rollback on failed save
+  let tagsCache = [];
+
+  loadBtn.onclick = async () => {
+    const userId = userSelect.value;
+    if (!userId) return alert("Please select a user first.");
+
+    tbody.innerHTML = `<tr><td colspan="4" class="empty-state">Loading tags...</td></tr>`;
+
+    try {
+      const res = await fetch("/a26ae3e19a140048efd2/get-tags-by-user", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId })
+      });
+
+      if (!res.ok) throw new Error("Failed to fetch tags");
+
+      const tags = await res.json(); // API returns array directly
+      tagsCache = Array.isArray(tags) ? tags : [];
+      renderTable(tagsCache);
+
+    } catch (err) {
+      console.error(err);
+      tbody.innerHTML = `<tr><td colspan="4" class="empty-state" style="color:#ef4444;">Error loading tags.</td></tr>`;
+    }
+  };
+
+  function renderTable(tagsData) {
+    if (!Array.isArray(tagsData) || tagsData.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="4" class="empty-state">No tags found for this user.</td></tr>`;
+      return;
+    }
+
+    tagsData.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+    let html = "";
+    for (const tag of tagsData) {
+      const createdDate = formatDateYYYYMMDD(tag.created_at);
+      const activeChecked = tag.is_activated ? "checked" : "";
+      const visibleChecked = tag.is_visible_to_user ? "checked" : "";
+
+      html += `
+        <tr data-row-id="${escapeHtml(tag.id)}">
+          <td><strong>${escapeHtml(tag.name)}</strong></td>
+          <td style="font-family:monospace; color:#64748b;">${createdDate}</td>
+
+          <td>
+            <label class="switch">
+              <input
+                type="checkbox"
+                data-id="${escapeHtml(tag.id)}"
+                data-field="is_activated"
+                ${activeChecked}
+              >
+              <span class="slider"></span>
+            </label>
+          </td>
+
+          <td>
+            <label class="switch">
+              <input
+                type="checkbox"
+                data-id="${escapeHtml(tag.id)}"
+                data-field="is_visible_to_user"
+                ${visibleChecked}
+              >
+              <span class="slider"></span>
+            </label>
+          </td>
+        </tr>
+      `;
+    }
+
+    tbody.innerHTML = html;
+  }
+
+  // --- SAVE TO BACKEND ON TOGGLE ---
+  tbody.addEventListener("change", async (e) => {
+    const input = e.target;
+    if (input.type !== "checkbox") return;
+
+    const tagId = input.dataset.id;
+    const field = input.dataset.field; // is_activated | is_visible_to_user
+    const value = input.checked;
+
+    if (!tagId || !field) return;
+
+    // Find tag in cache for rollback
+    const idx = tagsCache.findIndex(t => String(t.id) === String(tagId));
+    const prev = idx >= 0 ? Boolean(tagsCache[idx][field]) : !value;
+
+    // Optimistic update in cache
+    if (idx >= 0) tagsCache[idx][field] = value;
+
+    // Disable while saving
+    input.disabled = true;
+
+    try {
+      const res = await fetch("/a26ae3e19a140048efd2/update-tag-toggle", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tagId, field, value })
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.ok) {
+        throw new Error(data?.error || "Update failed");
+      }
+
+      // (Optional) sync returned tag fields
+      if (data.tag && idx >= 0) {
+        tagsCache[idx] = { ...tagsCache[idx], ...data.tag };
+      }
+
+      toast("Saved");
+
+    } catch (err) {
+      console.error(err);
+
+      // Rollback UI + cache
+      input.checked = prev;
+      if (idx >= 0) tagsCache[idx][field] = prev;
+
+      toast("Failed to save. Reverted.", "error");
+    } finally {
+      input.disabled = false;
+    }
+  });
+</script>
+  </body>
+</html>

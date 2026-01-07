@@ -147,7 +147,17 @@
         Magic Links
       </a>
     </li>
-
+    <li>
+      <a
+        href="/a26ae3e19a140048efd2/management"
+        style="<% linkStyle(activePage === 'permissions'); %>"
+        onmouseover="this.style.background='rgba(255,255,255,0.15)'; this.style.color='#fff';"
+        onmouseout="this.style.background='<%= (activePage === 'management') ? 'rgba(255,255,255,0.15)' : 'transparent' %>'; this.style.color='<%= (activePage === 'management') ? '#fff' : 'rgba(255,255,255,0.8)' %>';"
+      >
+        <i class="fas fa-shield-alt" style="<% iconStyle(); %>"></i>
+        Management
+      </a>
+    </li>
     <!-- <li>
       <a
         href="/admin/users"
@@ -159,19 +169,9 @@
         Users
       </a>
     </li>
+  -->
 
-    <li>
-      <a
-        href="/admin/permissions"
-        style="<% linkStyle(activePage === 'permissions'); %>"
-        onmouseover="this.style.background='rgba(255,255,255,0.15)'; this.style.color='#fff';"
-        onmouseout="this.style.background='<%= (activePage === 'permissions') ? 'rgba(255,255,255,0.15)' : 'transparent' %>'; this.style.color='<%= (activePage === 'permissions') ? '#fff' : 'rgba(255,255,255,0.8)' %>';"
-      >
-        <i class="fas fa-shield-alt" style="<% iconStyle(); %>"></i>
-        Permissions
-      </a>
-    </li>
-
+    <!--
     <li>
       <a
         href="/admin/settings"
