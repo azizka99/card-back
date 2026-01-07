@@ -193,32 +193,14 @@ adminRoutes.get("/api/monthly-payout", (0, express_async_handler_1.default)(asyn
         res.json({ success: false, message: "Missing userId or month" });
         return;
     }
-    // 1) group by tag_id, count cards for this user
-    const grouped = await dbConnection_1.default.steam_card.groupBy({
-        by: ["tag_id"],
-        where: { user_id: userId },
-        _count: { _all: true },
-    });
-    // tag_id can be null, so keep only strings
-    const tagIds = grouped
-        .map((g) => g.tag_id)
-        .filter((x) => typeof x === "string");
-    if (tagIds.length === 0) {
-        res.json({ success: true, items: [], total: 0 });
-        return;
-    }
-    // 2) load tags
-    const tags = await dbConnection_1.default.tag.findMany({
-        where: { id: { in: tagIds } },
-        select: { id: true, name: true },
-    });
-    // 3) helpers
+    // =========================
+    // helpers (same as you had)
+    // =========================
     function parseTagDate(tagName) {
         if (!tagName)
             return null;
         const s = String(tagName);
         let m, parts, y, mo, da, dt, raw, yy;
-        // YYYY-MM-DD / YYYY.MM.DD / YYYY/MM/DD
         m = s.match(/(\d{4}[.\-/]\d{2}[.\-/]\d{2})/);
         if (m) {
             parts = m[1].replace(/[.\/]/g, "-").split("-");
@@ -229,7 +211,6 @@ adminRoutes.get("/api/monthly-payout", (0, express_async_handler_1.default)(asyn
             if (dt.getFullYear() === y && dt.getMonth() === mo - 1 && dt.getDate() === da)
                 return dt;
         }
-        // DD-MM-YYYY / DD.MM.YYYY / DD/MM/YYYY
         m = s.match(/(\d{2}[.\-/]\d{2}[.\-/]\d{4})/);
         if (m) {
             parts = m[1].replace(/[.\/]/g, "-").split("-");
@@ -240,7 +221,6 @@ adminRoutes.get("/api/monthly-payout", (0, express_async_handler_1.default)(asyn
             if (dt.getFullYear() === y && dt.getMonth() === mo - 1 && dt.getDate() === da)
                 return dt;
         }
-        // DD-MM-YY / DD.MM.YY / DD/MM/YY => assume 20xx
         m = s.match(/(\d{2}[.\-/]\d{2}[.\-/]\d{2})/);
         if (m) {
             parts = m[1].replace(/[.\/]/g, "-").split("-");
@@ -252,7 +232,6 @@ adminRoutes.get("/api/monthly-payout", (0, express_async_handler_1.default)(asyn
             if (dt.getFullYear() === y && dt.getMonth() === mo - 1 && dt.getDate() === da)
                 return dt;
         }
-        // YYYYMMDD
         m = s.match(/(\d{8})/);
         if (m) {
             raw = m[1];
@@ -270,12 +249,92 @@ adminRoutes.get("/api/monthly-payout", (0, express_async_handler_1.default)(asyn
         const m = String(d.getMonth() + 1).padStart(2, "0");
         return `${y}-${m}`;
     }
-    // Map tagId -> count (typed!)
+    // =========================
+    // ALL users mode
+    // =========================
+    if (userId === "all") {
+        const grouped = await dbConnection_1.default.steam_card.groupBy({
+            by: ["user_id", "tag_id"],
+            where: {
+                //   user_id: { not: null },
+                tag_id: { not: null },
+            },
+            _count: { _all: true },
+        });
+        const tagIds = Array.from(new Set(grouped.map(g => g.tag_id).filter((x) => typeof x === "string")));
+        if (tagIds.length === 0) {
+            res.json({ success: true, items: [], total: 0 });
+            return;
+        }
+        const userIds = Array.from(new Set(grouped.map(g => g.user_id).filter((x) => typeof x === "string")));
+        const [tags, users] = await Promise.all([
+            dbConnection_1.default.tag.findMany({
+                where: { id: { in: tagIds } },
+                select: { id: true, name: true },
+            }),
+            dbConnection_1.default.app_user.findMany({
+                where: { id: { in: userIds } },
+                select: { id: true, name: true },
+            }),
+        ]);
+        const tagMap = new Map(tags.map(t => [t.id, t]));
+        const userMap = new Map(users.map(u => [u.id, u]));
+        const items = [];
+        for (const g of grouped) {
+            if (typeof g.tag_id !== "string" || typeof g.user_id !== "string")
+                continue;
+            const tag = tagMap.get(g.tag_id);
+            if (!tag)
+                continue;
+            const dt = parseTagDate(tag.name);
+            if (!dt)
+                continue;
+            if (monthKey(dt) !== month)
+                continue;
+            const u = userMap.get(g.user_id);
+            items.push({
+                _rowId: `${g.user_id}:${g.tag_id}`,
+                id: tag.id,
+                name: tag.name,
+                date: dt.toISOString(),
+                count: g._count._all,
+                user_id: g.user_id,
+                user_name: u?.name || undefined,
+            });
+        }
+        items.sort((a, b) => {
+            const d = new Date(b.date).getTime() - new Date(a.date).getTime();
+            if (d !== 0)
+                return d;
+            return String(a.user_name || a.user_id).localeCompare(String(b.user_name || b.user_id));
+        });
+        const total = items.reduce((sum, x) => sum + x.count, 0);
+        res.json({ success: true, items, total });
+        return;
+    }
+    // =========================
+    // Single user mode (your old logic)
+    // =========================
+    const grouped = await dbConnection_1.default.steam_card.groupBy({
+        by: ["tag_id"],
+        where: { user_id: userId },
+        _count: { _all: true },
+    });
+    const tagIds = grouped
+        .map((g) => g.tag_id)
+        .filter((x) => typeof x === "string");
+    if (tagIds.length === 0) {
+        res.json({ success: true, items: [], total: 0 });
+        return;
+    }
+    const tags = await dbConnection_1.default.tag.findMany({
+        where: { id: { in: tagIds } },
+        select: { id: true, name: true },
+    });
     const countMap = {};
     grouped.forEach((g) => {
-        if (typeof g.tag_id === "string") {
+        if (typeof g.tag_id === "string")
             countMap[g.tag_id] = g._count._all;
-        }
     });
     const items = [];
     for (const t of tags) {
@@ -285,17 +344,16 @@ adminRoutes.get("/api/monthly-payout", (0, express_async_handler_1.default)(asyn
         if (monthKey(dt) !== month)
             continue;
         items.push({
+            _rowId: t.id, // unique enough in single-user mode
             id: t.id,
             name: t.name,
             date: dt.toISOString(),
             count: countMap[t.id] ?? 0,
         });
     }
-    // Sort by date desc (use getTime)
     items.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     const total = items.reduce((sum, x) => sum + x.count, 0);
     res.json({ success: true, items, total });
-    return;
 }));
 adminRoutes.post("/api/monthly-payout/count", (0, express_async_handler_1.default)(async (req, res) => {
     const userId = String(req.body.userId || "");
