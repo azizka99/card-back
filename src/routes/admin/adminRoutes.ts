@@ -137,6 +137,8 @@ adminRoutes.get("/download/:tag_id", expressAsyncHandler(async (req, res) => {
     const ean = await prisma.ean.findMany();
 
     const campaignJson = () => {
+        console.log("tag", tag.is_activated);
+
         if (tag.is_activated === true) {
             return {
                 activeCampaign: {
@@ -150,6 +152,8 @@ adminRoutes.get("/download/:tag_id", expressAsyncHandler(async (req, res) => {
     }
 
     const result = campaignJson();
+    console.log("result", result);
+
 
     res.render("download", {
         items,
