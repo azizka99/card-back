@@ -23,5 +23,6 @@
         "arascom",
         "tesseract",
         "uuidv"
-    ]
+    ],
+    "prisma.pinToPrisma6": true
 }

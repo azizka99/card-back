@@ -48,7 +48,6 @@ adminRoutes.get("/dashboard", expressAsyncHandler(async (req, res) => {
     });
 }));
 
-
 adminRoutes.get("/live-feed", expressAsyncHandler(async (req, res) => {
     const steam_cards = await prisma.steam_card.findMany({
         include: {
@@ -145,9 +144,17 @@ adminRoutes.get("/download/:tag_id", expressAsyncHandler(async (req, res) => {
         selectedUserId,
         tagsForUser,
         selectedTagId: tagId,
+        //test
+        activeCampaign: {
+            isRunning: true,
+            percentage: 85, // % completed
+            failedItems: [
+                { barcode: "123456", reason: "Invalid EAN" },
+                { barcode: "789012", reason: "Timeout" }
+            ]
+        }
     });
 }));
-
 
 adminRoutes.post(
     "/api/activation-campaign",

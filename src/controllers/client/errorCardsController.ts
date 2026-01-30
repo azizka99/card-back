@@ -7,7 +7,7 @@ export const checkScannedCards = expressAsyncHandler(async (req, res) => {
     if (!tag_id) {
         res.status(400).json({ error: "There is no tag_id" });
         return;
-    }
+    } 
 
     // 🔥 Fire-and-forget background job (no await!)
     setImmediate(async () => {

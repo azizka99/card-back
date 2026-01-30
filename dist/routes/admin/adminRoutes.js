@@ -129,6 +129,15 @@ adminRoutes.get("/download/:tag_id", (0, express_async_handler_1.default)(async 
         selectedUserId,
         tagsForUser,
         selectedTagId: tagId,
+        //test
+        activeCampaign: {
+            isRunning: true,
+            percentage: 85, // % completed
+            failedItems: [
+                { barcode: "123456", reason: "Invalid EAN" },
+                { barcode: "789012", reason: "Timeout" }
+            ]
+        }
     });
 }));
 adminRoutes.post("/api/activation-campaign", (0, express_async_handler_1.default)(async (req, res) => {

@@ -41,326 +41,152 @@
         min-height: 100vh;
       }
 
-      /* --- SIDEBAR --- */
-      .sidebar {
-        width: var(--sidebar-width);
-        background-color: var(--primary);
-        color: var(--white);
-        display: flex;
-        flex-direction: column;
-        position: fixed;
-        height: 100vh;
+      /* ... [KEEP ALL YOUR EXISTING SIDEBAR/HEADER CSS HERE] ... */
+      /* Copied purely for context, assumes you keep your existing CSS above */
+      .sidebar { width: var(--sidebar-width); background-color: var(--primary); color: var(--white); display: flex; flex-direction: column; position: fixed; height: 100vh; left: 0; top: 0; padding: 24px; z-index: 50; }
+      .main-wrapper { margin-left: var(--sidebar-width); flex: 1; display: flex; flex-direction: column; }
+      header { background-color: var(--white); height: 70px; padding: 0 32px; display: flex; align-items: center; justify-content: space-between; box-shadow: var(--shadow); position: sticky; top: 0; z-index: 40; }
+      .search-bar { display: flex; align-items: center; background-color: var(--bg-body); padding: 10px 16px; border-radius: 8px; width: 350px; border: 1px solid transparent; transition: 0.2s; }
+      .search-bar input { border: none; background: none; outline: none; width: 100%; font-size: 14px; color: var(--text-dark); }
+      .content { padding: 32px; }
+      .page-title { font-size: 24px; font-weight: 700; color: var(--text-dark); margin-bottom: 24px; }
+      .panel { background: var(--white); border-radius: 12px; box-shadow: var(--shadow); padding: 24px; display: flex; flex-direction: column; position: relative; } /* Added position relative */
+      .download-grid { display: grid; grid-template-columns: 3fr 1fr; gap: 24px; }
+      .picker-panel { margin-bottom: 24px; }
+      .picker-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+      .table-container { width: 100%; overflow-x: auto; }
+      table { width: 100%; border-collapse: collapse; font-size: 14px; }
+      thead th { text-align: left; padding: 12px 16px; background-color: #f8fafc; color: var(--text-gray); font-weight: 600; border-bottom: 1px solid var(--border-color); text-transform: uppercase; font-size: 12px; }
+      tbody td { padding: 14px 16px; border-bottom: 1px solid var(--border-color); color: var(--text-dark); }
+      .code-pill { font-family: "Courier New", monospace; background: var(--bg-body); padding: 4px 8px; border-radius: 4px; color: var(--primary-dark); font-weight: 600; font-size: 13px; }
+      .pagination { display: flex; justify-content: flex-end; align-items: center; margin-top: 20px; gap: 12px; }
+      .page-btn { background: var(--white); border: 1px solid var(--border-color); padding: 6px 12px; border-radius: 6px; cursor: pointer; color: var(--text-gray); font-size: 13px; }
+      .export-title { font-size: 16px; font-weight: 600; margin-bottom: 16px; color: var(--text-dark); border-bottom: 1px solid var(--border-color); padding-bottom: 12px; }
+      .form-group { margin-bottom: 16px; }
+      .form-label { display: block; font-size: 12px; font-weight: 600; color: var(--text-gray); margin-bottom: 8px; text-transform: uppercase; }
+      .form-input { width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border-color); background-color: var(--white); font-size: 14px; color: var(--text-dark); height: 42px; }
+      .checkbox-group { display: flex; flex-direction: column; gap: 12px; margin-bottom: 24px; }
+      .custom-checkbox { display: flex; align-items: center; cursor: pointer; font-size: 14px; color: var(--text-dark); }
+      .custom-checkbox input { width: 18px; height: 18px; margin-right: 10px; accent-color: var(--primary); }
+      .download-btn { width: 100%; background-color: var(--primary); color: var(--white); border: none; padding: 12px; border-radius: 8px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; }
+      .run-btn { background-color: #10b981; }
+      
+      /* --- NEW STYLES FOR BLUR & MODAL --- */
+      
+      /* Overlay to blur the panel */
+      .panel-overlay {
+        position: absolute;
+        top: 0;
         left: 0;
-        top: 0;
-        padding: 24px;
-        z-index: 50;
-      }
-
-      /* --- MAIN CONTENT --- */
-      .main-wrapper {
-        margin-left: var(--sidebar-width);
-        flex: 1;
+        width: 100%;
+        height: 100%;
+        background: rgba(255, 255, 255, 0.7);
+        backdrop-filter: blur(4px);
+        z-index: 10;
         display: flex;
         flex-direction: column;
-      }
-
-      /* --- HEADER --- */
-      header {
-        background-color: var(--white);
-        height: 70px;
-        padding: 0 32px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        box-shadow: var(--shadow);
-        position: sticky;
-        top: 0;
-        z-index: 40;
-      }
-
-      .search-bar {
-        display: flex;
-        align-items: center;
-        background-color: var(--bg-body);
-        padding: 10px 16px;
-        border-radius: 8px;
-        width: 350px;
-        border: 1px solid transparent;
-        transition: 0.2s;
-      }
-
-      .search-bar:focus-within {
-        border-color: var(--primary);
-        background-color: var(--white);
-      }
-
-      .search-bar i {
-        color: var(--text-gray);
-        margin-right: 10px;
-      }
-
-      .search-bar input {
-        border: none;
-        background: none;
-        outline: none;
-        width: 100%;
-        font-size: 14px;
-        color: var(--text-dark);
-      }
-
-      .header-actions {
-        display: flex;
-        align-items: center;
-        gap: 20px;
-      }
-
-      /* --- PAGE SPECIFIC STYLES --- */
-      .content {
-        padding: 32px;
-      }
-
-      .page-title {
-        font-size: 24px;
-        font-weight: 700;
-        color: var(--text-dark);
-        margin-bottom: 24px;
-      }
-
-      /* Panel Styles */
-      .panel {
-        background: var(--white);
-        border-radius: 12px;
-        box-shadow: var(--shadow);
-        padding: 24px;
-        display: flex;
-        flex-direction: column;
-      }
-
-      /* Layout Grid */
-      .download-grid {
-        display: grid;
-        grid-template-columns: 3fr 1fr;
-        gap: 24px;
-      }
-
-      /* --- PICKER SECTION STYLES (NEW) --- */
-      .picker-panel {
-        margin-bottom: 24px; /* Spacing below the picker */
-      }
-      
-      .picker-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr; /* Two equal columns */
-        gap: 24px;
-      }
-
-      /* Table Styles */
-      .table-container {
-        width: 100%;
-        overflow-x: auto;
-      }
-
-      table {
-        width: 100%;
-        border-collapse: collapse;
-        font-size: 14px;
-      }
-
-      thead th {
-        text-align: left;
-        padding: 12px 16px;
-        background-color: #f8fafc;
-        color: var(--text-gray);
-        font-weight: 600;
-        border-bottom: 1px solid var(--border-color);
-        text-transform: uppercase;
-        font-size: 12px;
-        letter-spacing: 0.5px;
-      }
-
-      tbody td {
-        padding: 14px 16px;
-        border-bottom: 1px solid var(--border-color);
-        color: var(--text-dark);
-      }
-
-      tbody tr:last-child td {
-        border-bottom: none;
-      }
-
-      tbody tr:hover {
-        background-color: #f8fafc;
-      }
-
-      .code-pill {
-        font-family: "Courier New", monospace;
-        background: var(--bg-body);
-        padding: 4px 8px;
-        border-radius: 4px;
-        color: var(--primary-dark);
-        font-weight: 600;
-        font-size: 13px;
-      }
-
-      /* Pagination */
-      .pagination {
-        display: flex;
-        justify-content: flex-end;
-        align-items: center;
-        margin-top: 20px;
-        gap: 12px;
-      }
-
-      .page-btn {
-        background: var(--white);
-        border: 1px solid var(--border-color);
-        padding: 6px 12px;
-        border-radius: 6px;
-        cursor: pointer;
-        color: var(--text-gray);
-        font-size: 13px;
-        transition: 0.2s;
-      }
-
-      .page-btn:hover:not(:disabled) {
-        border-color: var(--primary);
-        color: var(--primary);
-      }
-
-      .page-btn:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-      }
-
-      .page-info {
-        font-size: 13px;
-        color: var(--text-gray);
-      }
-
-      /* Shared Form Styles */
-      .export-title {
-        font-size: 16px;
-        font-weight: 600;
-        margin-bottom: 16px;
-        color: var(--text-dark);
-        border-bottom: 1px solid var(--border-color);
-        padding-bottom: 12px;
-      }
-
-      .form-group {
-        margin-bottom: 16px;
-      }
-
-      .form-label {
-        display: block;
-        font-size: 12px;
-        font-weight: 600;
-        color: var(--text-gray);
-        margin-bottom: 8px;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-      }
-      
-      .form-label i {
-        margin-right: 6px;
-        color: var(--primary);
-      }
-
-      .form-input {
-        width: 100%;
-        padding: 10px 12px;
-        border-radius: 8px;
-        border: 1px solid var(--border-color);
-        background-color: var(--white);
-        font-size: 14px;
-        color: var(--text-dark);
-        outline: none;
-        transition: all 0.2s;
-        height: 42px; /* Fixed height for alignment */
-      }
-      
-      .form-input:focus {
-        border-color: var(--primary);
-        box-shadow: 0 0 0 2px rgba(98, 98, 166, 0.1);
-      }
-
-      .form-input:disabled {
-        background-color: #f1f5f9;
-        cursor: not-allowed;
-        color: #94a3b8;
-      }
-
-      .checkbox-group {
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-        margin-bottom: 24px;
-      }
-
-      .custom-checkbox {
-        display: flex;
-        align-items: center;
-        cursor: pointer;
-        font-size: 14px;
-        color: var(--text-dark);
-      }
-
-      .custom-checkbox input {
-        width: 18px;
-        height: 18px;
-        margin-right: 10px;
-        accent-color: var(--primary);
-        cursor: pointer;
-      }
-
-      /* Buttons */
-      .download-btn {
-        width: 100%;
-        background-color: var(--primary);
-        color: var(--white);
-        border: none;
-        padding: 12px;
-        border-radius: 8px;
-        font-weight: 600;
-        cursor: pointer;
-        transition: background 0.2s;
-        display: flex;
         align-items: center;
         justify-content: center;
+        border-radius: 12px;
+        text-align: center;
+        padding: 20px;
+      }
+
+      .overlay-message {
+        font-weight: 600;
+        color: var(--text-dark);
+        margin-bottom: 12px;
+      }
+
+      .stats-btn {
+        background-color: var(--primary);
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 6px;
+        font-weight: 500;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
         gap: 8px;
+        transition: 0.2s;
+      }
+      .stats-btn:hover { background-color: var(--primary-dark); }
+
+      /* Modal Background */
+      .modal-backdrop {
+        display: none; /* Hidden by default */
+        position: fixed;
+        z-index: 100;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0,0,0,0.5);
+        align-items: center;
+        justify-content: center;
       }
 
-      .download-btn:hover {
-        background-color: var(--primary-dark);
+      /* Modal Content */
+      .modal-content {
+        background-color: white;
+        border-radius: 12px;
+        width: 90%;
+        max-width: 600px;
+        max-height: 80vh;
+        display: flex;
+        flex-direction: column;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        animation: slideIn 0.3s ease-out;
       }
 
-      .run-btn {
-        background-color: #10b981; 
-      }
-      .run-btn:hover {
-        background-color: #059669;
+      @keyframes slideIn {
+        from { transform: translateY(20px); opacity: 0; }
+        to { transform: translateY(0); opacity: 1; }
       }
 
-      /* Responsive */
-      @media (max-width: 1024px) {
-        .download-grid {
-          grid-template-columns: 1fr;
-        }
+      .modal-header {
+        padding: 20px 24px;
+        border-bottom: 1px solid var(--border-color);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
       }
-      @media (max-width: 768px) {
-        .sidebar {
-          display: none;
-        }
-        .main-wrapper {
-          margin-left: 0;
-        }
-        header {
-          padding: 0 16px;
-        }
-        .picker-grid {
-          grid-template-columns: 1fr; /* Stack pickers on mobile */
-        }
+
+      .modal-title { font-weight: 700; font-size: 18px; color: var(--text-dark); }
+      .close-modal { cursor: pointer; color: var(--text-gray); font-size: 20px; }
+      .close-modal:hover { color: var(--text-dark); }
+
+      .modal-body {
+        padding: 24px;
+        overflow-y: auto;
       }
+
+      .stat-card {
+        background: #f8fafc;
+        padding: 16px;
+        border-radius: 8px;
+        text-align: center;
+        margin-bottom: 24px;
+      }
+      .stat-number { font-size: 32px; font-weight: 700; color: var(--primary); }
+      .stat-label { font-size: 13px; color: var(--text-gray); text-transform: uppercase; font-weight: 600; }
+
+      .error-list {
+        list-style: none;
+        margin-top: 10px;
+      }
+      .error-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 10px;
+        border-bottom: 1px solid var(--border-color);
+        font-size: 13px;
+      }
+      .error-item:last-child { border-bottom: none; }
+      .err-code { font-family: monospace; font-weight: 600; color: var(--text-dark); }
+      .err-reason { color: #ef4444; }
+
     </style>
   </head>
   <body>
@@ -369,28 +195,11 @@
     <div class="main-wrapper">
       <header>
         <div class="search-bar">
-          <i
-            class="fas fa-search"
-            style="color: #64748b; margin-right: 10px"
-          ></i>
+          <i class="fas fa-search"></i>
           <input type="text" placeholder="Search..." />
         </div>
         <div class="header-actions">
-          <div
-            style="
-              width: 35px;
-              height: 35px;
-              background: #6262a6;
-              border-radius: 50%;
-              color: white;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              font-weight: bold;
-            "
-          >
-            AD
-          </div>
+           <div style="width: 35px; height: 35px; background: #6262a6; border-radius: 50%; color: white; display: flex; align-items: center; justify-content: center; font-weight: bold;">AD</div>
         </div>
       </header>
 
@@ -398,53 +207,36 @@
         <h1 class="page-title">Data Management</h1>
 
         <% var hasPicker = (typeof users !== "undefined" && users && users.length); %>
-
         <% if (hasPicker) { %>
           <div class="panel picker-panel">
             <div class="picker-grid">
-              
               <div>
-                <label class="form-label" for="userSelect">
-                  <i class="fas fa-user-circle"></i> Select User
-                </label>
+                <label class="form-label" for="userSelect"><i class="fas fa-user-circle"></i> Select User</label>
                 <select id="userSelect" class="form-input">
                   <option value="" <%= !selectedUserId ? "selected" : "" %> disabled>Choose user...</option>
                   <% for (var i=0; i<users.length; i++) { %>
-                    <option value="<%= users[i].id %>" <%= (selectedUserId === users[i].id) ? "selected" : "" %>>
-                      <%= users[i].name %>
-                    </option>
+                    <option value="<%= users[i].id %>" <%= (selectedUserId === users[i].id) ? "selected" : "" %>><%= users[i].name %></option>
                   <% } %>
                 </select>
               </div>
-          
               <div>
-                <label class="form-label" for="tagSelect">
-                  <i class="fas fa-tag"></i> Select Tag
-                </label>
+                <label class="form-label" for="tagSelect"><i class="fas fa-tag"></i> Select Tag</label>
                 <select id="tagSelect" class="form-input" <%= (tagsForUser && tagsForUser.length) ? "" : "disabled" %>>
                   <option value="" disabled selected>Choose tag...</option>
                   <% if (tagsForUser && tagsForUser.length) { %>
                     <% for (var j=0; j<tagsForUser.length; j++) { %>
-                      <option value="<%= tagsForUser[j].id %>" <%= (selectedTagId === tagsForUser[j].id) ? "selected" : "" %>>
-                        <%= tagsForUser[j].name %>
-                      </option>
+                      <option value="<%= tagsForUser[j].id %>" <%= (selectedTagId === tagsForUser[j].id) ? "selected" : "" %>><%= tagsForUser[j].name %></option>
                     <% } %>
                   <% } %>
                 </select>
               </div>
-
             </div>
           </div>
         <% } %>
 
-
         <div class="download-grid">
-
           <div class="panel">
-            <h3 style="margin-bottom: 20px; font-size: 18px; color: var(--text-dark);" id="tableTitle">
-              Available Codes
-            </h3>
-
+            <h3 style="margin-bottom: 20px; font-size: 18px; color: var(--text-dark);" id="tableTitle">Available Codes</h3>
             <div class="table-container">
               <table>
                 <thead>
@@ -456,15 +248,10 @@
                 <tbody id="tableBody"></tbody>
               </table>
             </div>
-
             <div class="pagination">
-              <button class="page-btn" id="prevBtn" onclick="changePage(-1)">
-                <i class="fas fa-chevron-left"></i>
-              </button>
+              <button class="page-btn" id="prevBtn" onclick="changePage(-1)"><i class="fas fa-chevron-left"></i></button>
               <span class="page-info" id="pageInfo">Page 1 of 1</span>
-              <button class="page-btn" id="nextBtn" onclick="changePage(1)">
-                <i class="fas fa-chevron-right"></i>
-              </button>
+              <button class="page-btn" id="nextBtn" onclick="changePage(1)"><i class="fas fa-chevron-right"></i></button>
             </div>
           </div>
 
@@ -472,29 +259,15 @@
             
             <div class="panel" style="height: fit-content">
                 <div class="export-title">Export Options</div>
-
-                <p style="font-size: 13px; color: var(--text-gray); margin-bottom: 16px;">
-                Select columns to download.
-                </p>
-
+                <p style="font-size: 13px; color: var(--text-gray); margin-bottom: 16px;">Select columns to download.</p>
                 <div class="checkbox-group">
-                <label class="custom-checkbox">
-                    <input type="checkbox" id="chkBarcode" checked />
-                    Barcode ID
-                </label>
-
-                <label class="custom-checkbox">
-                    <input type="checkbox" id="chkActivation" checked />
-                    Activation Code
-                </label>
+                <label class="custom-checkbox"><input type="checkbox" id="chkBarcode" checked /> Barcode ID</label>
+                <label class="custom-checkbox"><input type="checkbox" id="chkActivation" checked /> Activation Code</label>
                 </div>
-
-                <button class="download-btn" id="downloadBtn" onclick="downloadFile()">
-                <i class="fas fa-file-download"></i> Download .txt
-                </button>
+                <button class="download-btn" id="downloadBtn" onclick="downloadFile()"><i class="fas fa-file-download"></i> Download .txt</button>
             </div>
 
-            <div class="panel" style="height: fit-content">
+            <div class="panel" style="height: fit-content; min-height: 250px;">
                 <div class="export-title">Activate</div>
                 
                 <p style="font-size: 13px; color: var(--text-gray); margin-bottom: 16px;">
@@ -502,18 +275,14 @@
                 </p>
 
                 <div class="form-group">
-                    <label class="form-label" for="eanSelect">
-                      <i class="fas fa-qrcode"></i> Select EAN
-                    </label>
+                    <label class="form-label" for="eanSelect"><i class="fas fa-qrcode"></i> Select EAN</label>
                     <select id="eanSelect" class="form-input">
                         <option value="" disabled selected>Choose EAN...</option>
                     </select>
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label" for="activateTime">
-                      <i class="far fa-calendar-alt"></i> Finish Date & Time
-                    </label>
+                    <label class="form-label" for="activateTime"><i class="far fa-calendar-alt"></i> Finish Date & Time</label>
                     <input type="datetime-local" id="activateTime" class="form-input" />
                 </div>
 
@@ -521,47 +290,134 @@
                     <i class="fas fa-play"></i> Run
                 </button>
                 <div id="activateStatus" style="margin-top:10px;font-size:13px;color:#64748b;"></div>
-            </div>
 
+
+                <% if (typeof selectedTagId === 'undefined' || !selectedTagId) { %>
+                  <div class="panel-overlay">
+                    <i class="fas fa-arrow-up" style="font-size: 24px; color: var(--text-gray); margin-bottom: 10px;"></i>
+                    <div class="overlay-message">Please choose a tag first</div>
+                  </div>
+                <% } %>
+
+                <% if (typeof selectedTagId !== 'undefined' && selectedTagId && typeof activeCampaign !== 'undefined' && activeCampaign) { %>
+                   <div class="panel-overlay">
+                    <i class="fas fa-cog fa-spin" style="font-size: 24px; color: var(--primary); margin-bottom: 10px;"></i>
+                    <div class="overlay-message">Activation Running / Finished</div>
+                    <button class="stats-btn" onclick="openStatsModal()">
+                      <i class="fas fa-chart-pie"></i> Show Statistics
+                    </button>
+                  </div>
+                <% } %>
+
+            </div>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="statsModal" class="modal-backdrop">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 class="modal-title">Activation Statistics</h3>
+          <i class="fas fa-times close-modal" onclick="closeStatsModal()"></i>
+        </div>
+        <div class="modal-body">
+          
+          <div class="stat-card">
+            <div class="stat-number" id="modalPercent">0%</div>
+            <div class="stat-label">Successfully Activated</div>
+          </div>
+
+          <h4 style="font-size: 14px; font-weight: 600; margin-bottom: 10px;">Failed Activations</h4>
+          <div style="background: #fff; border: 1px solid var(--border-color); border-radius: 8px;">
+            <ul class="error-list" id="modalErrorList">
+              <li class="error-item" style="justify-content: center; color: var(--text-gray);">No errors found.</li>
+            </ul>
+          </div>
+
         </div>
       </div>
     </div>
 
     <script>
       // --- 1. DATA INJECTION ---
-      // In your real EJS file, replace the mock data below with:
-      const items = <%- JSON.stringify(items) %>;
-      const name = <%- JSON.stringify(name) %>;
-      const eanList = <%- JSON.stringify(ean) %>; 
+      const items = <%- JSON.stringify(items || []) %>;
+      const name = <%- JSON.stringify(name || {}) %>;
+      const eanList = <%- JSON.stringify(ean || []) %>; 
+      
+      // Inject the active campaign data (handle if it's undefined)
+      const activeCampaign = <%- JSON.stringify((typeof activeCampaign !== 'undefined') ? activeCampaign : null) %>;
 
-      // --- 2. SETUP & PAGINATION ---
+      // --- 2. MODAL LOGIC ---
+      function openStatsModal() {
+        const modal = document.getElementById("statsModal");
+        const percentEl = document.getElementById("modalPercent");
+        const listEl = document.getElementById("modalErrorList");
+
+        // Populate Data
+        if (activeCampaign) {
+            percentEl.innerText = (activeCampaign.percentage || 0) + "%";
+            
+            // Clear list
+            listEl.innerHTML = "";
+
+            if (activeCampaign.failedItems && activeCampaign.failedItems.length > 0) {
+                activeCampaign.failedItems.forEach(fail => {
+                    const li = document.createElement("li");
+                    li.className = "error-item";
+                    li.innerHTML = `
+                        <span class="err-code">${fail.barcode}</span>
+                        <span class="err-reason">${fail.reason}</span>
+                    `;
+                    listEl.appendChild(li);
+                });
+            } else {
+                 listEl.innerHTML = '<li class="error-item" style="justify-content: center; color: #16a34a;">All items activated successfully!</li>';
+            }
+        }
+
+        modal.style.display = "flex";
+      }
+
+      function closeStatsModal() {
+        document.getElementById("statsModal").style.display = "none";
+      }
+
+      // Close modal if clicking outside content
+      window.onclick = function(event) {
+        const modal = document.getElementById("statsModal");
+        if (event.target == modal) {
+          modal.style.display = "none";
+        }
+      }
+
+      // --- 3. EXISTING SETUP & PAGINATION ---
       const rowsPerPage = 50;
       let currentPage = 1;
 
-      // Set Title with safety check
       var tagName = (name && name.name) ? name.name : "—";
-      document.getElementById("tableTitle").innerText =
-        "Available Codes: " + tagName + " (" + (items ? items.length : 0) + ")";
+      // Safety check for tableTitle element
+      const tableTitleEl = document.getElementById("tableTitle");
+      if(tableTitleEl) {
+          tableTitleEl.innerText = "Available Codes: " + tagName + " (" + (items ? items.length : 0) + ")";
+      }
 
-      // Populate EAN Select Dropdown
+      // Populate EAN Select
       const eanSelect = document.getElementById("eanSelect");
-      if(eanList && Array.isArray(eanList)) {
-          eanList.forEach(e => {
-              const option = document.createElement("option");
-              option.value = e.id; 
-              option.text = e.code;
-              eanSelect.appendChild(option);
-          });
-      } else if (eanList && typeof eanList === 'object') {
-          const option = document.createElement("option");
-          option.value = eanList.id;
-          option.text = eanList.code;
-          eanSelect.appendChild(option);
+      if(eanSelect) {
+          if(eanList && Array.isArray(eanList)) {
+              eanList.forEach(e => {
+                  const option = document.createElement("option");
+                  option.value = e.id; 
+                  option.text = e.code;
+                  eanSelect.appendChild(option);
+              });
+          }
       }
 
       function renderTable() {
         const tbody = document.getElementById("tableBody");
+        if(!tbody) return;
         tbody.innerHTML = "";
 
         const start = (currentPage - 1) * rowsPerPage;
@@ -588,29 +444,33 @@
 
       function updatePaginationControls() {
         const totalPages = Math.ceil(items.length / rowsPerPage);
-        document.getElementById("pageInfo").innerText = `Page ${currentPage} of ${totalPages || 1}`;
+        const pageInfo = document.getElementById("pageInfo");
+        const prevBtn = document.getElementById("prevBtn");
+        const nextBtn = document.getElementById("nextBtn");
 
-        document.getElementById("prevBtn").disabled = currentPage === 1;
-        document.getElementById("nextBtn").disabled = currentPage === totalPages || totalPages === 0;
+        if(pageInfo) pageInfo.innerText = `Page ${currentPage} of ${totalPages || 1}`;
+        if(prevBtn) prevBtn.disabled = currentPage === 1;
+        if(nextBtn) nextBtn.disabled = currentPage === totalPages || totalPages === 0;
       }
 
       function changePage(direction) {
         const totalPages = Math.ceil(items.length / rowsPerPage);
         const newPage = currentPage + direction;
-
         if (newPage > 0 && newPage <= totalPages) {
           currentPage = newPage;
           renderTable();
         }
       }
 
-      // Initial Render
       renderTable();
 
-      // --- 3. DOWNLOAD LOGIC ---
+      // --- 4. DOWNLOAD LOGIC ---
       function downloadFile() {
-        const includeBarcode = document.getElementById("chkBarcode").checked;
-        const includeActivation = document.getElementById("chkActivation").checked;
+        const chkBarcode = document.getElementById("chkBarcode");
+        const chkActivation = document.getElementById("chkActivation");
+        
+        const includeBarcode = chkBarcode ? chkBarcode.checked : false;
+        const includeActivation = chkActivation ? chkActivation.checked : false;
 
         if (!includeBarcode && !includeActivation) {
           alert("Please select at least one column to download.");
@@ -630,16 +490,10 @@
         const a = document.createElement("a");
         a.href = url;
         
-        let fileName = name.name || "export";
-        if(includeBarcode && includeActivation){
-          a.download = `${fileName}.txt`; 
-        } else if(includeActivation && !includeBarcode){
-          a.download = `${fileName}NurPin.txt`; 
-        } else if(!includeActivation && includeBarcode){
-          a.download = `${fileName}NurBarcode.txt`;
-        } else {
-          a.download = `${fileName}.txt`;
-        }
+        let fileName = (name && name.name) ? name.name : "export";
+        if(includeBarcode && includeActivation) a.download = `${fileName}.txt`; 
+        else if(includeActivation) a.download = `${fileName}NurPin.txt`; 
+        else a.download = `${fileName}NurBarcode.txt`;
         
         document.body.appendChild(a);
         a.click();
@@ -647,98 +501,68 @@
         window.URL.revokeObjectURL(url);
       }
 
-      // --- 4. ACTIVATION LOGIC ---
+      // --- 5. ACTIVATION LOGIC ---
       async function runActivation() {
-  const selectedEanId = document.getElementById("eanSelect").value;
-  const selectedTime = document.getElementById("activateTime").value;
-  const statusEl = document.getElementById("activateStatus");
+          const selectedEanId = document.getElementById("eanSelect").value;
+          const selectedTime = document.getElementById("activateTime").value;
+          const statusEl = document.getElementById("activateStatus");
+          const tagId = "<%= (typeof selectedTagId !== 'undefined' ? selectedTagId : '') %>";
 
-  // You need tag id for the campaign. If you are on /download/:tag_id route:
-  const tagId = "<%= (typeof selectedTagId !== 'undefined' ? selectedTagId : '') %>";
+          if (!tagId) { alert("No tag selected."); return; }
+          if (!selectedEanId) { alert("Please select an EAN code."); return; }
+          if (!selectedTime) { alert("Please select a finish date and time."); return; }
 
-  if (!tagId) {
-    alert("No tag selected. Please select a tag first.");
-    return;
-  }
-  if (!selectedEanId) {
-    alert("Please select an EAN code.");
-    return;
-  }
-  if (!selectedTime) {
-    alert("Please select a finish date and time.");
-    return;
-  }
+          try {
+            statusEl.textContent = "Scheduling activation…";
+            const res = await fetch("/a26ae3e19a140048efd2/api/activation-campaign", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ tagId, eanId: selectedEanId, finishAt: selectedTime }),
+            });
+            const data = await res.json();
 
-  try {
-    statusEl.textContent = "Scheduling activation…";
+            if (!data.success) {
+              statusEl.textContent = "";
+              alert(data.message || "Failed to schedule activation");
+              return;
+            }
+            statusEl.style.color = "#16a34a";
+            statusEl.textContent = "✅ Activation scheduled. Reloading...";
+            setTimeout(() => window.location.reload(), 700);
+          } catch (err) {
+            statusEl.textContent = "";
+            alert("Network error.");
+          }
+      }
 
-    const res = await fetch("/a26ae3e19a140048efd2/api/activation-campaign", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        tagId,
-        eanId: selectedEanId,
-        finishAt: selectedTime
-      }),
-    });
-
-    const data = await res.json();
-
-    if (!data.success) {
-      statusEl.textContent = "";
-      alert(data.message || "Failed to schedule activation");
-      return;
-    }
-
-    statusEl.style.color = "#16a34a";
-    statusEl.textContent = "✅ Activation is scheduled and running…";
-
-    // If you want refresh after success:
-    setTimeout(() => window.location.reload(), 700);
-  } catch (err) {
-    statusEl.textContent = "";
-    alert("Network error while scheduling activation.");
-  }
-}
-      // --- 5. PICKER LOGIC ---
+      // --- 6. PICKER LOGIC ---
       (function () {
         var userSelect = document.getElementById("userSelect");
         var tagSelect = document.getElementById("tagSelect");
-
         if (!userSelect || !tagSelect) return;
 
-        function clearTags() {
-          tagSelect.innerHTML = '<option value="" disabled selected>Choose tag...</option>';
-          tagSelect.disabled = true;
-        }
-
-        function addTagOption(tag) {
-          var opt = document.createElement("option");
-          opt.value = tag.id;
-          opt.text = tag.name;
-          tagSelect.appendChild(opt);
-        }
-
-        // when user changes → load tags
         userSelect.addEventListener("change", function () {
           var userId = userSelect.value;
-          clearTags();
+          tagSelect.innerHTML = '<option value="" disabled selected>Choose tag...</option>';
+          tagSelect.disabled = true;
           if (!userId) return;
 
           fetch("/a26ae3e19a140048efd2/api/user/" + encodeURIComponent(userId) + "/tags", {
             headers: { "Accept": "application/json" }
           })
-            .then(function (r) { return r.json(); })
-            .then(function (data) {
-              if (!data || !data.success || !Array.isArray(data.tags)) return;
-
-              data.tags.forEach(addTagOption);
-              tagSelect.disabled = data.tags.length === 0;
-            })
-            .catch(function () {});
+          .then(r => r.json())
+          .then(data => {
+            if (!data || !data.success || !Array.isArray(data.tags)) return;
+            data.tags.forEach(t => {
+                var opt = document.createElement("option");
+                opt.value = t.id; opt.text = t.name;
+                tagSelect.appendChild(opt);
+            });
+            tagSelect.disabled = data.tags.length === 0;
+          })
+          .catch(() => {});
         });
 
-        // when tag chosen → redirect
         tagSelect.addEventListener("change", function () {
           var tagId = tagSelect.value;
           if (!tagId) return;

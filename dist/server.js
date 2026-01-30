@@ -333,6 +333,61 @@ app.get("/test-error", (0, express_async_handler_1.default)(async (req, res) => 
     const testError = await ErrorCard_1.ErrorCard.createErrorCard(new ErrorCard_1.ErrorCard((0, uuid_1.v4)(), 'test', '1d3a265f-c59d-4343-bb34-506c273f9b8f'));
     res.json(testError);
 }));
+// app.post(
+//   "/test-barcodes",
+//   express.text({ type: "*/*", limit: "20mb" }),
+//   expressAsyncHandler(async (req, res) => {
+//     // 1️⃣ Raw text → array
+//     const raw = (req.body ?? "").toString();
+//     const barcodes = raw
+//       .split(/\r?\n/)
+//       .map(l => l.trim())
+//       .filter(Boolean);
+//     // 2️⃣ Validate + dedupe
+//     const cleanBarcodes = Array.from(new Set(barcodes)).filter(b =>
+//       /^\d{16}$/.test(b)
+//     );
+//     const CHUNK_SIZE = 1000;
+//     const chunks: string[][] = [];
+//     for (let i = 0; i < cleanBarcodes.length; i += CHUNK_SIZE) {
+//       chunks.push(cleanBarcodes.slice(i, i + CHUNK_SIZE));
+//     }
+//     // 3️⃣ Store barcode → activation_code
+//     let missingMap: Map<string, string> | null = null;
+//     //99b21fc0-be12-4942-b8e2-54e2c4823ba2
+//     for (const chunk of chunks) {
+//       const result = await prisma.steam_card.findMany({
+//         where: {
+//           tag_id: "99b21fc0-be12-4942-b8e2-54e2c4823ba2",
+//           barcode: { notIn: chunk },
+//         },
+//         select: {
+//           barcode: true,
+//           activation_code: true,
+//         },
+//       });
+//       const resultMap = new Map(
+//         result.map(r => [r.barcode, r.activation_code])
+//       );
+//       if (missingMap === null) {
+//         missingMap = resultMap;
+//       } else {
+//         // intersection by barcode
+//         missingMap = new Map(
+//           [...missingMap].filter(([barcode]) => resultMap.has(barcode))
+//         );
+//       }
+//     }
+//     // 4️⃣ Final output as "barcode,activation_code"
+//     const output = [...(missingMap ?? [])].map(
+//       ([barcode, activationCode]) => `${barcode},${activationCode}`
+//     );
+//     // 👉 BEST for copy-paste (plain text)
+//     res
+//       .type("text/plain")
+//       .send(output.join("\n"));
+//   })
+// );
 app.use(errorMiddleware_1.notFound);
 app.use(errorMiddleware_1.errorHandler);
 app.listen(process.env.APP_PORT || 5500, () => {
