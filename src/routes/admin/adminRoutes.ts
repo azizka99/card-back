@@ -152,6 +152,7 @@ adminRoutes.get("/download/:tag_id", expressAsyncHandler(async (req, res) => {
     }
 
     const result = campaignJson(tag);
+    console.log(tag);
 
     res.render("download", {
         items,
