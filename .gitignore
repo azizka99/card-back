@@ -3,3 +3,10 @@ node_modules
 # .env
 
 /src/generated/prisma
+./barcodes.txt
+./barcode-erros.txt
+./bulunan1.txt
+./bulunan2.txt
+./log.ndjson
+./status.csv
+./activirung
