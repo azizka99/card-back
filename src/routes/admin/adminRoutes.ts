@@ -148,10 +148,7 @@ adminRoutes.get("/download/:tag_id", expressAsyncHandler(async (req, res) => {
         activeCampaign: {
             isRunning: false,
             percentage: 100, // % completed
-            failedItems: [
-                { barcode: "123456", reason: "Invalid EAN" },
-                { barcode: "789012", reason: "Timeout" }
-            ]
+            failedItems: null
         }
     });
 }));
