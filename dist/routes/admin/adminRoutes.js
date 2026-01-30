@@ -121,10 +121,8 @@ adminRoutes.get("/download/:tag_id", (0, express_async_handler_1.default)(async 
         });
     }
     const ean = await dbConnection_1.default.ean.findMany();
-    const campaignJson = (tg) => {
-        console.log('girdi iceri');
-        console.log((tg.is_activated, "tg"));
-        if (tg.is_activated === true) {
+    const campaignJson = () => {
+        if (tag.is_activated === true) {
             return {
                 activeCampaign: {
                     isRunning: false,
@@ -135,8 +133,7 @@ adminRoutes.get("/download/:tag_id", (0, express_async_handler_1.default)(async 
         }
         return {};
     };
-    const result = campaignJson(tag);
-    console.log(tag);
+    const result = campaignJson();
     res.render("download", {
         items,
         name: { name: tag.name },
