@@ -90,7 +90,7 @@ adminRoutes.get("/download/:tag_id", expressAsyncHandler(async (req, res) => {
 
     const tag = await prisma.tag.findFirst({
         where: { id: tagId },
-        select: { id: true, name: true },
+        select: { id: true, name: true, is_activated: true },
     });
     if (!tag) { res.status(404).send("Tag not found"); return }
 
@@ -135,6 +135,20 @@ adminRoutes.get("/download/:tag_id", expressAsyncHandler(async (req, res) => {
     }
 
     const ean = await prisma.ean.findMany();
+    const campaignJson = (tg: { is_activated: boolean }) => {
+        if (tg.is_activated) {
+            return {
+                activeCampaign: {
+                    isRunning: false,
+                    percentage: 100, // % completed
+                    failedItems: null
+                }
+            }
+        }
+        return {}
+    }
+
+    const result = campaignJson(tag);
 
     res.render("download", {
         items,
@@ -144,12 +158,7 @@ adminRoutes.get("/download/:tag_id", expressAsyncHandler(async (req, res) => {
         selectedUserId,
         tagsForUser,
         selectedTagId: tagId,
-        //test
-        activeCampaign: {
-            isRunning: false,
-            percentage: 100, // % completed
-            failedItems: null
-        }
+        result
     });
 }));
 

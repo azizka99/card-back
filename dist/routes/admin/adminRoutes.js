@@ -81,7 +81,7 @@ adminRoutes.get("/download/:tag_id", (0, express_async_handler_1.default)(async 
     const tagId = req.params.tag_id;
     const tag = await dbConnection_1.default.tag.findFirst({
         where: { id: tagId },
-        select: { id: true, name: true },
+        select: { id: true, name: true, is_activated: true },
     });
     if (!tag) {
         res.status(404).send("Tag not found");
@@ -121,6 +121,19 @@ adminRoutes.get("/download/:tag_id", (0, express_async_handler_1.default)(async 
         });
     }
     const ean = await dbConnection_1.default.ean.findMany();
+    const campaignJson = (tg) => {
+        if (tg.is_activated) {
+            return {
+                activeCampaign: {
+                    isRunning: false,
+                    percentage: 100, // % completed
+                    failedItems: null
+                }
+            };
+        }
+        return {};
+    };
+    const result = campaignJson(tag);
     res.render("download", {
         items,
         name: { name: tag.name },
@@ -129,12 +142,7 @@ adminRoutes.get("/download/:tag_id", (0, express_async_handler_1.default)(async 
         selectedUserId,
         tagsForUser,
         selectedTagId: tagId,
-        //test
-        activeCampaign: {
-            isRunning: false,
-            percentage: 100, // % completed
-            failedItems: null
-        }
+        result
     });
 }));
 adminRoutes.post("/api/activation-campaign", (0, express_async_handler_1.default)(async (req, res) => {
