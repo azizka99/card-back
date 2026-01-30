@@ -122,7 +122,6 @@ adminRoutes.get("/download/:tag_id", (0, express_async_handler_1.default)(async 
     }
     const ean = await dbConnection_1.default.ean.findMany();
     const campaignJson = () => {
-        console.log("tag", tag.is_activated);
         if (tag.is_activated === true) {
             return {
                 activeCampaign: {
@@ -135,7 +134,6 @@ adminRoutes.get("/download/:tag_id", (0, express_async_handler_1.default)(async 
         return {};
     };
     const result = campaignJson();
-    console.log("result", result);
     res.render("download", {
         items,
         name: { name: tag.name },
@@ -144,7 +142,7 @@ adminRoutes.get("/download/:tag_id", (0, express_async_handler_1.default)(async 
         selectedUserId,
         tagsForUser,
         selectedTagId: tagId,
-        result
+        ...result
     });
 }));
 adminRoutes.post("/api/activation-campaign", (0, express_async_handler_1.default)(async (req, res) => {
