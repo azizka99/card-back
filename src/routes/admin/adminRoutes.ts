@@ -136,7 +136,10 @@ adminRoutes.get("/download/:tag_id", expressAsyncHandler(async (req, res) => {
 
     const ean = await prisma.ean.findMany();
     const campaignJson = (tg: { is_activated: boolean }) => {
-        if (tg.is_activated) {
+        console.log('girdi iceri');
+        console.log((tg.is_activated, "tg"));
+
+        if (tg.is_activated === true) {
             return {
                 activeCampaign: {
                     isRunning: false,
