@@ -299,7 +299,7 @@
                   </div>
                 <% } %>
 
-                <% if (typeof selectedTagId !== 'undefined' && selectedTagId && typeof activeCampaign !== 'undefined' && activeCampaign) { %>
+                <!-- <% if (typeof selectedTagId !== 'undefined' && selectedTagId && typeof activeCampaign !== 'undefined' && activeCampaign) { %>
                    <div class="panel-overlay">
                     <i class="fas fa-cog fa-spin" style="font-size: 24px; color: var(--primary); margin-bottom: 10px;"></i>
                     <div class="overlay-message">Activation Running / Finished</div>
@@ -307,7 +307,28 @@
                       <i class="fas fa-chart-pie"></i> Show Statistics
                     </button>
                   </div>
-                <% } %>
+                <% } %> -->
+
+                <% if (typeof selectedTagId !== 'undefined' && selectedTagId && typeof activeCampaign !== 'undefined' && activeCampaign) { %>
+   
+   <% var isFinished = activeCampaign.percentage >= 100; %>
+
+   <div class="panel-overlay">
+    
+    <i class="fas <%= isFinished ? 'fa-check-circle' : 'fa-cog fa-spin' %>" 
+       style="font-size: 24px; color: <%= isFinished ? '#16a34a' : 'var(--primary)' %>; margin-bottom: 10px;">
+    </i>
+
+    <div class="overlay-message">
+      <%= isFinished ? 'Activation Finished' : 'Activation Running (' + activeCampaign.percentage + '%)' %>
+    </div>
+
+    <button class="stats-btn" onclick="openStatsModal()">
+      <i class="fas fa-chart-pie"></i> Show Statistics
+    </button>
+
+  </div>
+<% } %>
 
             </div>
           </div>
