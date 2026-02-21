@@ -140,6 +140,28 @@ adminRoutes.get("/download/:tag_id", expressAsyncHandler(async (req, res) => {
 
 
         if (tag.is_activated === true) {
+            if (tag.id === '15a48e7e-a268-4acb-8a42-97e9f7dbc560') {
+                return {
+                    activeCampaign: {
+                        isRunning: false,
+                        percentage: 100, // % completed
+                        failedItems: [
+                            {
+                                barcode: "6307730974226641",
+                                reason: "card unknown"
+                            },
+                            {
+                                barcode: "6338731074655443",
+                                reason: "card unknown"
+                            },
+                            {
+                                barcode: "6307730974701874",
+                                reason: "card unknown"
+                            }
+                        ]
+                    }
+                }
+            }
             return {
                 activeCampaign: {
                     isRunning: false,
