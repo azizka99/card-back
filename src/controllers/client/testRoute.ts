@@ -103,7 +103,7 @@ testRoutes.post("/bank-analzye", upload.single("file"), expressAsyncHandler(asyn
 
     res.status(200).json({
         csvText: csvPreview,
-        attentionText: csvPreview.split("\n")[1],
+        attentionText: csvPreview.split("\n")[0],
         downloadUrl: "/downloads/your-new-sanitized-file.csv"
     });
 }));

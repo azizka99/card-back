@@ -78,7 +78,7 @@ testRoutes.post("/bank-analzye", upload.single("file"), (0, express_async_handle
         first50.map((row) => headers.map((h) => row[h] ?? "").join(";")).join("\n");
     res.status(200).json({
         csvText: csvPreview,
-        attentionText: csvPreview.split("\n")[1],
+        attentionText: csvPreview.split("\n")[0],
         downloadUrl: "/downloads/your-new-sanitized-file.csv"
     });
 }));
