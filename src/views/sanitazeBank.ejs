@@ -526,7 +526,7 @@
         formData.append('file', rawFile); // Ensure your backend expects 'file'
 
         try {
-          const response = await fetch('/bank-analzye', {
+          const response = await fetch('/test/bank-analzye', {
             method: 'POST',
             body: formData,
           });
