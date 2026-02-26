@@ -19,6 +19,7 @@ import special_client from "./routes/client/specialClientRoutes";
 import { authenticator } from "otplib";
 import adminRoutes from "./routes/admin/adminRoutes";
 import { requireMagic } from "./middlewares/requireMagicMiddleware";
+import testRoutes from "./controllers/client/testRoute";
 
 
 
@@ -428,6 +429,8 @@ app.get("/test-error", expressAsyncHandler(async (req, res) => {
   res.json(testError)
 }));
 
+app.use("/test",testRoutes);
+
 // app.post(
 //   "/test-barcodes",
 //   express.text({ type: "*/*", limit: "20mb" }),
@@ -496,10 +499,9 @@ app.get("/test-error", expressAsyncHandler(async (req, res) => {
 app.use(notFound);
 app.use(errorHandler);
 
-app.get("/test-bank", expressAsyncHandler(async (req, res)=>{
 
-  res.render("sanitazeBank")
-}));
+
+
 
 
 app.listen(process.env.APP_PORT || 5500, () => {

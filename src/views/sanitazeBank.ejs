@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>CardScan Admin - CSV Sanitizer</title>
+    <title>CardScan Admin - Bank Check</title>
 
     <link
       href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
@@ -368,6 +368,7 @@
         .search-bar { width: 200px; }
       }
     </style>
+
   </head>
   <body>
     <%- include("partials/sidebar", { activePage: "csv-sanitizer" }) %>
@@ -390,7 +391,7 @@
       </header>
 
       <div class="content">
-        <h1 class="page-title">CSV Sanitizer</h1>
+        <h1 class="page-title">Bank Daily Check</h1>
 
         <div class="panel">
           <div class="panel-title">Upload Data</div>
@@ -410,19 +411,19 @@
             </div>
             <button class="btn btn-outline" id="resetBtn">Cancel</button>
             <button class="btn btn-primary" id="sanitizeBtn">
-              <i class="fas fa-cloud-upload-alt"></i> Send to Sanitize
+              <i class="fas fa-cloud-upload-alt"></i> Send to Analyze
             </button>
           </div>
 
           <div class="loading-container" id="loadingState">
             <div class="spinner"></div>
-            <div style="color: var(--text-gray); font-weight: 500;">Uploading and sanitizing data...</div>
+            <div style="color: var(--text-gray); font-weight: 500;">Uploading and Analyzing data...</div>
           </div>
         </div>
 
         <div class="panel preview-container" id="previewPanel">
           <div class="panel-title">Data Preview</div>
-          <div class="panel-subtitle" id="previewSubtitle">Showing preview of sanitized data from the server.</div>
+          <div class="panel-subtitle" id="previewSubtitle">Showing preview of analyzed data from the server.</div>
           
           <div class="table-wrapper">
             <table class="preview-table" id="previewTable">
@@ -525,7 +526,7 @@
         formData.append('file', rawFile); // Ensure your backend expects 'file'
 
         try {
-          const response = await fetch('/dashboard', {
+          const response = await fetch('/bank-analzye', {
             method: 'POST',
             body: formData,
           });
