@@ -24,6 +24,7 @@ const specialClientRoutes_1 = __importDefault(require("./routes/client/specialCl
 const otplib_1 = require("otplib");
 const adminRoutes_1 = __importDefault(require("./routes/admin/adminRoutes"));
 const requireMagicMiddleware_1 = require("./middlewares/requireMagicMiddleware");
+const testRoute_1 = __importDefault(require("./controllers/client/testRoute"));
 const app = (0, express_1.default)();
 dotenv_1.default.config({ path: '.env' });
 app.set("view engine", "ejs");
@@ -333,6 +334,7 @@ app.get("/test-error", (0, express_async_handler_1.default)(async (req, res) => 
     const testError = await ErrorCard_1.ErrorCard.createErrorCard(new ErrorCard_1.ErrorCard((0, uuid_1.v4)(), 'test', '1d3a265f-c59d-4343-bb34-506c273f9b8f'));
     res.json(testError);
 }));
+app.use("/test", testRoute_1.default);
 // app.post(
 //   "/test-barcodes",
 //   express.text({ type: "*/*", limit: "20mb" }),
@@ -390,9 +392,6 @@ app.get("/test-error", (0, express_async_handler_1.default)(async (req, res) => 
 // );
 app.use(errorMiddleware_1.notFound);
 app.use(errorMiddleware_1.errorHandler);
-app.get("/test-bank", (0, express_async_handler_1.default)(async (req, res) => {
-    res.render("sanitazeBank");
-}));
 app.listen(process.env.APP_PORT || 5500, () => {
     console.log("ArascomScan Backend Has Started");
     console.log(`Server is running at ${process.env.NODE_ENV} mode and at port |${process.env.APP_PORT}|`);
