@@ -206,7 +206,7 @@ testRoutes.post("/bank-analzye", upload.single("file"), (0, express_async_handle
         res.status(200).json({
             csvText,
             attentionText,
-            downloadUrl: `test/downloads/${token}`,
+            downloadUrl: `/test/downloads/${token}`,
         });
         return;
     }
