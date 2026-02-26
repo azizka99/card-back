@@ -7,83 +7,78 @@ const express_1 = __importDefault(require("express"));
 const express_async_handler_1 = __importDefault(require("express-async-handler"));
 const multer = require("multer");
 const upload = multer({ storage: multer.memoryStorage() });
+const sync_1 = require("csv-parse/sync");
 const testRoutes = express_1.default.Router();
 testRoutes.get("/bank", (0, express_async_handler_1.default)(async (req, res) => {
     res.render("sanitazeBank");
 }));
 function detectBankCsvFormat(rawCsvText) {
-    // Normalize BOM + line endings
     const text = rawCsvText.replace(/^\uFEFF/, "").replace(/\r\n/g, "\n").replace(/\r/g, "\n");
-    // Check only first N lines to be fast and robust
     const lines = text.split("\n").slice(0, 40).map(l => l.trim()).filter(Boolean);
-    const headerA = "Buchungstag;Wert;Umsatzart;Begünstigter / Auftraggeber;Verwendungszweck";
-    const headerB = "Bezeichnung Auftragskonto;IBAN Auftragskonto;BIC Auftragskonto;Bankname Auftragskonto;Buchungstag";
-    // Find header line index for A
-    const idxA = lines.findIndex(l => l.startsWith("Buchungstag;") && l.includes("Umsatzart;") && l.includes("Verwendungszweck;"));
+    const idxA = lines.findIndex(l => l.startsWith("Buchungstag;") &&
+        l.includes("Umsatzart;") &&
+        l.includes("Verwendungszweck;"));
     if (idxA !== -1)
-        return { format: "POSTBANK_UMSAETZE", headerIndex: idxA };
-    // B header usually is first line, but we detect anywhere in first lines
-    const idxB = lines.findIndex(l => l.startsWith("Bezeichnung Auftragskonto;") && l.includes("Verwendungszweck;") && l.includes("Betrag;"));
+        return { format: "POSTBANK_UMSAETZE" };
+    const idxB = lines.findIndex(l => l.startsWith("Bezeichnung Auftragskonto;") &&
+        l.includes("Verwendungszweck;") &&
+        l.includes("Betrag;"));
     if (idxB !== -1)
-        return { format: "STANDARD_EXPORT", headerIndex: idxB };
-    // Fallback heuristics (optional): if file begins with "Umsätze" and later contains Buchungstag;Wert...
-    if (lines[0]?.toLowerCase().includes("umsätze") && lines.some(l => l.startsWith("Buchungstag;Wert;"))) {
-        return { format: "POSTBANK_UMSAETZE", headerIndex: lines.findIndex(l => l.startsWith("Buchungstag;Wert;")) };
-    }
-    return { format: "UNKNOWN", headerIndex: -1 };
+        return { format: "STANDARD_EXPORT" };
+    return { format: "UNKNOWN" };
 }
-function stripToHeader(rawCsvText, headerIndexInPreview, headerStartsWith) {
+function stripToHeader(rawCsvText, headerStartsWith) {
     const text = rawCsvText.replace(/^\uFEFF/, "").replace(/\r\n/g, "\n").replace(/\r/g, "\n");
-    const allLines = text.split("\n");
-    // If we detected header index in the preview lines, we still need the real index in full file:
-    // safer: find header line by "startsWith" + includes checks in the full file.
-    const realIdx = allLines.findIndex(l => {
-        const t = (l || "").trim();
-        return t.startsWith(headerStartsWith);
-    });
-    if (realIdx === -1)
-        return null; // header not found
-    return allLines.slice(realIdx).join("\n");
+    const lines = text.split("\n");
+    const headerIndex = lines.findIndex(l => (l || "").trim().startsWith(headerStartsWith));
+    if (headerIndex === -1)
+        return null;
+    return lines.slice(headerIndex).join("\n");
 }
 testRoutes.post("/bank-analzye", upload.single("file"), (0, express_async_handler_1.default)(async (req, res) => {
-    try {
-        if (!req.file) {
-            res.status(400).json({ error: "No file was uploaded." });
-            return;
-        }
-        const rawCsvText = req.file.buffer.toString("utf-8");
-        const detected = detectBankCsvFormat(rawCsvText);
-        if (detected.format === "UNKNOWN") {
+    if (!req.file) {
+        res.status(400).json({ error: "No file uploaded" });
+        return;
+    }
+    const rawCsvText = req.file.buffer.toString("utf-8");
+    const detected = detectBankCsvFormat(rawCsvText);
+    if (detected.format === "UNKNOWN") {
+        res.status(400).json({
+            error: "Unsupported CSV format"
+        });
+        return;
+    }
+    let cleanedCsv = rawCsvText;
+    if (detected.format === "POSTBANK_UMSAETZE") {
+        const stripped = stripToHeader(rawCsvText, "Buchungstag;Wert;Umsatzart;");
+        if (!stripped) {
             res.status(400).json({
-                error: "Unsupported bank CSV format",
-                hint: "Expected either Postbank Umsätze export or standard export with 'Bezeichnung Auftragskonto...'",
+                error: "POSTBANK header not found"
             });
             return;
         }
-        let csvForParsing = rawCsvText;
-        if (detected.format === "POSTBANK_UMSAETZE") {
-            const stripped = stripToHeader(rawCsvText, detected.headerIndex, "Buchungstag;Wert;Umsatzart;");
-            if (!stripped) {
-                res.status(400).json({ error: "Could not find header row in Postbank Umsätze CSV" });
-                return;
-            }
-            csvForParsing = stripped;
-        }
-        else if (detected.format === "STANDARD_EXPORT") {
-            // parse from start (or from detected header if you want to be extra safe)
-            const stripped = stripToHeader(rawCsvText, detected.headerIndex, "Bezeichnung Auftragskonto;");
-            csvForParsing = stripped ?? rawCsvText;
-        }
-        // Replace these dummy values with your actual processed data
-        console.log("detected:", detected.format);
-        res.status(200).json({
-            csvText: `${detected.format}`, // The text for the small preview window
-            downloadUrl: "/downloads/your-new-sanitized-file.csv" // URL where the user can download the final file
-        });
+        cleanedCsv = stripped;
     }
-    catch (error) {
-        console.error("Error processing file:", error);
-        res.status(500).json({ error: "An error occurred while processing the file." });
+    if (detected.format === "STANDARD_EXPORT") {
+        const stripped = stripToHeader(rawCsvText, "Bezeichnung Auftragskonto;");
+        cleanedCsv = stripped || rawCsvText;
     }
+    // Parse CSV
+    const records = (0, sync_1.parse)(cleanedCsv, {
+        delimiter: ";",
+        columns: true,
+        skip_empty_lines: true,
+        relax_column_count: true
+    });
+    // Take first 50 rows
+    const first50 = records.slice(0, 50);
+    // Convert back to CSV string for preview
+    const headers = Object.keys(first50[0] || {});
+    const csvPreview = headers.join(";") + "\n" +
+        first50.map((row) => headers.map((h) => row[h] ?? "").join(";")).join("\n");
+    res.status(200).json({
+        csvText: csvPreview,
+        downloadUrl: "/downloads/your-new-sanitized-file.csv"
+    });
 }));
 exports.default = testRoutes;
