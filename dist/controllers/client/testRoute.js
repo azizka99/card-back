@@ -174,39 +174,51 @@ testRoutes.post("/bank-analzye", upload.single("file"), (0, express_async_handle
             "Haben",
             "Währung",
         ]);
-        // 1️⃣ Remove unwanted columns
+        // 1) Drop unwanted columns first (for BOTH final + attention)
         for (const row of records) {
             for (const key of Object.keys(row)) {
                 if (DROP.has(key))
                     delete row[key];
             }
         }
-        // 2️⃣ Extract Kundennummer + collect attention rows
+        // 2) Split rows into:
+        //    - okRows: only rows with Kundennummer (for final download)
+        //    - attentionRows: rows without Kundennummer (for attentionText)
+        const okRows = [];
         const attentionRows = [];
         for (const row of records) {
             const vz = row["Verwendungszweck"] ?? "";
             const nums = extractKundennummern(vz);
-            row.kundennummer_extracted = nums[0] ?? "";
-            row.kundennummer_extracted_all = nums.join(",");
-            if (nums.length === 0) {
-                attentionRows.push(String(vz));
+            if (nums.length > 0) {
+                okRows.push({
+                    ...row,
+                    kundennummer_extracted: nums[0],
+                    kundennummer_extracted_all: nums.join(","),
+                });
+            }
+            else {
+                // Keep row as-is (no extracted columns)
+                attentionRows.push(row);
             }
         }
-        // 3️⃣ Build full CSV (for download)
-        const finalCsv = toCsvPreview(records, records.length);
-        // 4️⃣ Build preview CSV (first 50)
-        const csvText = toCsvPreview(records, 50);
-        const attentionText = attentionRows.slice(0, 50).join("\n");
-        // 5️⃣ Create one-time token
+        // 3) Preview: show first 50 OK rows (the ones that will be downloadable)
+        const csvText = toCsvPreview(okRows, 50);
+        // 4) Attention: show first 50 rows with NO kundennummer (as CSV text too)
+        const attentionText = toCsvPreview(attentionRows, 50);
+        // 5) Download CSV contains ONLY okRows
+        const finalCsv = toCsvPreview(okRows, okRows.length);
         const token = putOneTimeDownload({
             csv: finalCsv,
             filename: `postbank-sanitized-${Date.now()}.csv`,
-            ttlMs: 10 * 60 * 1000, // 10 minutes
+            ttlMs: 10 * 60 * 1000,
         });
         res.status(200).json({
             csvText,
             attentionText,
             downloadUrl: `/test/downloads/${token}`,
+            // optional: counts help a lot for debugging UI
+            okCount: okRows.length,
+            attentionCount: attentionRows.length,
         });
         return;
     }
