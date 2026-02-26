@@ -186,6 +186,10 @@ testRoutes.post("/bank-analzye", upload.single("file"), (0, express_async_handle
             "Soll",
             "Haben",
             "Währung",
+            "Umsatzart",
+            "Begünstigter / Auftraggeber",
+            "IBAN / Kontonummer",
+            "BIC",
         ]);
         // 1) Drop unwanted columns first (for BOTH final + attention)
         for (const row of records) {
