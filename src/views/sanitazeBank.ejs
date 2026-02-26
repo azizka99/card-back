@@ -318,7 +318,57 @@
         100% { transform: rotate(360deg); }
       }
 
-      /* --- PREVIEW TABLE (Small Window) --- */
+      /* --- ATTENTION BLOCK --- */
+      .attention-container {
+        display: none; /* Hidden by default */
+        background-color: #fffbeb;
+        border: 1px solid #fcd34d;
+        border-left: 4px solid #f59e0b;
+        padding: 16px 20px;
+        border-radius: 8px;
+        margin-bottom: 24px;
+      }
+
+      .attention-title {
+        font-weight: 700;
+        color: #b45309;
+        font-size: 15px;
+        margin-bottom: 12px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .attention-table-wrapper {
+        max-height: 200px;
+        overflow-y: auto;
+        border-radius: 4px;
+        border: 1px solid #fde68a;
+      }
+
+      .attention-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+        background-color: #ffffff;
+      }
+
+      .attention-table th, 
+      .attention-table td {
+        padding: 10px 14px;
+        text-align: left;
+        border-bottom: 1px solid #fde68a;
+      }
+
+      .attention-table th {
+        background-color: #fef3c7;
+        color: #92400e;
+        font-weight: 600;
+        position: sticky;
+        top: 0;
+      }
+
+      /* --- PREVIEW TABLE --- */
       .preview-container {
         display: none; /* Hidden until file is processed */
       }
@@ -425,12 +475,22 @@
           <div class="panel-title">Data Preview</div>
           <div class="panel-subtitle" id="previewSubtitle">Showing preview of analyzed data from the server.</div>
           
+          <div class="attention-container" id="attentionContainer">
+            <div class="attention-title">
+              <i class="fas fa-exclamation-triangle"></i> Action Required: Please review these rows
+            </div>
+            <div class="attention-table-wrapper">
+              <table class="attention-table">
+                <thead id="attentionThead"></thead>
+                <tbody id="attentionTbody"></tbody>
+              </table>
+            </div>
+          </div>
+
           <div class="table-wrapper">
             <table class="preview-table" id="previewTable">
-              <thead id="previewThead">
-                </thead>
-              <tbody id="previewTbody">
-                </tbody>
+              <thead id="previewThead"></thead>
+              <tbody id="previewTbody"></tbody>
             </table>
           </div>
 
@@ -455,10 +515,17 @@
       const loadingState = document.getElementById('loadingState');
       
       const previewPanel = document.getElementById('previewPanel');
+      
+      // Standard Preview Elements
       const previewThead = document.getElementById('previewThead');
       const previewTbody = document.getElementById('previewTbody');
       const previewSubtitle = document.getElementById('previewSubtitle');
       const downloadBtn = document.getElementById('downloadBtn');
+
+      // Attention Elements
+      const attentionContainer = document.getElementById('attentionContainer');
+      const attentionThead = document.getElementById('attentionThead');
+      const attentionTbody = document.getElementById('attentionTbody');
 
       let rawFile = null;
 
@@ -489,7 +556,6 @@
         if (fileInput.files.length > 0) {
           rawFile = fileInput.files[0];
           
-          // Strict frontend validation for CSV
           if (!rawFile.name.toLowerCase().endsWith('.csv') && rawFile.type !== 'text/csv') {
             alert('Invalid file format. Please select a valid .csv file.');
             resetUI();
@@ -500,6 +566,7 @@
           uploadZone.style.display = 'none';
           processActions.style.display = 'flex';
           previewPanel.style.display = 'none';
+          attentionContainer.style.display = 'none';
         }
       }
 
@@ -512,18 +579,18 @@
         processActions.style.display = 'none';
         previewPanel.style.display = 'none';
         loadingState.style.display = 'none';
+        attentionContainer.style.display = 'none';
       }
 
       // Send file to Backend
       sanitizeBtn.addEventListener('click', async () => {
         if (!rawFile) return;
 
-        // Hide actions, show loader
         processActions.style.display = 'none';
         loadingState.style.display = 'flex';
 
         const formData = new FormData();
-        formData.append('file', rawFile); // Ensure your backend expects 'file'
+        formData.append('file', rawFile);
 
         try {
           const response = await fetch('/test/bank-analzye', {
@@ -537,20 +604,24 @@
 
           /* EXPECTED JSON RESPONSE FROM BACKEND:
              {
-               "csvText": "header1,header2\nvalue1,value2",
+               "csvText": "Header1;Header2\nData1;Data2",
+               "attentionText": "Row;Issue\n15;Mismatch in amount", 
                "downloadUrl": "/downloads/sanitized_file.csv"
              }
           */
           const data = await response.json();
-
-          // Hide loading, process preview
           loadingState.style.display = 'none';
           
-          // Ensure we actually got the text back
           if(data.csvText) {
             renderPreviewTable(data.csvText);
+
+            // Trigger Attention Block if data is provided
+            if (data.attentionText && data.attentionText.trim() !== '') {
+              renderAttentionTable(data.attentionText);
+            } else {
+              attentionContainer.style.display = 'none';
+            }
             
-            // Set the download link
             downloadBtn.href = data.downloadUrl || '#'; 
             previewPanel.style.display = 'flex';
           } else {
@@ -565,8 +636,8 @@
         }
       });
 
+      // Renders the standard preview
       function renderPreviewTable(csvText) {
-        // Split text by line, ignoring empty lines
         const lines = csvText.split(/\r?\n/).filter(line => line.trim() !== '');
         
         if (lines.length === 0) {
@@ -578,10 +649,8 @@
         previewThead.innerHTML = '';
         previewTbody.innerHTML = '';
 
-        // Safely split CSV considering basic commas (Note: does not handle complex quoted commas natively in this basic split)
         const parseLine = (line) => line.split(';').map(cell => cell.trim());
 
-        // Setup Headers
         const headers = parseLine(lines[0]);
         const headerRow = document.createElement('tr');
         headers.forEach(headerText => {
@@ -591,23 +660,58 @@
         });
         previewThead.appendChild(headerRow);
 
-        // Setup Body (Limit to 50 for preview performance)
         const previewLimit = Math.min(lines.length, 51); 
-
         for (let i = 1; i < previewLimit; i++) {
           const rowData = parseLine(lines[i]);
           const tr = document.createElement('tr');
-          
           rowData.forEach(cellText => {
             const td = document.createElement('td');
             td.textContent = cellText;
             tr.appendChild(td);
           });
-          
           previewTbody.appendChild(tr);
         }
 
         previewSubtitle.textContent = `Showing preview of ${previewLimit - 1} rows. Download to view the full file.`;
+      }
+
+      // Renders the new attention block
+      function renderAttentionTable(attentionText) {
+        const lines = attentionText.split(/\r?\n/).filter(line => line.trim() !== '');
+        
+        if (lines.length === 0) {
+          attentionContainer.style.display = 'none';
+          return;
+        }
+
+        attentionThead.innerHTML = '';
+        attentionTbody.innerHTML = '';
+
+        const parseLine = (line) => line.split(';').map(cell => cell.trim());
+
+        // Extract and build headers
+        const headers = parseLine(lines[0]);
+        const headerRow = document.createElement('tr');
+        headers.forEach(headerText => {
+          const th = document.createElement('th');
+          th.textContent = headerText;
+          headerRow.appendChild(th);
+        });
+        attentionThead.appendChild(headerRow);
+
+        // Build Rows
+        for (let i = 1; i < lines.length; i++) {
+          const rowData = parseLine(lines[i]);
+          const tr = document.createElement('tr');
+          rowData.forEach(cellText => {
+            const td = document.createElement('td');
+            td.textContent = cellText;
+            tr.appendChild(td);
+          });
+          attentionTbody.appendChild(tr);
+        }
+
+        attentionContainer.style.display = 'block'; // Make it visible
       }
     </script>
   </body>
