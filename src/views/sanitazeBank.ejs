@@ -180,79 +180,6 @@
         color: var(--primary);
       }
 
-      .badge {
-        position: absolute;
-        top: -2px;
-        right: -2px;
-        min-width: 18px;
-        height: 18px;
-        padding: 0 4px;
-        background-color: #ef4444;
-        border-radius: 10px;
-        border: 2px solid var(--white);
-        color: white;
-        font-size: 10px;
-        font-weight: 700;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
-
-      .notification-dropdown {
-        display: none;
-        position: absolute;
-        top: 55px;
-        right: -10px;
-        width: 300px;
-        background: var(--white);
-        border-radius: 12px;
-        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
-          0 4px 6px -2px rgba(0, 0, 0, 0.05);
-        border: 1px solid #e2e8f0;
-        z-index: 100;
-        overflow: hidden;
-        cursor: default;
-      }
-
-      .notification-dropdown.active {
-        display: block;
-        animation: fadeIn 0.2s ease-out;
-      }
-
-      @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(-10px); }
-        to { opacity: 1; transform: translateY(0); }
-      }
-
-      .notif-header {
-        padding: 16px;
-        font-weight: 600;
-        font-size: 14px;
-        color: var(--text-dark);
-        border-bottom: 1px solid #f1f5f9;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-      }
-
-      .notif-list {
-        max-height: 300px;
-        overflow-y: auto;
-      }
-
-      .notif-item {
-        padding: 12px 16px;
-        display: flex;
-        gap: 12px;
-        border-bottom: 1px solid #f1f5f9;
-        transition: background 0.2s;
-        cursor: pointer;
-      }
-
-      .notif-item:hover {
-        background-color: #f8fafc;
-      }
-
       /* --- PAGE CONTENT --- */
       .content {
         padding: 32px;
@@ -339,6 +266,7 @@
         align-items: center;
         gap: 8px;
         justify-content: center;
+        text-decoration: none;
       }
 
       .btn-primary {
@@ -366,13 +294,37 @@
         margin-top: 20px;
       }
 
+      /* --- LOADING STATE --- */
+      .loading-container {
+        display: none; /* Hidden by default */
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 40px 0;
+      }
+
+      .spinner {
+        width: 40px;
+        height: 40px;
+        border: 4px solid var(--primary-light);
+        border-top: 4px solid var(--primary);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin-bottom: 16px;
+      }
+
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+
       /* --- PREVIEW TABLE (Small Window) --- */
       .preview-container {
         display: none; /* Hidden until file is processed */
       }
 
       .table-wrapper {
-        max-height: 350px; /* The "Small Window" constraint */
+        max-height: 350px;
         overflow-y: auto;
         overflow-x: auto;
         border: 1px solid #e2e8f0;
@@ -428,32 +380,6 @@
         </div>
 
         <div class="header-actions">
-          <div class="icon-wrapper" id="notificationBtn">
-            <i class="far fa-bell" style="font-size: 18px; color: #64748b"></i>
-            
-            <%
-              function startOfDay(d) { return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
-              function sameDay(a, b) { return startOfDay(a).getTime() === startOfDay(b).getTime(); }
-              /* ... (rest of the date parsing logic omitted for brevity but assumed present in your environment) ... */
-              var showCount = 0; // Fallback for pure HTML viewing
-            %>
-            
-            <% if (showCount > 0) { %>
-              <span class="badge" id="notifBadge"><%= showCount %></span>
-            <% } %>
-          
-            <div class="notification-dropdown" id="notificationDropdown">
-              <div class="notif-header">
-                <span>Notifications</span>
-              </div>
-              <div class="notif-list">
-                <div style="padding:14px 16px; color:#94a3b8; font-size:13px;">
-                  No notifications for today.
-                </div>
-              </div>
-            </div>
-          </div>
-
           <div class="icon-wrapper">
             <i class="fas fa-cog" style="font-size: 18px; color: #64748b"></i>
           </div>
@@ -468,13 +394,13 @@
 
         <div class="panel">
           <div class="panel-title">Upload Data</div>
-          <div class="panel-subtitle">Upload your raw CSV file to clean formatting, remove empty rows, and prepare it for import.</div>
+          <div class="panel-subtitle">Upload your raw CSV file to sanitize and prepare it for import.</div>
           
           <div class="upload-zone" id="uploadZone">
             <i class="fas fa-cloud-upload-alt upload-icon"></i>
             <div class="upload-text">Click or drag CSV file to upload</div>
             <div class="upload-subtext">Supports .csv files only</div>
-            <input type="file" id="csvFileInput" accept=".csv" />
+            <input type="file" id="csvFileInput" accept=".csv, text/csv" />
           </div>
           
           <div class="actions-row" id="processActions" style="display: none;">
@@ -484,14 +410,19 @@
             </div>
             <button class="btn btn-outline" id="resetBtn">Cancel</button>
             <button class="btn btn-primary" id="sanitizeBtn">
-              <i class="fas fa-broom"></i> Sanitize Data
+              <i class="fas fa-cloud-upload-alt"></i> Send to Sanitize
             </button>
+          </div>
+
+          <div class="loading-container" id="loadingState">
+            <div class="spinner"></div>
+            <div style="color: var(--text-gray); font-weight: 500;">Uploading and sanitizing data...</div>
           </div>
         </div>
 
         <div class="panel preview-container" id="previewPanel">
           <div class="panel-title">Data Preview</div>
-          <div class="panel-subtitle" id="previewSubtitle">Showing preview of sanitized data.</div>
+          <div class="panel-subtitle" id="previewSubtitle">Showing preview of sanitized data from the server.</div>
           
           <div class="table-wrapper">
             <table class="preview-table" id="previewTable">
@@ -503,9 +434,9 @@
           </div>
 
           <div class="actions-row">
-            <button class="btn btn-primary" id="downloadBtn">
+            <a href="#" class="btn btn-primary" id="downloadBtn" download>
               <i class="fas fa-download"></i> Download Sanitized CSV
-            </button>
+            </a>
           </div>
         </div>
 
@@ -513,30 +444,14 @@
     </div>
 
     <script>
-      // Notification Dropdown Logic
-      const notifBtn = document.getElementById("notificationBtn");
-      const notifDropdown = document.getElementById("notificationDropdown");
-
-      if (notifBtn && notifDropdown) {
-        notifBtn.addEventListener("click", function (e) {
-          if (e && e.stopPropagation) e.stopPropagation();
-          notifDropdown.classList.toggle("active");
-        });
-
-        document.addEventListener("click", function (e) {
-          if (!notifDropdown.contains(e.target) && !notifBtn.contains(e.target)) {
-            notifDropdown.classList.remove("active");
-          }
-        });
-      }
-
-      // --- CSV SANITIZER LOGIC ---
+      // --- CSV UPLOAD & FETCH LOGIC ---
       const uploadZone = document.getElementById('uploadZone');
       const fileInput = document.getElementById('csvFileInput');
       const processActions = document.getElementById('processActions');
       const fileNameDisplay = document.getElementById('fileNameDisplay');
       const resetBtn = document.getElementById('resetBtn');
       const sanitizeBtn = document.getElementById('sanitizeBtn');
+      const loadingState = document.getElementById('loadingState');
       
       const previewPanel = document.getElementById('previewPanel');
       const previewThead = document.getElementById('previewThead');
@@ -545,7 +460,6 @@
       const downloadBtn = document.getElementById('downloadBtn');
 
       let rawFile = null;
-      let sanitizedDataArray = [];
 
       // Handle Drag and Drop
       uploadZone.addEventListener('click', () => fileInput.click());
@@ -574,8 +488,9 @@
         if (fileInput.files.length > 0) {
           rawFile = fileInput.files[0];
           
-          if (!rawFile.name.endsWith('.csv')) {
-            alert('Please select a valid CSV file.');
+          // Strict frontend validation for CSV
+          if (!rawFile.name.toLowerCase().endsWith('.csv') && rawFile.type !== 'text/csv') {
+            alert('Invalid file format. Please select a valid .csv file.');
             resetUI();
             return;
           }
@@ -592,56 +507,81 @@
       function resetUI() {
         fileInput.value = '';
         rawFile = null;
-        sanitizedDataArray = [];
         uploadZone.style.display = 'block';
         processActions.style.display = 'none';
         previewPanel.style.display = 'none';
+        loadingState.style.display = 'none';
       }
 
-      // Sanitize action
-      sanitizeBtn.addEventListener('click', () => {
+      // Send file to Backend
+      sanitizeBtn.addEventListener('click', async () => {
         if (!rawFile) return;
 
-        const reader = new FileReader();
-        reader.onload = function(e) {
-          const text = e.target.result;
-          processCSV(text);
-        };
-        reader.readAsText(rawFile);
+        // Hide actions, show loader
+        processActions.style.display = 'none';
+        loadingState.style.display = 'flex';
+
+        const formData = new FormData();
+        formData.append('file', rawFile); // Ensure your backend expects 'file'
+
+        try {
+          const response = await fetch('/dashboard', {
+            method: 'POST',
+            body: formData,
+          });
+
+          if (!response.ok) {
+            throw new Error(`Server responded with status ${response.status}`);
+          }
+
+          /* EXPECTED JSON RESPONSE FROM BACKEND:
+             {
+               "csvText": "header1,header2\nvalue1,value2",
+               "downloadUrl": "/downloads/sanitized_file.csv"
+             }
+          */
+          const data = await response.json();
+
+          // Hide loading, process preview
+          loadingState.style.display = 'none';
+          
+          // Ensure we actually got the text back
+          if(data.csvText) {
+            renderPreviewTable(data.csvText);
+            
+            // Set the download link
+            downloadBtn.href = data.downloadUrl || '#'; 
+            previewPanel.style.display = 'flex';
+          } else {
+             alert('Backend did not return valid CSV text for preview.');
+             resetUI();
+          }
+
+        } catch (error) {
+          console.error('Upload Error:', error);
+          alert('There was an error sending the file to the server. Please check the console.');
+          resetUI();
+        }
       });
 
-      function processCSV(csvText) {
-        // Basic CSV Parsing (splits by new line, then by comma)
-        const lines = csvText.split(/\r?\n/);
-        sanitizedDataArray = [];
-
-        lines.forEach(line => {
-          // 1. Remove completely empty rows
-          if (line.trim().length === 0) return; 
-
-          // 2. Split into columns, trim whitespace from every cell
-          const columns = line.split(',').map(col => col.trim());
-          
-          // Only push if the row actually has data
-          if (columns.some(col => col.length > 0)) {
-            sanitizedDataArray.push(columns);
-          }
-        });
-
-        renderPreviewTable();
-      }
-
-      function renderPreviewTable() {
-        if (sanitizedDataArray.length === 0) {
-          alert("The CSV file was empty or contained no valid data.");
+      function renderPreviewTable(csvText) {
+        // Split text by line, ignoring empty lines
+        const lines = csvText.split(/\r?\n/).filter(line => line.trim() !== '');
+        
+        if (lines.length === 0) {
+          previewThead.innerHTML = '';
+          previewTbody.innerHTML = '<tr><td>No data returned</td></tr>';
           return;
         }
 
         previewThead.innerHTML = '';
         previewTbody.innerHTML = '';
 
-        // Extract Headers (Row 0)
-        const headers = sanitizedDataArray[0];
+        // Safely split CSV considering basic commas (Note: does not handle complex quoted commas natively in this basic split)
+        const parseLine = (line) => line.split(',').map(cell => cell.trim());
+
+        // Setup Headers
+        const headers = parseLine(lines[0]);
         const headerRow = document.createElement('tr');
         headers.forEach(headerText => {
           const th = document.createElement('th');
@@ -650,13 +590,11 @@
         });
         previewThead.appendChild(headerRow);
 
-        // Extract Body (Rows 1 to end)
-        // For the preview, let's limit it to 50 rows to keep the DOM light, 
-        // but the download will include everything.
-        const previewLimit = Math.min(sanitizedDataArray.length, 51); 
+        // Setup Body (Limit to 50 for preview performance)
+        const previewLimit = Math.min(lines.length, 51); 
 
         for (let i = 1; i < previewLimit; i++) {
-          const rowData = sanitizedDataArray[i];
+          const rowData = parseLine(lines[i]);
           const tr = document.createElement('tr');
           
           rowData.forEach(cellText => {
@@ -668,33 +606,8 @@
           previewTbody.appendChild(tr);
         }
 
-        previewSubtitle.textContent = `Showing ${previewLimit - 1} of ${sanitizedDataArray.length - 1} total valid rows.`;
-        previewPanel.style.display = 'flex';
+        previewSubtitle.textContent = `Showing preview of ${previewLimit - 1} rows. Download to view the full file.`;
       }
-
-      // Download Action
-      downloadBtn.addEventListener('click', () => {
-        if (sanitizedDataArray.length === 0) return;
-
-        // Convert array back to CSV string
-        const csvContent = sanitizedDataArray.map(row => {
-          // Wrap cells in quotes if they contain commas to avoid breaking the CSV format
-          return row.map(cell => cell.includes(',') ? `"${cell}"` : cell).join(',');
-        }).join('\n');
-
-        // Create a Blob and trigger download
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        
-        link.setAttribute('href', url);
-        link.setAttribute('download', `sanitized_${rawFile.name}`);
-        link.style.visibility = 'hidden';
-        
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-      });
     </script>
   </body>
 </html>
