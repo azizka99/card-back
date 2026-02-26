@@ -75,6 +75,7 @@ testRoutes.post("/bank-analzye", upload.single("file"), (0, express_async_handle
             csvForParsing = stripped ?? rawCsvText;
         }
         // Replace these dummy values with your actual processed data
+        console.log("detected:", detected.format);
         res.status(200).json({
             csvText: `${detected.format}`, // The text for the small preview window
             downloadUrl: "/downloads/your-new-sanitized-file.csv" // URL where the user can download the final file
