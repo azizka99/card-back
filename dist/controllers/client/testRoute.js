@@ -6,9 +6,27 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const express_async_handler_1 = __importDefault(require("express-async-handler"));
 const multer_1 = __importDefault(require("multer"));
+const crypto_1 = __importDefault(require("crypto"));
 const upload = (0, multer_1.default)({ storage: multer_1.default.memoryStorage() });
 const sync_1 = require("csv-parse/sync");
 const testRoutes = express_1.default.Router();
+const downloadStore = new Map();
+function putOneTimeDownload({ csv, filename = "sanitized.csv", ttlMs = 5 * 60 * 1000, }) {
+    const token = crypto_1.default.randomBytes(24).toString("hex");
+    const expiresAt = Date.now() + ttlMs;
+    const timeout = setTimeout(() => {
+        downloadStore.delete(token);
+    }, ttlMs);
+    downloadStore.set(token, {
+        csv,
+        mime: "text/csv; charset=utf-8",
+        filename,
+        expiresAt,
+        used: false,
+        timeout,
+    });
+    return token;
+}
 testRoutes.get("/bank", (0, express_async_handler_1.default)(async (req, res) => {
     res.render("sanitazeBank");
 }));
@@ -156,27 +174,39 @@ testRoutes.post("/bank-analzye", upload.single("file"), (0, express_async_handle
             "Haben",
             "Währung",
         ]);
+        // 1️⃣ Remove unwanted columns
         for (const row of records) {
             for (const key of Object.keys(row)) {
                 if (DROP.has(key))
                     delete row[key];
             }
         }
+        // 2️⃣ Extract Kundennummer + collect attention rows
         const attentionRows = [];
         for (const row of records) {
             const vz = row["Verwendungszweck"] ?? "";
             const nums = extractKundennummern(vz);
             row.kundennummer_extracted = nums[0] ?? "";
             row.kundennummer_extracted_all = nums.join(",");
-            if (nums.length === 0)
+            if (nums.length === 0) {
                 attentionRows.push(String(vz));
+            }
         }
-        const attentionText = attentionRows.slice(0, 50).join("\n");
+        // 3️⃣ Build full CSV (for download)
+        const finalCsv = toCsvPreview(records, records.length);
+        // 4️⃣ Build preview CSV (first 50)
         const csvText = toCsvPreview(records, 50);
+        const attentionText = attentionRows.slice(0, 50).join("\n");
+        // 5️⃣ Create one-time token
+        const token = putOneTimeDownload({
+            csv: finalCsv,
+            filename: `postbank-sanitized-${Date.now()}.csv`,
+            ttlMs: 10 * 60 * 1000, // 10 minutes
+        });
         res.status(200).json({
             csvText,
             attentionText,
-            downloadUrl: "/downloads/your-new-sanitized-file.csv",
+            downloadUrl: `test/downloads/${token}`,
         });
         return;
     }
@@ -187,5 +217,40 @@ testRoutes.post("/bank-analzye", upload.single("file"), (0, express_async_handle
         attentionText: csvText.split("\n")[1],
         downloadUrl: "/downloads/your-new-sanitized-file.csv",
     });
+}));
+testRoutes.get("/downloads/:token", (0, express_async_handler_1.default)(async (req, res) => {
+    const token = String(req.params.token || "").trim();
+    if (!token) {
+        res.status(400).send("Missing token.");
+        return;
+    }
+    const item = downloadStore.get(token);
+    if (!item) {
+        res.status(404).send("Link expired or invalid.");
+        return;
+    }
+    // Expired?
+    if (Date.now() > item.expiresAt) {
+        clearTimeout(item.timeout);
+        downloadStore.delete(token);
+        res.status(410).send("Link expired.");
+        return;
+    }
+    // One-time use?
+    if (item.used) {
+        // (normally won't happen because we delete on first use,
+        // but keep for safety if you ever change logic)
+        res.status(410).send("Link already used.");
+        return;
+    }
+    // Mark used + remove immediately to guarantee one-time
+    item.used = true;
+    clearTimeout(item.timeout);
+    downloadStore.delete(token);
+    res.setHeader("Content-Type", item.mime); // "text/csv; charset=utf-8"
+    res.setHeader("Content-Disposition", `attachment; filename="${item.filename}"`);
+    res.setHeader("Cache-Control", "no-store");
+    res.status(200).send(item.csv);
+    return;
 }));
 exports.default = testRoutes;
