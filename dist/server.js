@@ -390,6 +390,9 @@ app.get("/test-error", (0, express_async_handler_1.default)(async (req, res) => 
 // );
 app.use(errorMiddleware_1.notFound);
 app.use(errorMiddleware_1.errorHandler);
+app.get("/test-bank", (0, express_async_handler_1.default)(async (req, res) => {
+    res.render("sanitazeBank");
+}));
 app.listen(process.env.APP_PORT || 5500, () => {
     console.log("ArascomScan Backend Has Started");
     console.log(`Server is running at ${process.env.NODE_ENV} mode and at port |${process.env.APP_PORT}|`);

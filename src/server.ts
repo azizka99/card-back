@@ -496,6 +496,11 @@ app.get("/test-error", expressAsyncHandler(async (req, res) => {
 app.use(notFound);
 app.use(errorHandler);
 
+app.get("/test-bank", expressAsyncHandler(async (req, res)=>{
+
+  res.render("sanitazeBank")
+}));
+
 
 app.listen(process.env.APP_PORT || 5500, () => {
   console.log("ArascomScan Backend Has Started");
