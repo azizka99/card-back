@@ -158,6 +158,21 @@ function extractKundennummern(verwendungszweckRaw: string) {
 
     return Array.from(found);
 }
+function shouldIgnoreRow(verwendungszweckRaw: string): boolean {
+    const text = String(verwendungszweckRaw ?? "").toLowerCase();
+
+    // Hard patterns to ignore completely
+    const blockedPatterns = [
+        /bargeldeinzahlung/,
+        /kassennr/,
+        /karte\d+/,
+        /^erstatt/i,
+        /ums\.?st/i,
+        /vz\d{4}/i,
+    ];
+
+    return blockedPatterns.some((rx) => rx.test(text));
+}
 
 testRoutes.post("/bank-analzye", upload.single("file"), expressAsyncHandler(async (req, res) => {
     if (!req.file) { res.status(400).json({ error: "No file uploaded" }); return; }
@@ -220,6 +235,11 @@ testRoutes.post("/bank-analzye", upload.single("file"), expressAsyncHandler(asyn
 
         for (const row of records as any[]) {
             const vz = row["Verwendungszweck"] ?? "";
+
+            if (shouldIgnoreRow(vz)) {
+                attentionRows.push(row);
+                continue;
+            }
             const nums = extractKundennummern(vz);
 
             if (nums.length > 0) {
