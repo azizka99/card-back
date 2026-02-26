@@ -56,31 +56,35 @@ function toCsvPreview(rows: any, maxRows = 50) {
 }
 function extractKundennummern(verwendungszweckRaw: string) {
     const original = String(verwendungszweckRaw ?? "");
-    const text = original
+    let text = original
         .replace(/^\uFEFF/, "")
         .replace(/\s+/g, " ")
         .trim();
 
     if (!text) return [];
 
-    // Hard excludes: if the row looks like a pure large money number "2.449.877,11"
-    // or contains too many separators typical for amounts, we don't treat it as Kundennr-only line
+    // Remove common trailing punctuation so "32113 ." becomes "32113"
+    const textTrimmedPunct = text.replace(/[.,;:!]+$/g, "").trim();
+
+    // Exclude obvious pure amounts like "2.449.877,11" or "123,45"
     const looksLikeAmount =
-        /^\d{1,3}(\.\d{3})+,\d{2}$/.test(text) || // 2.449.877,11
-        /^\d+,\d{2}$/.test(text);                // 123,45
+        /^\d{1,3}(\.\d{3})+,\d{2}$/.test(textTrimmedPunct) ||
+        /^\d+,\d{2}$/.test(textTrimmedPunct);
     if (looksLikeAmount) return [];
 
     const found = new Set();
 
-    // 1) Keyword-anchored patterns (high confidence)
-    // Supports: Kundennr, Kundennummer, KUNDENNR, Kunden nr, Kunde, KD, KD-NR, KD-xxxxx, kdnr, knd, Ku Nr, KNr, etc.
+    // 1) Keyword-anchored patterns (robust, accepts weird punctuation/case)
+    // Also catches weird "Kundennr.: 17494.Handy-Shop"
     const keywordRegexes = [
-        // kundennr / kundennummer / kunde / kdnr / knd (with optional punctuation)
-        /\b(kundennr|kundennummer|kunden\s*nr|kunde|kdnr|knd)\b\s*[:.#\-]?\s*(\d{1,5})\b/gi,
+        // kundennr / kundennummer / kunden nr / kunde / kdnr / knd
+        /\b(kundennr|kundennummer|kunden\s*nr|kunde|kdnr|knd)\b\s*[:.#,\-]?\s*(\d{1,5})\b/gi,
         // KD 12345 / KD-12345 / KD-NR.12345 / KDNR 12345
-        /\b(kd)\b\s*[-\s]*(nr)?\s*[:.#\-]?\s*(\d{1,5})\b/gi,
+        /\b(kd)\b\s*[-\s]*(nr)?\s*[:.#,\-]?\s*(\d{1,5})\b/gi,
         // Ku Nr 12345 / KNr.12345
-        /\b(ku\s*nr|knr)\b\s*[:.#\-]?\s*(\d{1,5})\b/gi,
+        /\b(ku\s*nr|knr)\b\s*[:.#,\-]?\s*(\d{1,5})\b/gi,
+        // Handle common typo you showed: "Kundenn, 35580" / "Kundenn 35580"
+        /\b(kundenn)\b\s*[:.#,\-]?\s*(\d{1,5})\b/gi,
     ];
 
     for (const rx of keywordRegexes) {
@@ -91,33 +95,32 @@ function extractKundennummern(verwendungszweckRaw: string) {
         }
     }
 
-    // 2) Special: numbers followed by (amount) like "7082 (300)" — capture the left number
-    // This will also catch both sides in "7082 (300) und 6663 (100)"
+    // 2) Special: number followed by (amount) => "7082 (300)"
     {
         const rx = /\b(\d{1,5})\s*\(\s*\d+(?:[.,]\d+)?\s*\)/g;
         let m;
         while ((m = rx.exec(text)) !== null) {
-            const num = m[1];
-            if (num && num.length <= 5) found.add(num);
+            found.add(m[1]);
         }
     }
 
-    // 3) Fallback: if the whole text is just a 1–5 digit number (like "36770" or "26614")
-    // But avoid common non-kundennr contexts like "Rg. 222542" (6 digits won't pass anyway)
-    if (/^\d{1,5}$/.test(text)) {
-        found.add(text);
+    // 3) Standalone max-5-digit line ALWAYS counts (your rule)
+    if (/^\d{1,5}$/.test(textTrimmedPunct)) {
+        found.add(textTrimmedPunct);
     }
 
-    // 4) Extra safety excludes: avoid KassenNr / Karte numbers if they accidentally match
-    // (Your max 5 digits helps already, but keep it anyway)
-    // If the ONLY matches came from a context that contains kassennr/karte, remove them.
-    const badContext = /\b(kassennr|karte)\b/i.test(text);
-    if (badContext && found.size > 0) {
-        // If you want: only remove if keyword not used:
-        const hasKundenKeyword = /\b(kundennr|kundennummer|kdnr|knd|kd|ku\s*nr|knr|kunde)\b/i.test(text);
-        if (!hasKundenKeyword) {
-            // likely not a customer number
-            return [];
+    // 4) Fallback token scan (to catch "guthaben Kaufen 23284", "34055 Februar")
+    // Only if still nothing found
+    if (found.size === 0) {
+        // If the line is clearly about invoices/IDs/dates, do NOT extract random numbers
+        const hardBlock = /\b(rg|rechn|invoice|kassennr|karte|iban|bic|mandatsreferenz|gläubiger|glaeubiger|datum|uhr|saldo|umsatzart)\b/i;
+        if (!hardBlock.test(text)) {
+            // Extract all 1–5 digit tokens
+            const tokenRx = /\b(\d{1,5})\b/g;
+            let m;
+            while ((m = tokenRx.exec(text)) !== null) {
+                found.add(m[1]);
+            }
         }
     }
 
@@ -176,37 +179,28 @@ testRoutes.post("/bank-analzye", upload.single("file"), expressAsyncHandler(asyn
             }
         }
 
-        const attentionRows = []; // store original rows where no kunden nr found
+        const attentionRows = [];
 
         for (const row of records as any) {
             const vz = row["Verwendungszweck"] ?? "";
+            const nums = extractKundennummern(vz);
 
-            const kundenNums = extractKundennummern(vz); // returns [] or ["7082","6663",...]
+            row.kundennummer_extracted = nums[0] ?? "";
+            row.kundennummer_extracted_all = nums.join(",");
 
-            if (kundenNums.length === 0) {
-                attentionRows.push(vz);
-                row.kundennummer_extracted = "";       // keep empty
-                row.kundennummer_extracted_all = "";   // keep empty
-            } else {
-                row.kundennummer_extracted = kundenNums[0];          // first one
-                row.kundennummer_extracted_all = kundenNums.join(","); // all (multi)
-            }
+            if (nums.length === 0) attentionRows.push(String(vz));
         }
 
-        // Build preview CSV (first 50 rows) as you already do:
+        const attentionText = attentionRows.slice(0, 50).join("\n");
+
         const csvText = toCsvPreview(records, 50);
 
-        // Build attentionText: show first N rows that had no Kundennummer
-        const attentionText = attentionRows.slice(0, 20).join("\n");
-
-        // Response
-        res.status(200).json({
+         res.status(200).json({
             csvText,
-            attentionText, // <-- rows with NO kundennummer extracted (Verwendungszweck text)
+            attentionText,
             downloadUrl: "/downloads/your-new-sanitized-file.csv",
         });
         return;
-
     }
 
     const csvText = toCsvPreview(records, 50);
