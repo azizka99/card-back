@@ -579,7 +579,7 @@
         previewTbody.innerHTML = '';
 
         // Safely split CSV considering basic commas (Note: does not handle complex quoted commas natively in this basic split)
-        const parseLine = (line) => line.split(',').map(cell => cell.trim());
+        const parseLine = (line) => line.split(';').map(cell => cell.trim());
 
         // Setup Headers
         const headers = parseLine(lines[0]);
