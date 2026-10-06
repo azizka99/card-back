@@ -20,6 +20,7 @@ import { authenticator } from "otplib";
 import adminRoutes from "./routes/admin/adminRoutes";
 import { requireMagic } from "./middlewares/requireMagicMiddleware";
 import testRoutes from "./controllers/client/testRoute";
+import { resumeActivationJobs } from "./services/activationRunner";
 
 
 
@@ -511,5 +512,7 @@ app.listen(process.env.APP_PORT || 5500, () => {
   console.log('Database url: ' + process.env.DATABASE_URL);
 
   console.log("------------------------------------------------------------");
+
+  resumeActivationJobs().catch((err) => console.error("[activation] resume failed", err));
 });
 

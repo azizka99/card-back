@@ -2,6 +2,18 @@ import express from "express";
 import expressAsyncHandler from "express-async-handler";
 import prisma from "../../constants/dbConnection";
 import uuid from "uuid";
+import {
+    ActivationError,
+    ALLOWED_AMOUNTS,
+    activationEvents,
+    cancelJob,
+    getJobSnapshot,
+    getLatestJobId,
+    retryFailed,
+    retryItem,
+    startJob,
+    updateJobSettings,
+} from "../../services/activationRunner";
 
 
 const adminRoutes = express.Router();
@@ -103,7 +115,7 @@ adminRoutes.get("/download/:tag_id", expressAsyncHandler(async (req, res) => {
 
     const items = await prisma.steam_card.findMany({
         where: { tag_id: tagId },
-        select: { barcode: true, activation_code: true },
+        select: { id: true, barcode: true, activation_code: true },
         orderBy: { created_at: "asc" },
     });
 
@@ -136,46 +148,8 @@ adminRoutes.get("/download/:tag_id", expressAsyncHandler(async (req, res) => {
 
     const ean = await prisma.ean.findMany();
 
-    const campaignJson = () => {
-
-
-        if (tag.is_activated === true) {
-            if (tag.id === '15a48e7e-a268-4acb-8a42-97e9f7dbc560') {
-                return {
-                    activeCampaign: {
-                        isRunning: false,
-                        percentage: 100, // % completed
-                        failedItems: [
-                            {
-                                barcode: "6307730974226641",
-                                reason: "card unknown"
-                            },
-                            {
-                                barcode: "6338731074655443",
-                                reason: "card unknown"
-                            },
-                            {
-                                barcode: "6307730974701874",
-                                reason: "card unknown"
-                            }
-                        ]
-                    }
-                }
-            }
-            return {
-                activeCampaign: {
-                    isRunning: false,
-                    percentage: 100, // % completed
-                    failedItems: null
-                }
-            }
-        }
-        return {}
-    }
-
-    const result = campaignJson();
-
-
+    const latestJobId = await getLatestJobId(tagId);
+    const activationJob = latestJobId ? await getJobSnapshot(latestJobId) : null;
 
     res.render("download", {
         items,
@@ -185,48 +159,115 @@ adminRoutes.get("/download/:tag_id", expressAsyncHandler(async (req, res) => {
         selectedUserId,
         tagsForUser,
         selectedTagId: tagId,
-        ...result
+        activationJob,
+        allowedAmounts: ALLOWED_AMOUNTS,
     });
 }));
 
-adminRoutes.post(
-    "/api/activation-campaign",
-    expressAsyncHandler(async (req, res) => {
-        const { tagId, eanId, finishAt } = req.body;
+// ---------- activation jobs ----------
 
-        if (!tagId || !finishAt) {
-            res.status(400).json({ success: false, message: "Missing tagId or finishAt" });
-            return
-        }
+function sendActivationError(res: express.Response, err: unknown) {
+    if (err instanceof ActivationError) {
+        res.status(err.httpStatus).json({ success: false, message: err.message });
+        return;
+    }
+    throw err;
+}
 
-        // finishAt comes from <input type="datetime-local"> => "YYYY-MM-DDTHH:mm"
-        // Treat it as Berlin time and store as UTC in TIMESTAMPTZ:
-        const finishDate = new Date(finishAt); // OK if your server TZ is Europe/Berlin OR finishAt includes offset
-        if (Number.isNaN(finishDate.getTime())) {
-            res.status(400).json({ success: false, message: "Invalid finishAt" });
-            return
-        }
+function parseOptionalDate(v: unknown): Date | undefined | null {
+    if (v === undefined || v === null || v === "") return undefined;
+    const d = new Date(String(v));
+    return Number.isNaN(d.getTime()) ? null : d;
+}
 
-        // OPTIONAL: decide what "start" means. Often: NOW()
-        const startAt = new Date();
+adminRoutes.post("/api/activation-jobs", expressAsyncHandler(async (req, res) => {
+    const { tagId, eanId } = req.body;
+    const amount = Number(req.body.amount);
+    const finishAt = parseOptionalDate(req.body.finishAt); // ISO string from the browser
 
-        // save campaign
-        const created = await prisma.start_campaign.create({
-            data: {
-                id: crypto.randomUUID(), // Node 18+
-                tag_id: tagId,
-                start_at: startAt,
-                end_at: finishDate,
-                // if you also want to store eanId, add a column and save it
-                // ean_id: eanId,
-            },
-            select: { id: true, tag_id: true, start_at: true, end_at: true },
-        });
+    if (!tagId || !eanId || !finishAt) {
+        res.status(400).json({ success: false, message: "Missing or invalid tagId, eanId or finishAt" });
+        return;
+    }
 
-        res.json({ success: true, campaign: created });
-        return
-    })
-);
+    try {
+        const jobId = await startJob({ tagId, eanId, amount, finishAt });
+        res.json({ success: true, jobId });
+    } catch (err) {
+        sendActivationError(res, err);
+    }
+}));
+
+adminRoutes.get("/api/activation-jobs/:id", expressAsyncHandler(async (req, res) => {
+    const snapshot = await getJobSnapshot(req.params.id);
+    if (!snapshot) { res.status(404).json({ success: false, message: "Job not found" }); return; }
+    res.json({ success: true, ...snapshot });
+}));
+
+// Server-Sent Events: "job" = summary/counts, "item" = one card changed
+adminRoutes.get("/api/activation-jobs/:id/stream", (req, res) => {
+    const jobId = req.params.id;
+    res.set({
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache",
+        Connection: "keep-alive",
+        "X-Accel-Buffering": "no", // disable nginx buffering
+    });
+    res.flushHeaders();
+
+    const send = (event: string) => (data: unknown) => res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
+    const onJob = send("job");
+    const onItem = send("item");
+    activationEvents.on(`job:${jobId}`, onJob);
+    activationEvents.on(`item:${jobId}`, onItem);
+    const ping = setInterval(() => res.write(": ping\n\n"), 25000);
+
+    req.on("close", () => {
+        clearInterval(ping);
+        activationEvents.off(`job:${jobId}`, onJob);
+        activationEvents.off(`item:${jobId}`, onItem);
+    });
+});
+
+adminRoutes.post("/api/activation-jobs/:id/cancel", expressAsyncHandler(async (req, res) => {
+    try {
+        await cancelJob(req.params.id);
+        res.json({ success: true });
+    } catch (err) {
+        sendActivationError(res, err);
+    }
+}));
+
+adminRoutes.patch("/api/activation-jobs/:id", expressAsyncHandler(async (req, res) => {
+    const finishAt = parseOptionalDate(req.body.finishAt);
+    if (finishAt === null) { res.status(400).json({ success: false, message: "Invalid finishAt" }); return; }
+    const amount = req.body.amount === undefined || req.body.amount === "" ? undefined : Number(req.body.amount);
+
+    try {
+        await updateJobSettings(req.params.id, { eanId: req.body.eanId || undefined, amount, finishAt });
+        res.json({ success: true });
+    } catch (err) {
+        sendActivationError(res, err);
+    }
+}));
+
+adminRoutes.post("/api/activation-jobs/:id/retry-failed", expressAsyncHandler(async (req, res) => {
+    try {
+        await retryFailed(req.params.id);
+        res.json({ success: true });
+    } catch (err) {
+        sendActivationError(res, err);
+    }
+}));
+
+adminRoutes.post("/api/activation-items/:id/retry", expressAsyncHandler(async (req, res) => {
+    try {
+        await retryItem(req.params.id, req.body.barcode ? String(req.body.barcode) : undefined);
+        res.json({ success: true });
+    } catch (err) {
+        sendActivationError(res, err);
+    }
+}));
 
 adminRoutes.get("/api/user/:user_id/tags", expressAsyncHandler(async (req, res) => {
     const userId = req.params.user_id;

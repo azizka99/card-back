@@ -25,6 +25,7 @@ const otplib_1 = require("otplib");
 const adminRoutes_1 = __importDefault(require("./routes/admin/adminRoutes"));
 const requireMagicMiddleware_1 = require("./middlewares/requireMagicMiddleware");
 const testRoute_1 = __importDefault(require("./controllers/client/testRoute"));
+const activationRunner_1 = require("./services/activationRunner");
 const app = (0, express_1.default)();
 dotenv_1.default.config({ path: '.env' });
 app.set("view engine", "ejs");
@@ -398,4 +399,5 @@ app.listen(process.env.APP_PORT || 5500, () => {
     console.log('Server mode: ' + process.env.NODE_ENV);
     console.log('Database url: ' + process.env.DATABASE_URL);
     console.log("------------------------------------------------------------");
+    (0, activationRunner_1.resumeActivationJobs)().catch((err) => console.error("[activation] resume failed", err));
 });
