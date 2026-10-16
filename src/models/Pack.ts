@@ -47,11 +47,9 @@ export class Pack {
 
 
     public static checkPack = async (_pack: Pack) => {
-        console.log('packs', _pack);
 
         const expected = generateFixed200(_pack.start_number);
         const expectedSet = new Set(expected);
-        console.log('expected', expected);
 
         const cards = await prisma.steam_card.findMany({
             where: { pack_id: _pack.id },
@@ -101,9 +99,9 @@ export class Pack {
             packId: _pack.id,
             totalExpected: expected.length,
             totalFound: cards.length,
-            extra,
-            duplicates,
-            matched
+            extra: extra.length,
+            duplicates: duplicates.length,
+            matched: matched.length
         });
 
         return {

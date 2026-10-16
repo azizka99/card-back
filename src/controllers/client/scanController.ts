@@ -20,7 +20,6 @@ export const createScan = expressAsyncHandler(async (req, res) => {
   try {
 
 
-    console.log("Skana Gelenler", id, activationCode, barCode, userId, tagId, 'packId', packId);
 
     if (!file) {
       throw new Error("No file Sent");
@@ -51,9 +50,7 @@ export const createScan = expressAsyncHandler(async (req, res) => {
     }
 
     if (packId) {
-      console.log(packId, pack);
       pack = await Pack.findPackById(packId);
-      console.log(pack);
 
 
       if (!pack) {

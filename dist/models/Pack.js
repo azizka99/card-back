@@ -49,10 +49,8 @@ Pack.createPack = async (_pack) => {
     }
 };
 Pack.checkPack = async (_pack) => {
-    console.log('packs', _pack);
     const expected = (0, generateLuhn_1.generateFixed200)(_pack.start_number);
     const expectedSet = new Set(expected);
-    console.log('expected', expected);
     const cards = await dbConnection_1.default.steam_card.findMany({
         where: { pack_id: _pack.id },
         select: {
@@ -95,9 +93,9 @@ Pack.checkPack = async (_pack) => {
         packId: _pack.id,
         totalExpected: expected.length,
         totalFound: cards.length,
-        extra,
-        duplicates,
-        matched
+        extra: extra.length,
+        duplicates: duplicates.length,
+        matched: matched.length
     });
     return {
         packId: _pack.id,

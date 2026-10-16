@@ -7,16 +7,29 @@ import {
     ALLOWED_AMOUNTS,
     activationEvents,
     cancelJob,
+    getActivationOverview,
     getJobSnapshot,
+    pauseJob,
+    resumeJob,
     getLatestJobId,
     retryFailed,
     retryItem,
     startJob,
     updateJobSettings,
 } from "../../services/activationRunner";
+import { defaultReportWeek, getWeeklyReport } from "../../services/activationReport";
+import { checkPackByBarcode } from "../../services/packCheck";
 
 
 const adminRoutes = express.Router();
+
+// Prisma's `distinct` loads every card of the user and dedupes in Node (~280k rows);
+// SQL DISTINCT uses steam_card_user_tag_idx instead.
+async function distinctTagIdsOfUser(userId: string): Promise<string[]> {
+    const rows = await prisma.$queryRaw<{ tag_id: string }[]>`
+        SELECT DISTINCT tag_id FROM steam_card WHERE user_id = ${userId}::uuid AND tag_id IS NOT NULL`;
+    return rows.map((r) => r.tag_id);
+}
 
 
 adminRoutes.get("/dashboard", expressAsyncHandler(async (req, res) => {
@@ -50,7 +63,9 @@ adminRoutes.get("/dashboard", expressAsyncHandler(async (req, res) => {
         orderBy: { created_at: "desc" },
         take: 100,
     });
+    const activation = await getActivationOverview();
     res.render("adminDashboard.ejs", {
+        activation,
         activePage: "dashboard",
         stats,
         topScanners,
@@ -128,16 +143,7 @@ adminRoutes.get("/download/:tag_id", expressAsyncHandler(async (req, res) => {
     let tagsForUser: any = [];
 
     if (selectedUserId) {
-        const distinct = await prisma.steam_card.findMany({
-            where: {
-                user_id: selectedUserId,
-                tag_id: { not: null },
-            },
-            select: { tag_id: true },
-            distinct: ["tag_id"],
-        });
-
-        const tagIds = distinct.map(x => x.tag_id).filter(Boolean);
+        const tagIds = await distinctTagIdsOfUser(selectedUserId);
 
         tagsForUser = await prisma.tag.findMany({
             where: { id: { in: tagIds as string[] } },
@@ -174,6 +180,15 @@ function sendActivationError(res: express.Response, err: unknown) {
     throw err;
 }
 
+/** "" / missing -> null, otherwise a number (NaN fails the amount check later) */
+function optionalNumber(v: unknown): number | null {
+    return v === undefined || v === null || v === "" ? null : Number(v);
+}
+
+function optionalString(v: unknown): string | null {
+    return v === undefined || v === null || v === "" ? null : String(v);
+}
+
 function parseOptionalDate(v: unknown): Date | undefined | null {
     if (v === undefined || v === null || v === "") return undefined;
     const d = new Date(String(v));
@@ -191,7 +206,11 @@ adminRoutes.post("/api/activation-jobs", expressAsyncHandler(async (req, res) =>
     }
 
     try {
-        const jobId = await startJob({ tagId, eanId, amount, finishAt });
+        const jobId = await startJob({
+            tagId, eanId, amount, finishAt,
+            fallbackEanId: optionalString(req.body.fallbackEanId),
+            fallbackAmount: optionalNumber(req.body.fallbackAmount),
+        });
         res.json({ success: true, jobId });
     } catch (err) {
         sendActivationError(res, err);
@@ -238,13 +257,56 @@ adminRoutes.post("/api/activation-jobs/:id/cancel", expressAsyncHandler(async (r
     }
 }));
 
+adminRoutes.get("/api/activation-overview", expressAsyncHandler(async (req, res) => {
+    res.json({ success: true, ...(await getActivationOverview()) });
+}));
+
+// weekly activation report for checking the Monday invoice; ?week=2026-W41 (default: last week)
+adminRoutes.get("/api/activation-report", expressAsyncHandler(async (req, res) => {
+    const week = String(req.query.week || defaultReportWeek());
+    const report = await getWeeklyReport(week);
+    if (!report) { res.status(400).json({ success: false, message: "week must look like 2026-W41" }); return; }
+    res.json({ success: true, ...report });
+}));
+
+// Pack check by any barcode of the pack: wrong cards, missing barcodes, and which missing
+// barcode a wrong card most likely is. GET ?barcode=6338731070110036
+adminRoutes.get("/api/pack-check", expressAsyncHandler(async (req, res) => {
+    const barcode = String(req.query.barcode || "").trim();
+    if (!/^\d{16}$/.test(barcode)) { res.status(400).json({ success: false, message: "barcode must be 16 digits" }); return; }
+    res.json({ success: true, ...(await checkPackByBarcode(barcode)) });
+}));
+
+adminRoutes.post("/api/activation-jobs/:id/pause", expressAsyncHandler(async (req, res) => {
+    try {
+        await pauseJob(req.params.id);
+        res.json({ success: true });
+    } catch (err) {
+        sendActivationError(res, err);
+    }
+}));
+
+adminRoutes.post("/api/activation-jobs/:id/resume", expressAsyncHandler(async (req, res) => {
+    const finishAt = parseOptionalDate(req.body.finishAt);
+    if (!finishAt) { res.status(400).json({ success: false, message: "Missing or invalid finishAt" }); return; }
+    try {
+        await resumeJob(req.params.id, finishAt);
+        res.json({ success: true });
+    } catch (err) {
+        sendActivationError(res, err);
+    }
+}));
+
 adminRoutes.patch("/api/activation-jobs/:id", expressAsyncHandler(async (req, res) => {
     const finishAt = parseOptionalDate(req.body.finishAt);
     if (finishAt === null) { res.status(400).json({ success: false, message: "Invalid finishAt" }); return; }
     const amount = req.body.amount === undefined || req.body.amount === "" ? undefined : Number(req.body.amount);
 
     try {
-        await updateJobSettings(req.params.id, { eanId: req.body.eanId || undefined, amount, finishAt });
+        // fallback: absent = unchanged, {eanId:"", amount:""} = remove
+        const fallback = req.body.fallback === undefined ? undefined
+            : { eanId: optionalString(req.body.fallback?.eanId), amount: optionalNumber(req.body.fallback?.amount) };
+        await updateJobSettings(req.params.id, { eanId: req.body.eanId || undefined, amount, finishAt, fallback });
         res.json({ success: true });
     } catch (err) {
         sendActivationError(res, err);
@@ -253,7 +315,7 @@ adminRoutes.patch("/api/activation-jobs/:id", expressAsyncHandler(async (req, re
 
 adminRoutes.post("/api/activation-jobs/:id/retry-failed", expressAsyncHandler(async (req, res) => {
     try {
-        await retryFailed(req.params.id);
+        await retryFailed(req.params.id, { eanId: optionalString(req.body.eanId), amount: optionalNumber(req.body.amount) });
         res.json({ success: true });
     } catch (err) {
         sendActivationError(res, err);
@@ -262,7 +324,11 @@ adminRoutes.post("/api/activation-jobs/:id/retry-failed", expressAsyncHandler(as
 
 adminRoutes.post("/api/activation-items/:id/retry", expressAsyncHandler(async (req, res) => {
     try {
-        await retryItem(req.params.id, req.body.barcode ? String(req.body.barcode) : undefined);
+        await retryItem(req.params.id, {
+            barcode: req.body.barcode ? String(req.body.barcode) : undefined,
+            eanId: optionalString(req.body.eanId),
+            amount: optionalNumber(req.body.amount),
+        });
         res.json({ success: true });
     } catch (err) {
         sendActivationError(res, err);
@@ -272,16 +338,7 @@ adminRoutes.post("/api/activation-items/:id/retry", expressAsyncHandler(async (r
 adminRoutes.get("/api/user/:user_id/tags", expressAsyncHandler(async (req, res) => {
     const userId = req.params.user_id;
 
-    const distinct = await prisma.steam_card.findMany({
-        where: {
-            user_id: userId,
-            tag_id: { not: null },
-        },
-        select: { tag_id: true },
-        distinct: ["tag_id"],
-    });
-
-    const tagIds = distinct.map(x => x.tag_id).filter(Boolean);
+    const tagIds = await distinctTagIdsOfUser(userId);
 
     const tags = await prisma.tag.findMany({
         where: { id: { in: tagIds as string[] } },

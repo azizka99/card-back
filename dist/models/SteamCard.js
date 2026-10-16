@@ -52,7 +52,6 @@ class SteamCard {
 exports.SteamCard = SteamCard;
 _a = SteamCard;
 SteamCard.createSteamCard = async (steam) => {
-    console.log('steam', steam);
     const data = {
         id: steam.id,
         activation_code: steam.activationCode,

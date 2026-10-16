@@ -8,7 +8,16 @@ const express_async_handler_1 = __importDefault(require("express-async-handler")
 const dbConnection_1 = __importDefault(require("../../constants/dbConnection"));
 const uuid_1 = __importDefault(require("uuid"));
 const activationRunner_1 = require("../../services/activationRunner");
+const activationReport_1 = require("../../services/activationReport");
+const packCheck_1 = require("../../services/packCheck");
 const adminRoutes = express_1.default.Router();
+// Prisma's `distinct` loads every card of the user and dedupes in Node (~280k rows);
+// SQL DISTINCT uses steam_card_user_tag_idx instead.
+async function distinctTagIdsOfUser(userId) {
+    const rows = await dbConnection_1.default.$queryRaw `
+        SELECT DISTINCT tag_id FROM steam_card WHERE user_id = ${userId}::uuid AND tag_id IS NOT NULL`;
+    return rows.map((r) => r.tag_id);
+}
 adminRoutes.get("/dashboard", (0, express_async_handler_1.default)(async (req, res) => {
     const stats = {
         totalScans: 128430,
@@ -37,7 +46,9 @@ adminRoutes.get("/dashboard", (0, express_async_handler_1.default)(async (req, r
         orderBy: { created_at: "desc" },
         take: 100,
     });
+    const activation = await (0, activationRunner_1.getActivationOverview)();
     res.render("adminDashboard.ejs", {
+        activation,
         activePage: "dashboard",
         stats,
         topScanners,
@@ -106,15 +117,7 @@ adminRoutes.get("/download/:tag_id", (0, express_async_handler_1.default)(async 
     // tags for that user (distinct tag_ids from steam_card)
     let tagsForUser = [];
     if (selectedUserId) {
-        const distinct = await dbConnection_1.default.steam_card.findMany({
-            where: {
-                user_id: selectedUserId,
-                tag_id: { not: null },
-            },
-            select: { tag_id: true },
-            distinct: ["tag_id"],
-        });
-        const tagIds = distinct.map(x => x.tag_id).filter(Boolean);
+        const tagIds = await distinctTagIdsOfUser(selectedUserId);
         tagsForUser = await dbConnection_1.default.tag.findMany({
             where: { id: { in: tagIds } },
             select: { id: true, name: true },
@@ -144,6 +147,13 @@ function sendActivationError(res, err) {
     }
     throw err;
 }
+/** "" / missing -> null, otherwise a number (NaN fails the amount check later) */
+function optionalNumber(v) {
+    return v === undefined || v === null || v === "" ? null : Number(v);
+}
+function optionalString(v) {
+    return v === undefined || v === null || v === "" ? null : String(v);
+}
 function parseOptionalDate(v) {
     if (v === undefined || v === null || v === "")
         return undefined;
@@ -159,7 +169,11 @@ adminRoutes.post("/api/activation-jobs", (0, express_async_handler_1.default)(as
         return;
     }
     try {
-        const jobId = await (0, activationRunner_1.startJob)({ tagId, eanId, amount, finishAt });
+        const jobId = await (0, activationRunner_1.startJob)({
+            tagId, eanId, amount, finishAt,
+            fallbackEanId: optionalString(req.body.fallbackEanId),
+            fallbackAmount: optionalNumber(req.body.fallbackAmount),
+        });
         res.json({ success: true, jobId });
     }
     catch (err) {
@@ -205,6 +219,52 @@ adminRoutes.post("/api/activation-jobs/:id/cancel", (0, express_async_handler_1.
         sendActivationError(res, err);
     }
 }));
+adminRoutes.get("/api/activation-overview", (0, express_async_handler_1.default)(async (req, res) => {
+    res.json({ success: true, ...(await (0, activationRunner_1.getActivationOverview)()) });
+}));
+// weekly activation report for checking the Monday invoice; ?week=2026-W41 (default: last week)
+adminRoutes.get("/api/activation-report", (0, express_async_handler_1.default)(async (req, res) => {
+    const week = String(req.query.week || (0, activationReport_1.defaultReportWeek)());
+    const report = await (0, activationReport_1.getWeeklyReport)(week);
+    if (!report) {
+        res.status(400).json({ success: false, message: "week must look like 2026-W41" });
+        return;
+    }
+    res.json({ success: true, ...report });
+}));
+// Pack check by any barcode of the pack: wrong cards, missing barcodes, and which missing
+// barcode a wrong card most likely is. GET ?barcode=6338731070110036
+adminRoutes.get("/api/pack-check", (0, express_async_handler_1.default)(async (req, res) => {
+    const barcode = String(req.query.barcode || "").trim();
+    if (!/^\d{16}$/.test(barcode)) {
+        res.status(400).json({ success: false, message: "barcode must be 16 digits" });
+        return;
+    }
+    res.json({ success: true, ...(await (0, packCheck_1.checkPackByBarcode)(barcode)) });
+}));
+adminRoutes.post("/api/activation-jobs/:id/pause", (0, express_async_handler_1.default)(async (req, res) => {
+    try {
+        await (0, activationRunner_1.pauseJob)(req.params.id);
+        res.json({ success: true });
+    }
+    catch (err) {
+        sendActivationError(res, err);
+    }
+}));
+adminRoutes.post("/api/activation-jobs/:id/resume", (0, express_async_handler_1.default)(async (req, res) => {
+    const finishAt = parseOptionalDate(req.body.finishAt);
+    if (!finishAt) {
+        res.status(400).json({ success: false, message: "Missing or invalid finishAt" });
+        return;
+    }
+    try {
+        await (0, activationRunner_1.resumeJob)(req.params.id, finishAt);
+        res.json({ success: true });
+    }
+    catch (err) {
+        sendActivationError(res, err);
+    }
+}));
 adminRoutes.patch("/api/activation-jobs/:id", (0, express_async_handler_1.default)(async (req, res) => {
     const finishAt = parseOptionalDate(req.body.finishAt);
     if (finishAt === null) {
@@ -213,7 +273,10 @@ adminRoutes.patch("/api/activation-jobs/:id", (0, express_async_handler_1.defaul
     }
     const amount = req.body.amount === undefined || req.body.amount === "" ? undefined : Number(req.body.amount);
     try {
-        await (0, activationRunner_1.updateJobSettings)(req.params.id, { eanId: req.body.eanId || undefined, amount, finishAt });
+        // fallback: absent = unchanged, {eanId:"", amount:""} = remove
+        const fallback = req.body.fallback === undefined ? undefined
+            : { eanId: optionalString(req.body.fallback?.eanId), amount: optionalNumber(req.body.fallback?.amount) };
+        await (0, activationRunner_1.updateJobSettings)(req.params.id, { eanId: req.body.eanId || undefined, amount, finishAt, fallback });
         res.json({ success: true });
     }
     catch (err) {
@@ -222,7 +285,7 @@ adminRoutes.patch("/api/activation-jobs/:id", (0, express_async_handler_1.defaul
 }));
 adminRoutes.post("/api/activation-jobs/:id/retry-failed", (0, express_async_handler_1.default)(async (req, res) => {
     try {
-        await (0, activationRunner_1.retryFailed)(req.params.id);
+        await (0, activationRunner_1.retryFailed)(req.params.id, { eanId: optionalString(req.body.eanId), amount: optionalNumber(req.body.amount) });
         res.json({ success: true });
     }
     catch (err) {
@@ -231,7 +294,11 @@ adminRoutes.post("/api/activation-jobs/:id/retry-failed", (0, express_async_hand
 }));
 adminRoutes.post("/api/activation-items/:id/retry", (0, express_async_handler_1.default)(async (req, res) => {
     try {
-        await (0, activationRunner_1.retryItem)(req.params.id, req.body.barcode ? String(req.body.barcode) : undefined);
+        await (0, activationRunner_1.retryItem)(req.params.id, {
+            barcode: req.body.barcode ? String(req.body.barcode) : undefined,
+            eanId: optionalString(req.body.eanId),
+            amount: optionalNumber(req.body.amount),
+        });
         res.json({ success: true });
     }
     catch (err) {
@@ -240,15 +307,7 @@ adminRoutes.post("/api/activation-items/:id/retry", (0, express_async_handler_1.
 }));
 adminRoutes.get("/api/user/:user_id/tags", (0, express_async_handler_1.default)(async (req, res) => {
     const userId = req.params.user_id;
-    const distinct = await dbConnection_1.default.steam_card.findMany({
-        where: {
-            user_id: userId,
-            tag_id: { not: null },
-        },
-        select: { tag_id: true },
-        distinct: ["tag_id"],
-    });
-    const tagIds = distinct.map(x => x.tag_id).filter(Boolean);
+    const tagIds = await distinctTagIdsOfUser(userId);
     const tags = await dbConnection_1.default.tag.findMany({
         where: { id: { in: tagIds } },
         select: { id: true, name: true },

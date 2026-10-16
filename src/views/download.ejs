@@ -223,6 +223,13 @@
       .fail-row input { font-family: monospace; font-size: 13px; padding: 6px 8px; border: 1px solid var(--border-color); border-radius: 6px; width: 100%; }
       .fail-row .why { grid-column: 1 / -1; color: #ef4444; font-size: 12px; }
       .act-msg { margin-top: 10px; font-size: 13px; color: #64748b; min-height: 18px; }
+      .retry-with { display: grid; grid-template-columns: auto 1fr 120px; gap: 8px; align-items: center; margin-bottom: 8px; }
+      .retry-with .form-input { height: 36px; padding: 6px 10px; font-size: 13px; }
+      .hint-box { background: #fffbeb; border: 1px solid #fde68a; color: #92400e; border-radius: 8px; padding: 10px 12px; font-size: 13px; margin-bottom: 12px; line-height: 1.5; }
+      .fallback-box { border: 1px dashed var(--border-color); border-radius: 8px; padding: 12px; margin-bottom: 16px; }
+      .fallback-box summary { cursor: pointer; font-size: 13px; font-weight: 600; color: var(--primary-dark); }
+      .fallback-grid { display: grid; grid-template-columns: 1fr; gap: 8px; margin-top: 10px; }
+      .fallback-grid .form-input { height: 38px; font-size: 13px; padding: 6px 10px; }
 
     </style>
   </head>
@@ -339,8 +346,14 @@
             <h4 style="font-size: 14px; font-weight: 600;">Failed Activations</h4>
             <button class="btn-sm" id="retryAllBtn" onclick="retryAllFailed()"><i class="fas fa-redo"></i> Retry all failed</button>
           </div>
+          <div id="invalidAmountHint" class="hint-box" style="display:none;"></div>
+          <div class="retry-with">
+            <span class="form-label" style="margin:0;">Retry with</span>
+            <select id="retryEan" class="form-input"></select>
+            <select id="retryAmount" class="form-input"></select>
+          </div>
           <p style="font-size: 12px; color: var(--text-gray); margin-bottom: 10px;">
-            Fix a wrongly scanned barcode in the field, then press Retry. The card's barcode is updated in the database too.
+            Applies to Retry and Retry all failed. Fix a wrongly scanned barcode in its field before pressing Retry; the card's barcode is updated in the database too.
           </p>
           <div style="background: #fff; border: 1px solid var(--border-color); border-radius: 8px;" id="modalErrorList"></div>
 
@@ -415,6 +428,17 @@
 
         const failed = activation.items.filter(it => it.status === "failed");
         document.getElementById("retryAllBtn").disabled = failed.length === 0;
+        fillRetryWith();
+
+        const invalid = failed.filter(it => /invalid amount/i.test(it.result_text || "")).length;
+        const hint = document.getElementById("invalidAmountHint");
+        hint.style.display = invalid ? "block" : "none";
+        if (invalid) {
+          const fb = activation.job.fallback_ean;
+          hint.innerHTML = `<i class="fas fa-lightbulb"></i> <b>${invalid}</b> card(s) failed with <b>invalid amount</b>: they are probably another card value. ` +
+            `Choose the right EAN and amount below and press Retry all failed` +
+            (fb ? "." : `, or set a fallback in Change so the rest of this job tries it automatically.`);
+        }
 
         const listEl = document.getElementById("modalErrorList");
         // keep what the admin is typing if a live update re-renders the list
@@ -429,7 +453,7 @@
           <div class="fail-row">
             <input value="${esc(it.barcode)}" data-item-id="${esc(it.id)}" maxlength="16" inputmode="numeric" />
             <button class="btn-sm" onclick="retryOne('${esc(it.id)}', this)"><i class="fas fa-redo"></i> Retry</button>
-            <div class="why">${esc(it.result_text || "failed")}${it.terminal_id ? " · TID " + esc(it.terminal_id) : ""}${it.attempts ? " · " + it.attempts + " attempt(s)" : ""}</div>
+            <div class="why">${esc(it.result_text || "failed")}${it.ean ? " · sent as " + esc(it.ean) + " / " + esc(it.amount) + " €" : ""}${it.terminal_id ? " · TID " + esc(it.terminal_id) : ""}${it.attempts ? " · " + it.attempts + " attempt(s)" : ""}</div>
           </div>`).join("");
       }
 
@@ -439,7 +463,7 @@
         if (barcode && !/^\d{16}$/.test(barcode)) { alert("Barcode must be 16 digits."); return; }
         btn.disabled = true;
         try {
-          await api("POST", `/api/activation-items/${itemId}/retry`, { barcode });
+          await api("POST", `/api/activation-items/${itemId}/retry`, { barcode, ...retryWith() });
           if (input) input.blur();
           await refreshSnapshot();
         } catch (err) {
@@ -448,10 +472,39 @@
         }
       }
 
+      // "Retry with" selectors: empty = the job's own EAN / amount
+      function fillRetryWith() {
+        const job = activation.job;
+        const eanSel = document.getElementById("retryEan");
+        const amtSel = document.getElementById("retryAmount");
+        if (eanSel.dataset.job === job.id + job.ean + job.amount) return; // keep the admin's choice
+        eanSel.dataset.job = job.id + job.ean + job.amount;
+        eanSel.innerHTML = `<option value="">Job's EAN (${esc(job.ean)})</option>` +
+          eanList.map(e => `<option value="${esc(e.id)}">${esc(e.code)}</option>`).join("");
+        amtSel.innerHTML = `<option value="">Job's (${job.amount} €)</option>` +
+          allowedAmounts.map(a => `<option value="${a}">${a} €</option>`).join("");
+      }
+
+      function retryWith() {
+        const eanId = document.getElementById("retryEan").value;
+        const amount = document.getElementById("retryAmount").value;
+        if (!eanId && !amount) return {};
+        // one of the two chosen: fill the other from the job
+        const job = activation.job;
+        return {
+          eanId: eanId || (eanList.find(e => e.code === job.ean) || {}).id,
+          amount: amount ? Number(amount) : job.amount,
+        };
+      }
+
       async function retryAllFailed() {
         if (!activation) return;
+        const n = activation.items.filter(it => it.status === "failed").length;
+        const w = retryWith();
+        const label = w.eanId ? `EAN ${(eanList.find(e => e.id === w.eanId) || {}).code} / ${w.amount} €` : "the job's EAN and amount";
+        if (!confirm(`Retry ${n} failed card(s) with ${label}?`)) return;
         try {
-          await api("POST", `/api/activation-jobs/${activation.job.id}/retry-failed`);
+          await api("POST", `/api/activation-jobs/${activation.job.id}/retry-failed`, w);
           await refreshSnapshot();
         } catch (err) {
           alert(err.message);
@@ -597,6 +650,51 @@
           </div>`;
       }
 
+      // "if invalid amount, try this instead": EAN select (with "none") + amount select
+      function fallbackFields(prefix, job) {
+        const code = job ? job.fallback_ean : null;
+        const amount = job ? job.fallback_amount : null;
+        return `<div class="fallback-grid">
+            <select id="${prefix}FbEan" class="form-input">
+              <option value="">No fallback</option>
+              ${eanList.map(e => `<option value="${esc(e.id)}" ${e.code === code ? "selected" : ""}>${esc(e.code)}</option>`).join("")}
+            </select>
+            <select id="${prefix}FbAmount" class="form-input">
+              <option value="">—</option>
+              ${allowedAmounts.map(a => `<option value="${a}" ${a === amount ? "selected" : ""}>${a} €</option>`).join("")}
+            </select>
+          </div>`;
+      }
+
+      function readFallback(prefix) {
+        const eanId = document.getElementById(prefix + "FbEan").value;
+        const amount = document.getElementById(prefix + "FbAmount").value;
+        if (!eanId && !amount) return { eanId: "", amount: "" };
+        if (!eanId || !amount) throw new Error("For the fallback choose both EAN and amount (or neither).");
+        return { eanId, amount: Number(amount) };
+      }
+
+      function fallbackLine(job) {
+        return job.fallback_ean
+          ? `<br/><span style="color:#92400e"><i class="fas fa-random"></i> If invalid amount → <b>${esc(job.fallback_ean)}</b> · <b>${job.fallback_amount} €</b></span>`
+          : "";
+      }
+
+      function editFormHtml(job, withFinish) {
+        return `
+            <div id="editSettings" style="display:none; border-top: 1px solid var(--border-color); padding-top: 14px; margin-bottom: 8px;">
+              <p style="font-size: 12px; color: var(--text-gray); margin-bottom: 12px;">Applies to cards that have not been sent yet.</p>
+              <div class="form-group"><label class="form-label">EAN</label><select id="editEan" class="form-input">${eanOptions(job.ean)}</select></div>
+              <div class="form-group"><label class="form-label">Amount</label>${amountOptions("editAmount", job.amount)}</div>
+              ${withFinish ? `<div class="form-group"><label class="form-label">Finish Date & Time</label><input type="datetime-local" id="editFinish" class="form-input" value="${toLocalInput(job.finish_at)}" /></div>` : ""}
+              <div class="form-group"><label class="form-label">If "invalid amount", retry with</label>${fallbackFields("edit", job)}</div>
+              <div class="btn-row">
+                <button class="download-btn btn-secondary" onclick="toggleEdit(false)">Close</button>
+                <button class="download-btn" onclick="saveSettings()"><i class="fas fa-save"></i> Save</button>
+              </div>
+            </div>`;
+      }
+
       function renderActivation() {
         const body = document.getElementById("activationBody");
         if (!body) return;
@@ -607,25 +705,43 @@
             <div class="act-meta">
               <i class="fas fa-cog fa-spin" style="color: var(--primary)"></i> <b>Running</b><br/>
               EAN <b>${esc(job.ean)}</b> · <b>${job.amount} €</b><br/>
-              Finishes by <b>${fmtTime(job.finish_at)}</b>
+              Finishes by <b>${fmtTime(job.finish_at)}</b>${fallbackLine(job)}
             </div>
             ${progressHtml()}
-            <div id="editSettings" style="display:none; border-top: 1px solid var(--border-color); padding-top: 14px; margin-bottom: 8px;">
-              <p style="font-size: 12px; color: var(--text-gray); margin-bottom: 12px;">Applies to cards that have not been sent yet.</p>
-              <div class="form-group"><label class="form-label">EAN</label><select id="editEan" class="form-input">${eanOptions(job.ean)}</select></div>
-              <div class="form-group"><label class="form-label">Amount</label>${amountOptions("editAmount", job.amount)}</div>
-              <div class="form-group"><label class="form-label">Finish Date & Time</label><input type="datetime-local" id="editFinish" class="form-input" value="${toLocalInput(job.finish_at)}" /></div>
-              <div class="btn-row">
-                <button class="download-btn btn-secondary" onclick="toggleEdit(false)">Close</button>
-                <button class="download-btn" onclick="saveSettings()"><i class="fas fa-save"></i> Save</button>
-              </div>
+            ${editFormHtml(job, true)}
+            <div class="btn-row">
+              <button class="download-btn btn-secondary" onclick="openStatsModal()"><i class="fas fa-list"></i> Details</button>
+              <button class="download-btn btn-secondary" onclick="toggleEdit(true)"><i class="fas fa-pen"></i> Change</button>
+            </div>
+            <div class="btn-row">
+              <button class="download-btn btn-secondary" onclick="pauseActivation()"><i class="fas fa-pause"></i> Pause</button>
+              <button class="download-btn btn-danger" onclick="cancelActivation()"><i class="fas fa-stop"></i> Cancel</button>
+            </div>`;
+          return;
+        }
+
+        if (job && job.status === "paused") {
+          const defaultFinish = new Date(Date.now() + 8 * 3600 * 1000);
+          body.innerHTML = `
+            <div class="act-meta">
+              <i class="fas fa-pause-circle" style="color:#b45309"></i> <b>Paused</b> · nothing is being sent<br/>
+              EAN <b>${esc(job.ean)}</b> · <b>${job.amount} €</b>${fallbackLine(job)}
+            </div>
+            ${progressHtml()}
+            ${editFormHtml(job, false)}
+            <div class="form-group">
+              <label class="form-label" for="resumeFinish"><i class="far fa-calendar-alt"></i> New finish date & time</label>
+              <input type="datetime-local" id="resumeFinish" class="form-input" min="${toLocalInput(new Date())}" value="${toLocalInput(defaultFinish)}" />
+            </div>
+            <div class="btn-row">
+              <button class="download-btn run-btn" onclick="resumeActivation()"><i class="fas fa-play"></i> Resume</button>
             </div>
             <div class="btn-row">
               <button class="download-btn btn-secondary" onclick="openStatsModal()"><i class="fas fa-list"></i> Details</button>
               <button class="download-btn btn-secondary" onclick="toggleEdit(true)"><i class="fas fa-pen"></i> Change</button>
             </div>
             <div class="btn-row">
-              <button class="download-btn btn-danger" onclick="cancelActivation()"><i class="fas fa-stop"></i> Cancel activation</button>
+              <button class="download-btn btn-danger" onclick="cancelActivation()"><i class="fas fa-stop"></i> Cancel</button>
             </div>`;
           return;
         }
@@ -633,7 +749,7 @@
         const last = job ? `
             <div class="act-meta">
               Last run <b>${esc(job.status)}</b>${job.ended_at ? " · " + fmtTime(job.ended_at) : ""}<br/>
-              EAN <b>${esc(job.ean)}</b> · <b>${job.amount} €</b>
+              EAN <b>${esc(job.ean)}</b> · <b>${job.amount} €</b>${fallbackLine(job)}
             </div>
             ${progressHtml()}
             <div class="btn-row" style="margin-bottom: 18px;">
@@ -648,6 +764,11 @@
             <div class="form-group"><label class="form-label" for="eanSelect"><i class="fas fa-qrcode"></i> Select EAN</label><select id="eanSelect" class="form-input">${eanOptions(null)}</select></div>
             <div class="form-group"><label class="form-label"><i class="fas fa-euro-sign"></i> Amount</label>${amountOptions("amount", null)}</div>
             <div class="form-group"><label class="form-label" for="activateTime"><i class="far fa-calendar-alt"></i> Finish Date & Time</label><input type="datetime-local" id="activateTime" class="form-input" min="${toLocalInput(new Date())}" /></div>
+            <details class="fallback-box">
+              <summary>If "invalid amount", retry with… <span style="font-weight:400; color: var(--text-gray);">(optional)</span></summary>
+              <p style="font-size: 12px; color: var(--text-gray); margin-top: 8px;">For tags that mix card values: a card rejected with "invalid amount" is sent again right away with this EAN and amount.</p>
+              ${fallbackFields("new", null)}
+            </details>
             <button class="download-btn run-btn" onclick="runActivation()"><i class="fas fa-play"></i> Run</button>`;
       }
 
@@ -665,8 +786,12 @@
         if (!amountEl) { alert("Please select an amount."); return; }
         if (!finish) { alert("Please select a finish date and time."); return; }
 
+        let fallback;
+        try { fallback = readFallback("new"); } catch (err) { alert(err.message); return; }
+
         const eanCode = eanList.find(e => e.id === eanId)?.code;
-        if (!confirm(`Activate cards of "${name.name}" with EAN ${eanCode} for ${amountEl.value} €?`)) return;
+        const fbText = fallback.eanId ? `\nIf invalid amount: ${eanList.find(e => e.id === fallback.eanId)?.code} for ${fallback.amount} €` : "";
+        if (!confirm(`Activate cards of "${name.name}" with EAN ${eanCode} for ${amountEl.value} €?${fbText}`)) return;
 
         try {
           setMsg("Starting activation…");
@@ -675,6 +800,8 @@
             eanId,
             amount: Number(amountEl.value),
             finishAt: new Date(finish).toISOString(), // browser local time -> UTC
+            fallbackEanId: fallback.eanId,
+            fallbackAmount: fallback.amount,
           });
           setMsg("");
           await refreshSnapshot(data.jobId);
@@ -696,14 +823,38 @@
         }
       }
 
+      async function pauseActivation() {
+        try {
+          await api("POST", `/api/activation-jobs/${activation.job.id}/pause`);
+          await refreshSnapshot();
+          setMsg("Paused. Nothing more is sent until you resume.", "#b45309");
+        } catch (err) {
+          alert(err.message);
+        }
+      }
+
+      async function resumeActivation() {
+        const finish = document.getElementById("resumeFinish").value;
+        if (!finish) { alert("Please choose a finish date and time."); return; }
+        try {
+          await api("POST", `/api/activation-jobs/${activation.job.id}/resume`, { finishAt: new Date(finish).toISOString() });
+          await refreshSnapshot();
+          setMsg("Resumed.", "#16a34a");
+        } catch (err) {
+          alert(err.message);
+        }
+      }
+
       async function saveSettings() {
         const amountEl = document.querySelector('input[name="editAmount"]:checked');
-        const finish = document.getElementById("editFinish").value;
+        const finishEl = document.getElementById("editFinish"); // not shown for paused jobs
+        const finish = finishEl ? finishEl.value : "";
         try {
           await api("PATCH", `/api/activation-jobs/${activation.job.id}`, {
             eanId: document.getElementById("editEan").value || undefined,
             amount: amountEl ? Number(amountEl.value) : undefined,
             finishAt: finish ? new Date(finish).toISOString() : undefined,
+            fallback: readFallback("edit"),
           });
           setMsg("Settings saved for remaining cards.", "#16a34a");
           await refreshSnapshot();
@@ -714,9 +865,14 @@
 
       // --- live updates ---
       function applySnapshot(snap) {
+        const prev = activation && activation.job;
         activation = snap;
         itemsByCard = new Map((snap ? snap.items : []).map(it => [it.steam_card_id, it]));
-        renderActivation();
+        // a reconnect refresh must not close the Change form or wipe the resume time being edited
+        const editing = document.getElementById("editSettings")?.style.display === "block"
+          || document.activeElement?.id === "resumeFinish";
+        const sameState = prev && snap && prev.id === snap.job.id && prev.status === snap.job.status;
+        if (!(editing && sameState)) renderActivation();
         renderTable();
         if (isModalOpen()) renderModal();
       }
@@ -740,13 +896,14 @@
         stream.addEventListener("job", e => {
           const d = JSON.parse(e.data);
           if (d.full) { refreshSnapshot().catch(() => {}); return; }
-          const wasRunning = activation.job.status === "running";
+          const prevStatus = activation.job.status;
+          const wasRunning = prevStatus === "running";
           activation.job = d.job;
           activation.counts = d.counts;
           activation.total = d.total;
-          // don't wipe the edit form while the admin is using it
           const editing = document.getElementById("editSettings")?.style.display === "block";
-          if (!editing || wasRunning !== (d.job.status === "running")) renderActivation();
+          // don't wipe the edit / resume form while the admin is using it
+          if (prevStatus !== d.job.status || (!editing && d.job.status !== "paused")) renderActivation();
           if (isModalOpen()) renderModal();
           if (wasRunning && d.job.status === "finished") setMsg("✅ Activation finished.", "#16a34a");
         });

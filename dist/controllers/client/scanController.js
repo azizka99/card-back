@@ -20,7 +20,6 @@ exports.createScan = (0, express_async_handler_1.default)(async (req, res) => {
     const { id, activationCode, barCode, userId, tagId, packId } = req.body;
     let pack = null;
     try {
-        console.log("Skana Gelenler", id, activationCode, barCode, userId, tagId, 'packId', packId);
         if (!file) {
             throw new Error("No file Sent");
         }
@@ -41,9 +40,7 @@ exports.createScan = (0, express_async_handler_1.default)(async (req, res) => {
             throw new Error(`Tag with with Id ${userId} not found`);
         }
         if (packId) {
-            console.log(packId, pack);
             pack = await Pack_1.Pack.findPackById(packId);
-            console.log(pack);
             if (!pack) {
                 throw new Error(`Pack with Id ${packId} not found`);
             }

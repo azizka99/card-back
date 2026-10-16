@@ -97,14 +97,16 @@ app.post("/admin/logout", (req, res) => {
 // });
 app.get("/admin/m/:magic_id", requireMagicMiddleware_1.requireMagic, async (req, res) => {
     // 1. Get ALL three filter values from the query
-    const q = req.query.q || "";
+    const q = String(req.query.q || "").trim();
     const tag = req.query.tag || "";
     const user = req.query.user || "";
     // 2. Build the dynamic 'where' clause for Prisma
     const where = {};
     if (q) {
-        // Filter by barcode on the main table
-        where.barcode = { contains: q, mode: "insensitive" };
+        // A full barcode is looked up exactly (unique index, milliseconds). A partial one needs
+        // `contains`, which scans all ~1M cards unless the trigram index from
+        // prisma/sql/2026-10-14_steam_card_barcode_trgm.sql exists.
+        where.barcode = /^\d{16}$/.test(q) ? q : { contains: q };
     }
     if (tag) {
         // Filter by the 'name' field on the RELATED 'tag' table
@@ -397,7 +399,6 @@ app.listen(process.env.APP_PORT || 5500, () => {
     console.log("ArascomScan Backend Has Started");
     console.log(`Server is running at ${process.env.NODE_ENV} mode and at port |${process.env.APP_PORT}|`);
     console.log('Server mode: ' + process.env.NODE_ENV);
-    console.log('Database url: ' + process.env.DATABASE_URL);
     console.log("------------------------------------------------------------");
     (0, activationRunner_1.resumeActivationJobs)().catch((err) => console.error("[activation] resume failed", err));
 });
