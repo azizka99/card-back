@@ -29,6 +29,7 @@ const activationRunner_1 = require("./services/activationRunner");
 const app = (0, express_1.default)();
 dotenv_1.default.config({ path: '.env' });
 app.set("view engine", "ejs");
+app.locals.berlinTime = (d) => d ? new Date(d).toLocaleString("de-DE", { timeZone: "Europe/Berlin", day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit" }) : "—";
 app.set("views", path_1.default.join(process.cwd(), "src/views"));
 app.use((0, cors_1.default)());
 app.use((0, cookie_parser_1.default)());
@@ -96,6 +97,7 @@ app.post("/admin/logout", (req, res) => {
 //   res.render("dashboard", { items, q });
 // });
 app.get("/admin/m/:magic_id", requireMagicMiddleware_1.requireMagic, async (req, res) => {
+    var _a;
     // 1. Get ALL three filter values from the query
     const q = String(req.query.q || "").trim();
     const tag = req.query.tag || "";
@@ -103,10 +105,19 @@ app.get("/admin/m/:magic_id", requireMagicMiddleware_1.requireMagic, async (req,
     // 2. Build the dynamic 'where' clause for Prisma
     const where = {};
     if (q) {
-        // A full barcode is looked up exactly (unique index, milliseconds). A partial one needs
-        // `contains`, which scans all ~1M cards unless the trigram index from
-        // prisma/sql/2026-10-14_steam_card_barcode_trgm.sql exists.
-        where.barcode = /^\d{16}$/.test(q) ? q : { contains: q };
+        // A full barcode is looked up exactly (unique index, milliseconds); a partial one uses
+        // `contains` (fast with the trigram index from prisma/sql/2026-10-14_steam_card_barcode_trgm.sql).
+        const isFull = /^\d{16}$/.test(q);
+        // cards whose barcode was corrected FROM this one are found too
+        const corrected = await dbConnection_1.default.barcode_correction.findMany({
+            where: { old_barcode: isFull ? q : { contains: q } },
+            select: { steam_card_id: true },
+            take: 200,
+        });
+        where.OR = [
+            { barcode: isFull ? q : { contains: q } },
+            ...(corrected.length ? [{ id: { in: corrected.map((c) => c.steam_card_id) } }] : []),
+        ];
     }
     if (tag) {
         // Filter by the 'name' field on the RELATED 'tag' table
@@ -142,24 +153,55 @@ app.get("/admin/m/:magic_id", requireMagicMiddleware_1.requireMagic, async (req,
         take: 200,
         include: { tag: true, app_user: true }, // This is what gives you the data structure you showed!
     });
+    // barcode corrections and latest activation of the cards shown
+    const ids = items.map((i) => i.id);
+    const [corrRows, actRows] = ids.length
+        ? await Promise.all([
+            dbConnection_1.default.barcode_correction.findMany({ where: { steam_card_id: { in: ids } }, orderBy: { created_at: "asc" } }),
+            dbConnection_1.default.activation_item.findMany({
+                where: { steam_card_id: { in: ids } },
+                orderBy: { updated_at: "desc" },
+                select: { steam_card_id: true, status: true, result_text: true, updated_at: true },
+            }),
+        ])
+        : [[], []];
+    const corrections = {};
+    for (const c of corrRows)
+        (corrections[_a = c.steam_card_id] || (corrections[_a] = [])).push(c);
+    const activations = {};
+    for (const a of actRows)
+        if (!activations[a.steam_card_id])
+            activations[a.steam_card_id] = a;
     // 4. FIX THE ERROR: Pass 'items', 'q', 'tag', AND 'user' to the template
-    res.render("dashboard", { items, allUsers, q, tag, user, tags: allTags, magic_id: req.params.magic_id });
+    res.render("dashboard", { items, allUsers, q, tag, user, tags: allTags, magic_id: req.params.magic_id, corrections, activations });
 });
 //duzelt sonra bunu
 app.get("/admin/item/:id", async (req, res) => {
     const item = await dbConnection_1.default.steam_card.findUnique({
         where: { id: req.params.id },
-        select: { id: true, barcode: true, activation_code: true, img_src: true, created_at: true }
+        select: {
+            id: true, barcode: true, activation_code: true, img_src: true, created_at: true,
+            app_user: { select: { name: true } },
+            tag: { select: { name: true } },
+        }
     });
     if (!item)
         return res.status(404).send("Not found");
+    const [corrections, activations] = await Promise.all([
+        dbConnection_1.default.barcode_correction.findMany({ where: { steam_card_id: item.id }, orderBy: { created_at: "asc" } }),
+        dbConnection_1.default.activation_item.findMany({
+            where: { steam_card_id: item.id },
+            orderBy: { updated_at: "desc" },
+            select: { status: true, barcode: true, result_text: true, ean: true, amount: true, terminal_id: true, updated_at: true },
+        }),
+    ]);
     // img_src stores the S3 key (e.g. 'scans/123-file.jpg')
     let signedUrl = null;
     if (item.img_src) {
         signedUrl = await (0, s3_request_presigner_1.getSignedUrl)(s3, new client_s3_1.GetObjectCommand({ Bucket: BUCKET, Key: item.img_src }), { expiresIn: 60 * 10 } // 10 minutes
         );
     }
-    res.render("item", { item, signedUrl });
+    res.render("item", { item, signedUrl, corrections, activations });
 });
 app.get("/admin/download-scans/:tag_id", requireAuth, async (req, res) => {
     const items = await dbConnection_1.default.steam_card.findMany({

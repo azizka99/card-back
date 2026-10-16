@@ -110,9 +110,47 @@
             <!-- Created -->
             <div class="mb-4">
               <dt class="text-sm font-medium text-gray-500">Created</dt>
-              <dd class="text-lg text-gray-900"><%= new Date(item.created_at).toLocaleString() %></dd>
+              <dd class="text-lg text-gray-900"><%= berlinTime(item.created_at) %></dd>
             </div>
           </dl>
+
+          <% const pill = {
+               activated: "bg-green-100 text-green-800", already_active: "bg-teal-100 text-teal-800",
+               failed: "bg-red-100 text-red-800", pending: "bg-gray-100 text-gray-600",
+               sending: "bg-blue-100 text-blue-800", cancelled: "bg-gray-100 text-gray-400" }; %>
+
+          <% if (corrections && corrections.length) { %>
+          <h3 class="text-sm font-semibold text-gray-700 uppercase tracking-wide mt-6 mb-2">Barcode corrections</h3>
+          <ul class="space-y-2">
+            <% corrections.forEach(c => { %>
+            <li class="text-sm bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+              <span class="font-mono text-red-700 line-through"><%= c.old_barcode %></span>
+              <span class="text-gray-400 mx-1">→</span>
+              <span class="font-mono text-green-700 font-semibold"><%= c.new_barcode %></span>
+              <div class="text-xs text-gray-500 mt-0.5"><%= berlinTime(c.created_at) %> · <%= c.source === "pack_check" ? "Pack check" : "Activation retry" %></div>
+            </li>
+            <% }) %>
+          </ul>
+          <% } %>
+
+          <h3 class="text-sm font-semibold text-gray-700 uppercase tracking-wide mt-6 mb-2">Activation</h3>
+          <% if (activations && activations.length) { %>
+          <ul class="space-y-2">
+            <% activations.forEach(a => { %>
+            <li class="text-sm border border-gray-200 rounded-lg px-3 py-2">
+              <span class="inline-flex px-2 py-0.5 rounded-full text-xs font-semibold uppercase <%= pill[a.status] || 'bg-gray-100 text-gray-600' %>"><%= a.status.replace("_", " ") %></span>
+              <span class="ml-1 text-gray-700"><%= a.result_text || "" %></span>
+              <div class="text-xs text-gray-500 mt-0.5">
+                <span class="font-mono"><%= a.barcode %></span>
+                <%= a.ean ? " · " + a.ean + " / " + a.amount + " €" : "" %>
+                <%= a.terminal_id ? " · TID " + a.terminal_id : "" %> · <%= berlinTime(a.updated_at) %>
+              </div>
+            </li>
+            <% }) %>
+          </ul>
+          <% } else { %>
+          <p class="text-sm text-gray-400">Not activated yet.</p>
+          <% } %>
         </div>
 
       </div>

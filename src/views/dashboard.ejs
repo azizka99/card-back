@@ -261,7 +261,7 @@
                   scope="col"
                   class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider"
                 >
-                  Activation
+                  Activation Code
                 </th>
                 <th
                   scope="col"
@@ -278,12 +278,25 @@
               </tr>
             </thead>
             <tbody class="bg-white divide-y divide-gray-200">
+              <%
+                const pill = {
+                  activated: "bg-green-100 text-green-800", already_active: "bg-teal-100 text-teal-800",
+                  failed: "bg-red-100 text-red-800", pending: "bg-gray-100 text-gray-600",
+                  sending: "bg-blue-100 text-blue-800", cancelled: "bg-gray-100 text-gray-400",
+                };
+              %>
               <% items.forEach(it => { %>
+              <% const corr = (typeof corrections !== "undefined" && corrections[it.id]) || []; %>
+              <% const act = (typeof activations !== "undefined" && activations[it.id]) || null; %>
               <tr class="hover:bg-blue-50 transition duration-150 group">
-                <td
-                  class="px-6 py-4 whitespace-nowrap text-sm font-mono font-medium text-gray-900 select-all"
-                >
-                  <%= it.barcode %>
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-mono font-medium text-gray-900">
+                  <span class="select-all"><%= it.barcode %></span>
+                  <% corr.forEach(c => { %>
+                  <div class="text-xs font-normal mt-1 <%= q && c.old_barcode.includes(q) ? 'text-amber-700 font-semibold' : 'text-gray-400' %>"
+                       title="Corrected on <%= berlinTime(c.created_at) %>">
+                    corrected from <span class="select-all"><%= c.old_barcode %></span>
+                  </div>
+                  <% }) %>
                 </td>
 
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
@@ -310,17 +323,22 @@
                   <% } %>
                 </td>
 
-                <td
-                  class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-mono"
-                >
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-mono">
                   <%= it.activation_code || "-" %>
+                  <div class="mt-1 font-sans">
+                    <% if (act) { %>
+                    <span class="inline-flex px-2 py-0.5 rounded-full text-xs font-semibold uppercase <%= pill[act.status] || 'bg-gray-100 text-gray-600' %>"
+                          title="<%= act.result_text || '' %> · <%= berlinTime(act.updated_at) %>"><%= act.status.replace("_", " ") %></span>
+                    <% } else { %>
+                    <span class="text-xs text-gray-400">not activated</span>
+                    <% } %>
+                  </div>
                 </td>
 
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  <%= new Date(it.created_at).toLocaleDateString() %>
-                  <span class="text-xs text-gray-400"
-                    ><%= new Date(it.created_at).toLocaleTimeString() %></span
-                  >
+                  <% const when = berlinTime(it.created_at).split(", "); %>
+                  <%= when[0] %>
+                  <span class="text-xs text-gray-400"><%= when[1] %></span>
                 </td>
 
                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
