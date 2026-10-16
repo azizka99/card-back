@@ -1,5 +1,6 @@
 import prisma from "../constants/dbConnection";
 import { generateFixed200 } from "../helpers/generateLuhn";
+import { listCorrections } from "./barcodeCorrection";
 
 // A pack holds 200 cards with consecutive barcodes from pack.start_number (Luhn check digit at the end).
 // A misread barcode shows up as an "extra" card in the pack while the real card's barcode is "missing";
@@ -43,7 +44,7 @@ export async function checkPackByBarcode(barcode: string) {
     const expectedSet = new Set(expected);
     const cards = await prisma.steam_card.findMany({
         where: { pack_id: pack.id },
-        select: { id: true, barcode: true, created_at: true, tag: { select: { name: true } }, app_user: { select: { name: true } } },
+        select: { id: true, barcode: true, created_at: true, tag_id: true, tag: { select: { name: true } }, app_user: { select: { name: true } } },
         orderBy: { created_at: "asc" },
     });
 
@@ -63,6 +64,8 @@ export async function checkPackByBarcode(barcode: string) {
             }
             if (best && bestDiff <= 6) free.delete(best);
             return {
+                steamCardId: c.id,
+                tagId: c.tag_id,
                 barcode: c.barcode,
                 tag: c.tag?.name ?? null,
                 scannedBy: c.app_user?.name ?? null,
@@ -71,6 +74,25 @@ export async function checkPackByBarcode(barcode: string) {
                 digitsDifferent: best && bestDiff <= 6 ? bestDiff : null,
             };
         });
+
+    // latest activation of each wrong card (an activated wrong barcode may have activated someone else's card)
+    const acts = extra.length
+        ? await prisma.activation_item.findMany({
+            where: { steam_card_id: { in: extra.map((c) => c.id) } },
+            orderBy: { updated_at: "desc" },
+            select: { steam_card_id: true, status: true, result_text: true, barcode: true, ean: true, amount: true, updated_at: true, job: { select: { status: true } } },
+        })
+        : [];
+    const lastAct = new Map<string, (typeof acts)[number]>();
+    for (const a of acts) if (!lastAct.has(a.steam_card_id)) lastAct.set(a.steam_card_id, a);
+
+    // default EAN / amount for activating a corrected card: the tag's latest run
+    const tagIds = Array.from(new Set(extra.map((c) => c.tag_id).filter((t): t is string => !!t)));
+    const lastJobs = tagIds.length
+        ? await prisma.activation_job.findMany({ where: { tag_id: { in: tagIds } }, orderBy: { created_at: "desc" }, select: { tag_id: true, ean: true, amount: true } })
+        : [];
+    const defaults = new Map<string, { ean: string; amount: number }>();
+    for (const j of lastJobs) if (!defaults.has(j.tag_id)) defaults.set(j.tag_id, { ean: j.ean, amount: j.amount });
 
     const queriedIsWrong = !!card && !expectedSet.has(barcode);
     const match = wrongCards.find((w) => w.barcode === barcode);
@@ -94,7 +116,20 @@ export async function checkPackByBarcode(barcode: string) {
             wrong: extra.length,
             missing: missing.length,
         },
-        wrongCards,
+        wrongCards: wrongCards.map((w) => {
+            const a = lastAct.get(w.steamCardId);
+            return {
+                ...w,
+                activation: a ? {
+                    status: a.status, result: a.result_text, barcode: a.barcode, ean: a.ean, amount: a.amount,
+                    at: a.updated_at, jobStatus: a.job.status,
+                } : null,
+                tagActivatedBefore: !!(w.tagId && defaults.has(w.tagId)),
+                defaultEan: w.tagId ? defaults.get(w.tagId)?.ean ?? null : null,
+                defaultAmount: w.tagId ? defaults.get(w.tagId)?.amount ?? null : null,
+            };
+        }),
         missing,
+        corrections: await listCorrections({ packId: pack.id, limit: 200 }),
     };
 }

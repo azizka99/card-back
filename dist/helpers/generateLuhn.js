@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.isValidBarcode = isValidBarcode;
 exports.generateFixed200 = generateFixed200;
 function luhnCheckDigit(payload15) {
     let sum = 0;
@@ -13,6 +14,10 @@ function luhnCheckDigit(payload15) {
         sum += d;
     }
     return String((10 - (sum % 10)) % 10);
+}
+/** 16 digits with a correct Luhn check digit (every real activated barcode passes this). */
+function isValidBarcode(barcode) {
+    return /^\d{16}$/.test(barcode) && luhnCheckDigit(barcode.slice(0, 15)) === barcode[15];
 }
 // Generate exactly 200 barcodes from the 15-digit payload of `start`
 function generateFixed200(startCode) {

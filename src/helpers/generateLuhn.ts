@@ -11,6 +11,11 @@ function luhnCheckDigit(payload15: string): string {
     return String((10 - (sum % 10)) % 10);
 }
 
+/** 16 digits with a correct Luhn check digit (every real activated barcode passes this). */
+export function isValidBarcode(barcode: string): boolean {
+    return /^\d{16}$/.test(barcode) && luhnCheckDigit(barcode.slice(0, 15)) === barcode[15];
+}
+
 // Generate exactly 200 barcodes from the 15-digit payload of `start`
 export function generateFixed200(startCode: string): string[] {
 

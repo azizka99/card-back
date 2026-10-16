@@ -10,6 +10,7 @@ const uuid_1 = __importDefault(require("uuid"));
 const activationRunner_1 = require("../../services/activationRunner");
 const activationReport_1 = require("../../services/activationReport");
 const packCheck_1 = require("../../services/packCheck");
+const barcodeCorrection_1 = require("../../services/barcodeCorrection");
 const adminRoutes = express_1.default.Router();
 // Prisma's `distinct` loads every card of the user and dedupes in Node (~280k rows);
 // SQL DISTINCT uses steam_card_user_tag_idx instead.
@@ -241,6 +242,50 @@ adminRoutes.get("/api/pack-check", (0, express_async_handler_1.default)(async (r
         return;
     }
     res.json({ success: true, ...(await (0, packCheck_1.checkPackByBarcode)(barcode)) });
+}));
+// Pack check page: find a pack by any barcode, correct wrong scans, track corrections
+adminRoutes.get("/pack-check", (0, express_async_handler_1.default)(async (req, res) => {
+    const ean = await dbConnection_1.default.ean.findMany({ orderBy: { code: "asc" } });
+    res.render("packCheck", {
+        activePage: "pack-check",
+        ean,
+        allowedAmounts: activationRunner_1.ALLOWED_AMOUNTS,
+        initialBarcode: String(req.query.barcode || ""),
+    });
+}));
+adminRoutes.get("/api/barcode-corrections", (0, express_async_handler_1.default)(async (req, res) => {
+    const rows = await (0, barcodeCorrection_1.listCorrections)({ q: String(req.query.q || ""), limit: Number(req.query.limit) || 100 });
+    res.json({ success: true, corrections: rows });
+}));
+// { steamCardId, newBarcode, activate, eanId?, amount? }
+adminRoutes.post("/api/barcode-corrections", (0, express_async_handler_1.default)(async (req, res) => {
+    const { steamCardId, newBarcode } = req.body;
+    if (!steamCardId || !newBarcode) {
+        res.status(400).json({ success: false, message: "Missing steamCardId or newBarcode" });
+        return;
+    }
+    try {
+        const r = await (0, barcodeCorrection_1.correctBarcode)({
+            steamCardId: String(steamCardId),
+            newBarcode: String(newBarcode),
+            activate: req.body.activate === true,
+            eanId: optionalString(req.body.eanId),
+            amount: optionalNumber(req.body.amount),
+        });
+        res.json({ success: true, ...r });
+    }
+    catch (err) {
+        sendActivationError(res, err);
+    }
+}));
+adminRoutes.post("/api/barcode-corrections/:id/activate", (0, express_async_handler_1.default)(async (req, res) => {
+    try {
+        const r = await (0, barcodeCorrection_1.activateCorrection)(req.params.id, { eanId: optionalString(req.body.eanId), amount: optionalNumber(req.body.amount) });
+        res.json({ success: true, ...r });
+    }
+    catch (err) {
+        sendActivationError(res, err);
+    }
 }));
 adminRoutes.post("/api/activation-jobs/:id/pause", (0, express_async_handler_1.default)(async (req, res) => {
     try {

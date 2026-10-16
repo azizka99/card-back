@@ -6,6 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.checkPackByBarcode = checkPackByBarcode;
 const dbConnection_1 = __importDefault(require("../constants/dbConnection"));
 const generateLuhn_1 = require("../helpers/generateLuhn");
+const barcodeCorrection_1 = require("./barcodeCorrection");
 // A pack holds 200 cards with consecutive barcodes from pack.start_number (Luhn check digit at the end).
 // A misread barcode shows up as an "extra" card in the pack while the real card's barcode is "missing";
 // the missing barcode with the fewest differing digits is the most likely real one.
@@ -46,7 +47,7 @@ async function checkPackByBarcode(barcode) {
     const expectedSet = new Set(expected);
     const cards = await dbConnection_1.default.steam_card.findMany({
         where: { pack_id: pack.id },
-        select: { id: true, barcode: true, created_at: true, tag: { select: { name: true } }, app_user: { select: { name: true } } },
+        select: { id: true, barcode: true, created_at: true, tag_id: true, tag: { select: { name: true } }, app_user: { select: { name: true } } },
         orderBy: { created_at: "asc" },
     });
     const scanned = new Set(cards.map((c) => c.barcode)); // barcode is unique, so no duplicates
@@ -68,6 +69,8 @@ async function checkPackByBarcode(barcode) {
         if (best && bestDiff <= 6)
             free.delete(best);
         return {
+            steamCardId: c.id,
+            tagId: c.tag_id,
             barcode: c.barcode,
             tag: c.tag?.name ?? null,
             scannedBy: c.app_user?.name ?? null,
@@ -76,6 +79,27 @@ async function checkPackByBarcode(barcode) {
             digitsDifferent: best && bestDiff <= 6 ? bestDiff : null,
         };
     });
+    // latest activation of each wrong card (an activated wrong barcode may have activated someone else's card)
+    const acts = extra.length
+        ? await dbConnection_1.default.activation_item.findMany({
+            where: { steam_card_id: { in: extra.map((c) => c.id) } },
+            orderBy: { updated_at: "desc" },
+            select: { steam_card_id: true, status: true, result_text: true, barcode: true, ean: true, amount: true, updated_at: true, job: { select: { status: true } } },
+        })
+        : [];
+    const lastAct = new Map();
+    for (const a of acts)
+        if (!lastAct.has(a.steam_card_id))
+            lastAct.set(a.steam_card_id, a);
+    // default EAN / amount for activating a corrected card: the tag's latest run
+    const tagIds = Array.from(new Set(extra.map((c) => c.tag_id).filter((t) => !!t)));
+    const lastJobs = tagIds.length
+        ? await dbConnection_1.default.activation_job.findMany({ where: { tag_id: { in: tagIds } }, orderBy: { created_at: "desc" }, select: { tag_id: true, ean: true, amount: true } })
+        : [];
+    const defaults = new Map();
+    for (const j of lastJobs)
+        if (!defaults.has(j.tag_id))
+            defaults.set(j.tag_id, { ean: j.ean, amount: j.amount });
     const queriedIsWrong = !!card && !expectedSet.has(barcode);
     const match = wrongCards.find((w) => w.barcode === barcode);
     return {
@@ -97,7 +121,20 @@ async function checkPackByBarcode(barcode) {
             wrong: extra.length,
             missing: missing.length,
         },
-        wrongCards,
+        wrongCards: wrongCards.map((w) => {
+            const a = lastAct.get(w.steamCardId);
+            return {
+                ...w,
+                activation: a ? {
+                    status: a.status, result: a.result_text, barcode: a.barcode, ean: a.ean, amount: a.amount,
+                    at: a.updated_at, jobStatus: a.job.status,
+                } : null,
+                tagActivatedBefore: !!(w.tagId && defaults.has(w.tagId)),
+                defaultEan: w.tagId ? defaults.get(w.tagId)?.ean ?? null : null,
+                defaultAmount: w.tagId ? defaults.get(w.tagId)?.amount ?? null : null,
+            };
+        }),
         missing,
+        corrections: await (0, barcodeCorrection_1.listCorrections)({ packId: pack.id, limit: 200 }),
     };
 }

@@ -140,3 +140,21 @@ model activation_item {
   @@index([steam_card_id])
   @@index([updated_at, status])
 }
+
+/// History of barcode corrections (wrong scan -> real barcode) and the activation sent for it.
+/// No foreign keys on purpose: the history stays even if a card or job is deleted.
+model barcode_correction {
+  id                 String   @id @db.Uuid
+  steam_card_id      String   @db.Uuid
+  old_barcode        String
+  new_barcode        String
+  pack_id            String?  @db.Uuid
+  source             String /// pack_check | activation_retry
+  activation_item_id String?  @db.Uuid
+  created_at         DateTime @default(now()) @db.Timestamptz(6)
+
+  @@index([created_at])
+  @@index([steam_card_id])
+  @@index([old_barcode])
+  @@index([new_barcode])
+}

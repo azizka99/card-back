@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CardScan - Pack Check</title>
+
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+      rel="stylesheet"
+    />
+
+    <style>
+      :root {
+        --primary: #6262a6;
+        --primary-dark: #4e4e85;
+        --primary-light: #eef0f7;
+        --text-dark: #1e293b;
+        --text-gray: #64748b;
+        --bg-body: #f1f5f9;
+        --white: #ffffff;
+        --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+        --sidebar-width: 260px;
+        --border-color: #e2e8f0;
+        --green: #16a34a;
+        --green-bg: #dcfce7;
+        --red: #dc2626;
+        --red-bg: #fee2e2;
+        --amber: #b45309;
+        --amber-bg: #fef3c7;
+      }
+
+      * { margin: 0; padding: 0; box-sizing: border-box; font-family: "Inter", sans-serif; }
+      body { background-color: var(--bg-body); display: flex; min-height: 100vh; color: var(--text-dark); }
+
+      .main-wrapper { margin-left: var(--sidebar-width); flex: 1; display: flex; flex-direction: column; min-width: 0; }
+      header { background-color: var(--white); height: 70px; padding: 0 32px; display: flex; align-items: center; justify-content: flex-end; box-shadow: var(--shadow); position: sticky; top: 0; z-index: 40; }
+      .avatar { width: 35px; height: 35px; background: var(--primary); border-radius: 50%; color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; }
+      .content { padding: 32px; max-width: 1200px; width: 100%; }
+      .page-title { font-size: 24px; font-weight: 700; margin-bottom: 6px; }
+      .page-sub { font-size: 14px; color: var(--text-gray); margin-bottom: 24px; }
+      .panel { background: var(--white); border-radius: 12px; box-shadow: var(--shadow); padding: 24px; margin-bottom: 24px; }
+      .panel-title { font-size: 16px; font-weight: 700; margin-bottom: 4px; display: flex; align-items: center; gap: 10px; }
+      .panel-sub { font-size: 13px; color: var(--text-gray); margin-bottom: 16px; }
+
+      .mono { font-family: "SF Mono", "Menlo", "Courier New", monospace; font-variant-numeric: tabular-nums; letter-spacing: 0.02em; }
+
+      /* search */
+      .search-row { display: flex; gap: 12px; }
+      .search-row input { flex: 1; height: 52px; border: 2px solid var(--border-color); border-radius: 10px; padding: 0 18px; font-size: 20px; outline: none; transition: border-color 0.15s; }
+      .search-row input:focus { border-color: var(--primary); }
+      .btn { height: 40px; padding: 0 16px; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; background: var(--primary); color: #fff; transition: background 0.15s, opacity 0.15s; white-space: nowrap; }
+      .btn:hover { background: var(--primary-dark); }
+      .btn:disabled { opacity: 0.5; cursor: default; }
+      .btn-lg { height: 52px; padding: 0 24px; font-size: 15px; }
+      .btn-light { background: var(--white); color: var(--primary-dark); border: 1px solid var(--border-color); }
+      .btn-light:hover { background: var(--primary-light); }
+      .btn-green { background: var(--green); }
+      .btn-green:hover { background: #15803d; }
+      .btn-sm { height: 32px; padding: 0 12px; font-size: 12px; }
+      .hint { font-size: 12px; color: var(--text-gray); margin-top: 8px; }
+
+      /* status banner */
+      .banner { display: flex; gap: 14px; align-items: flex-start; border-radius: 12px; padding: 16px 20px; margin-bottom: 24px; font-size: 14px; line-height: 1.5; }
+      .banner i { font-size: 22px; margin-top: 1px; }
+      .banner b { font-weight: 700; }
+      .banner.ok { background: var(--green-bg); color: #14532d; }
+      .banner.wrong { background: var(--red-bg); color: #7f1d1d; }
+      .banner.info { background: var(--amber-bg); color: #78350f; }
+      .banner .big { font-size: 18px; }
+
+      /* pack summary */
+      .pack-head { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; }
+      .range { font-size: 15px; }
+      .tiles { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 16px; }
+      .tile { background: #f8fafc; border-radius: 10px; padding: 12px 14px; }
+      .tile .v { font-size: 26px; font-weight: 700; font-variant-numeric: tabular-nums; }
+      .tile .l { font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--text-gray); }
+      .bar { height: 10px; background: var(--bg-body); border-radius: 999px; display: flex; overflow: hidden; }
+      .bar .ok { background: var(--green); } .bar .wr { background: var(--red); } .bar .ms { background: #f59e0b; }
+      .legend { display: flex; gap: 16px; font-size: 12px; color: var(--text-gray); margin-top: 8px; }
+      .legend span::before { content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 6px; background: var(--c); }
+
+      /* wrong cards */
+      .wrong-card { border: 1px solid var(--border-color); border-radius: 12px; padding: 18px; margin-bottom: 14px; }
+      .wrong-card.done { border-color: #bbf7d0; background: #f0fdf4; }
+      .wc-top { display: grid; grid-template-columns: 1fr auto 1fr; gap: 16px; align-items: center; margin-bottom: 14px; }
+      .wc-label { font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--text-gray); margin-bottom: 4px; }
+      .bc { font-size: 19px; }
+      .bc .d { color: var(--red); background: var(--red-bg); border-radius: 3px; }
+      .bc.good .d { color: var(--green); background: var(--green-bg); }
+      .arrow { color: var(--text-gray); font-size: 18px; }
+      .wc-meta { font-size: 12px; color: var(--text-gray); margin-top: 4px; }
+      .wc-form { display: grid; grid-template-columns: 1.4fr 1fr 110px auto; gap: 10px; align-items: end; border-top: 1px dashed var(--border-color); padding-top: 14px; }
+      .field label { display: block; font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--text-gray); margin-bottom: 4px; }
+      .field input, .field select { width: 100%; height: 40px; border: 1px solid var(--border-color); border-radius: 8px; padding: 0 10px; font-size: 14px; background: #fff; }
+      .field input.mono { font-size: 15px; }
+      .field input.valid { border-color: var(--green); }
+      .field input.invalid { border-color: var(--red); }
+      .check-note { font-size: 11px; margin-top: 4px; min-height: 14px; }
+      .activate-toggle { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 500; margin-top: 10px; }
+      .activate-toggle input { width: 16px; height: 16px; accent-color: var(--primary); }
+      .warn { background: var(--amber-bg); color: #78350f; border-radius: 8px; padding: 8px 12px; font-size: 12px; margin-bottom: 12px; }
+      .err-msg { color: var(--red); font-size: 13px; margin-top: 8px; }
+
+      .pill { display: inline-block; padding: 3px 9px; border-radius: 999px; font-size: 11px; font-weight: 600; text-transform: uppercase; white-space: nowrap; }
+      .st-pending { background: #f1f5f9; color: #64748b; }
+      .st-sending { background: #dbeafe; color: #1d4ed8; }
+      .st-activated { background: var(--green-bg); color: #15803d; }
+      .st-already_active { background: #ccfbf1; color: #0f766e; }
+      .st-failed { background: var(--red-bg); color: #b91c1c; }
+      .st-cancelled { background: #f1f5f9; color: #94a3b8; }
+      .st-none { background: #f1f5f9; color: #94a3b8; }
+
+      /* missing chips */
+      .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+      .chip { background: #fffbeb; border: 1px solid #fde68a; color: #92400e; border-radius: 8px; padding: 6px 10px; font-size: 13px; cursor: pointer; }
+      .chip:hover { background: #fef3c7; }
+      .chip.matched { background: #f8fafc; border-color: var(--border-color); color: var(--text-gray); }
+
+      /* history */
+      .hist-tools { display: flex; gap: 10px; margin-bottom: 14px; }
+      .hist-tools input { flex: 1; height: 40px; border: 1px solid var(--border-color); border-radius: 8px; padding: 0 12px; font-size: 14px; }
+      .table-wrap { overflow-x: auto; }
+      table { width: 100%; border-collapse: collapse; font-size: 13px; }
+      th { text-align: left; padding: 10px 12px; background: #f8fafc; color: var(--text-gray); font-size: 11px; text-transform: uppercase; font-weight: 600; border-bottom: 1px solid var(--border-color); white-space: nowrap; }
+      td { padding: 12px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
+      td .sub { font-size: 11px; color: var(--text-gray); margin-top: 2px; }
+      td .bc { font-size: 14px; }
+      .empty { text-align: center; color: var(--text-gray); padding: 28px 0; font-size: 14px; }
+      .toast { position: fixed; bottom: 24px; right: 24px; background: var(--text-dark); color: #fff; padding: 12px 18px; border-radius: 10px; font-size: 14px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); opacity: 0; transform: translateY(10px); transition: all 0.2s; z-index: 100; pointer-events: none; }
+      .toast.show { opacity: 1; transform: none; }
+
+      @media (max-width: 900px) {
+        .tiles { grid-template-columns: repeat(3, 1fr); }
+        .wc-top { grid-template-columns: 1fr; }
+        .arrow { transform: rotate(90deg); justify-self: start; }
+        .wc-form { grid-template-columns: 1fr 1fr; }
+      }
+    </style>
+  </head>
+  <body>
+    <%- include("partials/sidebar", { activePage: "pack-check" }) %>
+
+    <div class="main-wrapper">
+      <header><div class="avatar">AD</div></header>
+
+      <div class="content">
+        <h1 class="page-title">Pack Check</h1>
+        <p class="page-sub">Enter any barcode of a pack: see which cards were scanned wrong, which barcodes are missing, and correct them.</p>
+
+        <div class="panel">
+          <form class="search-row" id="searchForm">
+            <input id="barcodeInput" class="mono" inputmode="numeric" maxlength="16" autocomplete="off"
+                   placeholder="6338731070110036" value="<%= initialBarcode %>" aria-label="Barcode" />
+            <button class="btn btn-lg" type="submit"><i class="fas fa-search"></i> Check pack</button>
+          </form>
+          <div class="hint">Works with a wrong card, a correct card, or even the missing barcode itself.</div>
+        </div>
+
+        <div id="result"></div>
+
+        <div class="panel">
+          <div class="panel-title"><i class="fas fa-history" style="color: var(--primary)"></i> Correction history</div>
+          <div class="panel-sub">Every barcode change (here or in an activation's Details) with the activation it led to.</div>
+          <div class="hist-tools">
+            <input id="histSearch" placeholder="Search barcode or tag…" aria-label="Search corrections" />
+          </div>
+          <div class="table-wrap" id="history"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+      const ADMIN_BASE = "/a26ae3e19a140048efd2";
+      const eanList = <%- JSON.stringify(ean || []).replace(/</g, "\\u003c") %>;
+      const allowedAmounts = <%- JSON.stringify(allowedAmounts || []) %>;
+
+      let current = null;      // last pack-check result
+      let historyRows = [];
+
+      function esc(v) {
+        return String(v == null ? "" : v).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+      }
+      function fmt(d) {
+        return d ? new Date(d).toLocaleString("de-DE", { day: "2-digit", month: "2-digit", year: "2-digit", hour: "2-digit", minute: "2-digit" }) : "—";
+      }
+      function toast(msg) {
+        const t = document.getElementById("toast");
+        t.textContent = msg;
+        t.classList.add("show");
+        clearTimeout(t._h);
+        t._h = setTimeout(() => t.classList.remove("show"), 3500);
+      }
+      async function api(method, url, body) {
+        const res = await fetch(ADMIN_BASE + url, {
+          method,
+          headers: { "Content-Type": "application/json", Accept: "application/json" },
+          body: body ? JSON.stringify(body) : undefined,
+        });
+        let data = null;
+        try { data = await res.json(); } catch (_) {}
+        if (!res.ok || !data || data.success === false) throw new Error((data && data.message) || "HTTP " + res.status);
+        return data;
+      }
+
+      // same check digit rule the server uses (all real activated barcodes pass it)
+      function luhnOk(b) {
+        if (!/^\d{16}$/.test(b)) return false;
+        let s = 0;
+        for (let i = 14, k = 1; i >= 0; i--, k++) { let d = +b[i]; if (k % 2 === 1) { d *= 2; if (d > 9) d -= 9; } s += d; }
+        return String((10 - (s % 10)) % 10) === b[15];
+      }
+
+      // digits of `a`, those different from `b` highlighted
+      function diffHtml(a, b, good) {
+        return `<span class="bc mono ${good ? "good" : ""}">` + a.split("").map((ch, i) =>
+          b && b[i] !== ch ? `<span class="d">${esc(ch)}</span>` : esc(ch)).join("") + `</span>`;
+      }
+
+      function statusPill(status, title) {
+        const s = status || "none";
+        const label = status ? status.replace("_", " ") : "not activated";
+        return `<span class="pill st-${esc(s)}" title="${esc(title || "")}">${esc(label)}</span>`;
+      }
+
+      function eanOptions(selectedCode) {
+        return eanList.map(e => `<option value="${esc(e.id)}" ${e.code === selectedCode ? "selected" : ""}>${esc(e.code)}</option>`).join("");
+      }
+      function amountOptions(selected) {
+        return allowedAmounts.map(a => `<option value="${a}" ${a === selected ? "selected" : ""}>${a} €</option>`).join("");
+      }
+
+      // ---------- pack check ----------
+      async function check(barcode, quiet) {
+        const el = document.getElementById("result");
+        if (!quiet) el.innerHTML = `<div class="panel empty"><i class="fas fa-spinner fa-spin"></i> Checking…</div>`;
+        try {
+          current = await api("GET", "/api/pack-check?barcode=" + encodeURIComponent(barcode));
+          history.replaceState(null, "", "?barcode=" + encodeURIComponent(barcode));
+          renderResult();
+        } catch (err) {
+          el.innerHTML = `<div class="banner wrong"><i class="fas fa-times-circle"></i><div>${esc(err.message)}</div></div>`;
+        }
+      }
+
+      function renderResult() {
+        const r = current, el = document.getElementById("result");
+        if (!r.pack) {
+          el.innerHTML = `<div class="banner info"><i class="fas fa-question-circle"></i><div><b>No pack found.</b> ${esc(r.message || "")}</div></div>`;
+          return;
+        }
+        let banner;
+        if (r.status === "wrong_for_this_pack") {
+          banner = `<div class="banner wrong"><i class="fas fa-exclamation-triangle"></i><div>
+            <div class="big"><b>${esc(r.barcode)}</b> does not belong to this pack.</div>
+            ${r.likelyRealBarcode ? `The real card is most likely <b class="mono">${esc(r.likelyRealBarcode)}</b>. Correct it below.` : "No close missing barcode found, check the card by hand."}
+          </div></div>`;
+        } else if (r.status === "not_in_database") {
+          banner = `<div class="banner info"><i class="fas fa-info-circle"></i><div>
+            <div class="big"><b>${esc(r.barcode)}</b> was never scanned.</div>
+            It belongs to this pack${r.counts.wrong ? `; a wrong scan below is probably this card.` : "."}
+          </div></div>`;
+        } else {
+          banner = `<div class="banner ok"><i class="fas fa-check-circle"></i><div>
+            <div class="big"><b>${esc(r.barcode)}</b> is correct for this pack.</div>
+            ${r.counts.wrong || r.counts.missing ? "The pack still has problems, see below." : "The whole pack is complete."}
+          </div></div>`;
+        }
+
+        const c = r.counts, w = n => (n / c.expected * 100).toFixed(2) + "%";
+        const pack = `<div class="panel">
+          <div class="pack-head">
+            <div>
+              <div class="panel-title"><i class="fas fa-box" style="color: var(--primary)"></i> Pack</div>
+              <div class="range mono">${esc(r.pack.start)} – ${esc(r.pack.end)}</div>
+            </div>
+          </div>
+          <div class="tiles">
+            <div class="tile"><div class="l">Expected</div><div class="v">${c.expected}</div></div>
+            <div class="tile"><div class="l">Scanned</div><div class="v">${c.scanned}</div></div>
+            <div class="tile"><div class="l">Correct</div><div class="v" style="color: var(--green)">${c.correct}</div></div>
+            <div class="tile"><div class="l">Wrong</div><div class="v" style="color: ${c.wrong ? "var(--red)" : "inherit"}">${c.wrong}</div></div>
+            <div class="tile"><div class="l">Missing</div><div class="v" style="color: ${c.missing ? "#b45309" : "inherit"}">${c.missing}</div></div>
+          </div>
+          <div class="bar"><div class="ok" style="width:${w(c.correct)}"></div><div class="wr" style="width:${w(c.wrong)}"></div><div class="ms" style="width:${w(Math.max(0, c.missing - c.wrong))}"></div></div>
+          <div class="legend"><span style="--c: var(--green)">correct</span><span style="--c: var(--red)">wrong scan</span><span style="--c: #f59e0b">missing, no wrong scan for it</span></div>
+        </div>`;
+
+        const wrong = r.wrongCards.length ? `<div class="panel">
+          <div class="panel-title"><i class="fas fa-exchange-alt" style="color: var(--red)"></i> Wrong scans (${r.wrongCards.length})</div>
+          <div class="panel-sub">The suggestion is the missing barcode with the fewest different digits. Check the card, edit if needed, then correct.</div>
+          ${r.wrongCards.map(wrongCardHtml).join("")}
+        </div>` : "";
+
+        const matched = new Set(r.wrongCards.map(x => x.likelyRealBarcode).filter(Boolean));
+        const missing = r.missing.length ? `<div class="panel">
+          <div class="panel-title"><i class="fas fa-search-minus" style="color: #b45309"></i> Missing barcodes (${r.missing.length})</div>
+          <div class="panel-sub">Click to copy. Grey ones are already suggested for a wrong scan above.</div>
+          <div class="chips">${r.missing.map(m => `<span class="chip mono ${matched.has(m) ? "matched" : ""}" data-copy="${esc(m)}">${esc(m)}</span>`).join("")}</div>
+        </div>` : "";
+
+        el.innerHTML = banner + pack + wrong + missing;
+        el.querySelectorAll(".chip").forEach(ch => ch.onclick = () => {
+          navigator.clipboard?.writeText(ch.dataset.copy).then(() => toast("Copied " + ch.dataset.copy)).catch(() => {});
+        });
+        el.querySelectorAll("input[data-new]").forEach(inp => { inp.oninput = () => validateInput(inp); validateInput(inp); });
+        el.querySelectorAll("button[data-correct]").forEach(btn => btn.onclick = () => submitCorrection(btn.dataset.correct, btn));
+      }
+
+      function wrongCardHtml(wc) {
+        const id = wc.steamCardId;
+        const a = wc.activation;
+        const activatedWrong = a && (a.status === "activated" || a.status === "already_active") && a.barcode === wc.barcode;
+        const canActivate = wc.tagActivatedBefore;
+        return `<div class="wrong-card" id="wc-${esc(id)}">
+          <div class="wc-top">
+            <div>
+              <div class="wc-label">Scanned (wrong)</div>
+              ${diffHtml(wc.barcode, wc.likelyRealBarcode, false)}
+              <div class="wc-meta">${esc(wc.tag || "no tag")} · ${esc(wc.scannedBy || "—")} · ${fmt(wc.scannedAt)}</div>
+            </div>
+            <div class="arrow"><i class="fas fa-arrow-right"></i></div>
+            <div>
+              <div class="wc-label">Most likely real card</div>
+              ${wc.likelyRealBarcode
+                ? diffHtml(wc.likelyRealBarcode, wc.barcode, true) + `<div class="wc-meta">${wc.digitsDifferent} digit(s) different</div>`
+                : `<div class="wc-meta">No close missing barcode, enter it by hand.</div>`}
+            </div>
+          </div>
+          <div class="wc-meta" style="margin: -4px 0 12px;">Activation: ${statusPill(a && a.status, a && a.result)}
+            ${a ? `<span style="margin-left:6px">${esc(a.result || "")}${a.ean ? " · " + esc(a.ean) + " / " + esc(a.amount) + " €" : ""}</span>` : ""}</div>
+          ${activatedWrong ? `<div class="warn"><i class="fas fa-exclamation-triangle"></i> The <b>wrong</b> barcode was accepted by epay, so a different card may have been activated. The corrected card still needs its own activation.</div>` : ""}
+          <div class="wc-form">
+            <div class="field">
+              <label for="new-${esc(id)}">Correct barcode</label>
+              <input id="new-${esc(id)}" data-new="${esc(id)}" class="mono" maxlength="16" inputmode="numeric" value="${esc(wc.likelyRealBarcode || "")}" />
+              <div class="check-note" id="note-${esc(id)}"></div>
+            </div>
+            <div class="field">
+              <label for="ean-${esc(id)}">EAN</label>
+              <select id="ean-${esc(id)}" ${canActivate ? "" : "disabled"}>${eanOptions(wc.defaultEan)}</select>
+              <div class="check-note"></div>
+            </div>
+            <div class="field">
+              <label for="amt-${esc(id)}">Amount</label>
+              <select id="amt-${esc(id)}" ${canActivate ? "" : "disabled"}>${amountOptions(wc.defaultAmount)}</select>
+              <div class="check-note"></div>
+            </div>
+            <div class="field">
+              <button class="btn btn-green" data-correct="${esc(id)}"><i class="fas fa-check"></i> Correct</button>
+              <div class="check-note"></div>
+            </div>
+          </div>
+          <label class="activate-toggle">
+            <input type="checkbox" id="act-${esc(id)}" ${canActivate ? "checked" : "disabled"} />
+            ${canActivate ? "Send to activation after correcting" : "Tag not activated yet: the corrected card goes with the tag's normal run"}
+          </label>
+          <div class="err-msg" id="err-${esc(id)}"></div>
+        </div>`;
+      }
+
+      function validateInput(inp) {
+        const v = inp.value.trim();
+        const note = document.getElementById("note-" + inp.dataset.new);
+        inp.classList.remove("valid", "invalid");
+        if (!v) { note.textContent = ""; return false; }
+        if (!luhnOk(v)) {
+          inp.classList.add("invalid");
+          note.innerHTML = `<span style="color: var(--red)">${v.length < 16 ? (16 - v.length) + " digit(s) missing" : "check digit wrong, typo?"}</span>`;
+          return false;
+        }
+        inp.classList.add("valid");
+        const inPack = current && current.missing.includes(v);
+        note.innerHTML = inPack
+          ? `<span style="color: var(--green)"><i class="fas fa-check"></i> missing from this pack</span>`
+          : `<span style="color: #b45309"><i class="fas fa-exclamation"></i> valid, but not missing from this pack</span>`;
+        return true;
+      }
+
+      async function submitCorrection(id, btn) {
+        const inp = document.getElementById("new-" + id);
+        const err = document.getElementById("err-" + id);
+        err.textContent = "";
+        if (!validateInput(inp)) { err.textContent = "Enter a valid 16-digit barcode."; inp.focus(); return; }
+        const activate = document.getElementById("act-" + id).checked;
+        const eanSel = document.getElementById("ean-" + id), amtSel = document.getElementById("amt-" + id);
+        const wc = current.wrongCards.find(x => x.steamCardId === id);
+        const what = activate ? ` and send it to activation (${eanSel.selectedOptions[0]?.text} / ${amtSel.value} €)` : "";
+        if (!confirm(`Change ${wc.barcode} → ${inp.value.trim()}${what}?`)) return;
+
+        btn.disabled = true;
+        try {
+          const r = await api("POST", "/api/barcode-corrections", {
+            steamCardId: id, newBarcode: inp.value.trim(), activate,
+            eanId: activate ? eanSel.value : undefined, amount: activate ? Number(amtSel.value) : undefined,
+          });
+          toast(r.activationError ? "Barcode corrected, activation not sent: " + r.activationError
+            : activate ? "Barcode corrected and sent to activation" : "Barcode corrected");
+          await Promise.all([check(current.barcode === wc.barcode ? r.newBarcode : current.barcode, true), loadHistory()]);
+        } catch (e) {
+          err.textContent = e.message;
+          btn.disabled = false;
+        }
+      }
+
+      // ---------- history ----------
+      async function loadHistory() {
+        const q = document.getElementById("histSearch").value.trim();
+        try {
+          const d = await api("GET", "/api/barcode-corrections?limit=100&q=" + encodeURIComponent(q));
+          historyRows = d.corrections;
+          renderHistory();
+        } catch (e) {
+          document.getElementById("history").innerHTML = `<div class="empty">${esc(e.message)}</div>`;
+        }
+      }
+
+      function renderHistory() {
+        const el = document.getElementById("history");
+        if (!historyRows.length) { el.innerHTML = `<div class="empty">No corrections yet.</div>`; return; }
+        el.innerHTML = `<table><thead><tr>
+            <th>When</th><th>Wrong → correct</th><th>Tag</th><th>From</th><th>Activation</th><th></th>
+          </tr></thead><tbody>` + historyRows.map(h => {
+            const canSend = !h.act_status || h.act_status === "failed" || h.act_status === "cancelled";
+            return `<tr>
+              <td>${fmt(h.created_at)}</td>
+              <td><div class="mono">${diffHtml(h.old_barcode, h.new_barcode, false)}</div>
+                  <div class="mono" style="margin-top:2px">${diffHtml(h.new_barcode, h.old_barcode, true)}</div></td>
+              <td>${esc(h.tag_name || "—")}</td>
+              <td>${h.source === "pack_check" ? "Pack check" : "Activation retry"}</td>
+              <td>${statusPill(h.act_status, h.act_result)}
+                  <div class="sub">${esc(h.act_result || "")}${h.act_ean ? " · " + esc(h.act_ean) + " / " + esc(h.act_amount) + " €" : ""}${h.act_at ? " · " + fmt(h.act_at) : ""}</div></td>
+              <td>${canSend ? `<button class="btn btn-light btn-sm" data-activate="${esc(h.id)}"><i class="fas fa-paper-plane"></i> Activate</button>` : ""}</td>
+            </tr>`;
+          }).join("") + `</tbody></table>`;
+        el.querySelectorAll("button[data-activate]").forEach(b => b.onclick = () => activateFromHistory(b.dataset.activate, b));
+      }
+
+      async function activateFromHistory(id, btn) {
+        if (!confirm("Send this corrected card to activation with the tag's latest EAN and amount?")) return;
+        btn.disabled = true;
+        try {
+          await api("POST", `/api/barcode-corrections/${id}/activate`, {});
+          toast("Sent to activation");
+          await loadHistory();
+        } catch (e) {
+          toast(e.message);
+          btn.disabled = false;
+        }
+      }
+
+      // ---------- wiring ----------
+      document.getElementById("searchForm").onsubmit = e => {
+        e.preventDefault();
+        const b = document.getElementById("barcodeInput").value.replace(/\s/g, "");
+        if (!/^\d{16}$/.test(b)) { toast("Enter a 16-digit barcode"); return; }
+        check(b);
+      };
+      let histTimer;
+      document.getElementById("histSearch").oninput = () => { clearTimeout(histTimer); histTimer = setTimeout(loadHistory, 300); };
+
+      // keep activation results live while something is still on its way
+      setInterval(() => {
+        if (document.hidden) return;
+        const busy = historyRows.some(h => h.act_status === "pending" || h.act_status === "sending");
+        if (busy) {
+          loadHistory();
+          if (current && current.pack) check(current.barcode, true);
+        }
+      }, 5000);
+
+      const initial = document.getElementById("barcodeInput").value.trim();
+      if (/^\d{16}$/.test(initial)) check(initial); else document.getElementById("barcodeInput").focus();
+      loadHistory();
+    </script>
+  </body>
+</html>

@@ -101,6 +101,18 @@
 
     <li>
       <a
+        href="/a26ae3e19a140048efd2/pack-check"
+        style="<% linkStyle(activePage === 'pack-check'); %>"
+        onmouseover="this.style.background='rgba(255,255,255,0.15)'; this.style.color='#fff';"
+        onmouseout="this.style.background='<%= (activePage === 'pack-check') ? 'rgba(255,255,255,0.15)' : 'transparent' %>'; this.style.color='<%= (activePage === 'pack-check') ? '#fff' : 'rgba(255,255,255,0.8)' %>';"
+      >
+        <i class="fas fa-box-open" style="<% iconStyle(); %>"></i>
+        Pack Check
+      </a>
+    </li>
+
+    <li>
+      <a
         href="/a26ae3e19a140048efd2/monthly-payout"
         style="<% linkStyle(activePage === 'monthlyPayload'); %>"
         onmouseover="this.style.background='rgba(255,255,255,0.15)'; this.style.color='#fff';"

@@ -10,6 +10,8 @@ exports.pauseJob = pauseJob;
 exports.resumeJob = resumeJob;
 exports.updateJobSettings = updateJobSettings;
 exports.retryItem = retryItem;
+exports.recordCorrection = recordCorrection;
+exports.activateCard = activateCard;
 exports.retryFailed = retryFailed;
 exports.resumeActivationJobs = resumeActivationJobs;
 exports.getJobSummary = getJobSummary;
@@ -469,7 +471,11 @@ async function retryItem(itemId, opts = {}) {
         if (!/^\d{16}$/.test(barcode))
             throw new ActivationError(400, "Barcode must be 16 digits");
         try {
-            await dbConnection_1.default.steam_card.update({ where: { id: item.steam_card_id }, data: { barcode } });
+            const card = await dbConnection_1.default.steam_card.update({ where: { id: item.steam_card_id }, data: { barcode } });
+            await recordCorrection({
+                steamCardId: item.steam_card_id, oldBarcode: item.barcode, newBarcode: barcode,
+                packId: card.pack_id, source: "activation_retry", activationItemId: itemId,
+            });
         }
         catch (err) {
             if (err?.code === "P2002")
@@ -488,6 +494,92 @@ async function retryItem(itemId, opts = {}) {
     });
     emitItem(updated);
     await reopenJob(item.job_id);
+}
+/** History row for a barcode change (old -> new) and the activation sent for it. */
+async function recordCorrection(c) {
+    return dbConnection_1.default.barcode_correction.create({
+        data: {
+            id: crypto_1.default.randomUUID(),
+            steam_card_id: c.steamCardId,
+            old_barcode: c.oldBarcode,
+            new_barcode: c.newBarcode,
+            pack_id: c.packId,
+            source: c.source,
+            activation_item_id: c.activationItemId ?? null,
+        },
+    });
+}
+/**
+ * Send one card (with its current barcode) to activation, e.g. after a barcode correction.
+ * - card already queued/failed in the tag's open job -> requeued there
+ * - card failed in a closed job -> requeued there and that job reopened
+ * - otherwise appended to the tag's open job, or a new one-card job if the tag had runs before
+ * A tag that was never activated is refused: its normal run will include the card.
+ * EAN/amount: the given ones, else the tag's latest job's. Returns the activation_item id.
+ */
+async function activateCard(steamCardId, opts = {}) {
+    if (!process.env.EPAY_INTERNAL_TOKEN)
+        throw new ActivationError(500, "EPAY_INTERNAL_TOKEN is not configured on the server");
+    const card = await dbConnection_1.default.steam_card.findUnique({ where: { id: steamCardId }, select: { id: true, barcode: true, tag_id: true } });
+    if (!card)
+        throw new ActivationError(404, "Card not found");
+    if (!card.tag_id)
+        throw new ActivationError(400, "Card has no tag");
+    const tagId = card.tag_id;
+    const lastJob = await dbConnection_1.default.activation_job.findFirst({ where: { tag_id: tagId }, orderBy: { created_at: "desc" } });
+    if (!lastJob)
+        throw new ActivationError(409, "This tag was never activated: the card will be activated with the tag's normal run");
+    const chosen = await optionalEanAmount(opts.eanId, opts.amount);
+    const ean = chosen?.ean ?? lastJob.ean;
+    const amount = chosen?.amount ?? lastJob.amount;
+    const items = await dbConnection_1.default.activation_item.findMany({ where: { steam_card_id: card.id }, orderBy: { updated_at: "desc" } });
+    if (items.some((i) => i.status === "sending"))
+        throw new ActivationError(409, "This card is being sent right now");
+    const openJob = await dbConnection_1.default.activation_job.findFirst({ where: { tag_id: tagId, status: { in: ["running", "paused"] } } });
+    const requeue = async (itemId) => {
+        const updated = await dbConnection_1.default.activation_item.update({
+            where: { id: itemId },
+            data: { status: "pending", barcode: card.barcode, ean, amount },
+        });
+        emitItem(updated);
+        return updated;
+    };
+    // 1) already in the open job (queued or failed there)
+    const inOpen = openJob && items.find((i) => i.job_id === openJob.id && (i.status === "pending" || i.status === "failed"));
+    if (openJob && inOpen) {
+        await requeue(inOpen.id);
+        await reopenJob(openJob.id);
+        return inOpen.id;
+    }
+    // 2) failed in a closed job and no other run open on the tag: reopen that job
+    const failed = items.find((i) => i.status === "failed");
+    if (!openJob && failed) {
+        await requeue(failed.id);
+        await reopenJob(failed.job_id);
+        return failed.id;
+    }
+    // 3) new item: in the open job, else a new one-card job
+    let jobId = openJob?.id;
+    if (!jobId) {
+        jobId = crypto_1.default.randomUUID();
+        await dbConnection_1.default.activation_job.create({
+            data: {
+                id: jobId, tag_id: tagId, ean, amount, currency: CURRENCY,
+                status: "running", finish_at: new Date(), started_at: new Date(),
+            },
+        });
+    }
+    const last = await dbConnection_1.default.activation_item.findFirst({ where: { job_id: jobId }, orderBy: { position: "desc" }, select: { position: true } });
+    const itemId = crypto_1.default.randomUUID();
+    const created = await dbConnection_1.default.activation_item.create({
+        data: {
+            id: itemId, job_id: jobId, steam_card_id: card.id, position: (last?.position ?? -1) + 1,
+            barcode: card.barcode, ean, amount,
+        },
+    });
+    emitItem(created);
+    await reopenJob(jobId);
+    return itemId;
 }
 /** Retry all failed cards of a job, optionally all with another EAN + amount. */
 async function retryFailed(jobId, opts = {}) {
